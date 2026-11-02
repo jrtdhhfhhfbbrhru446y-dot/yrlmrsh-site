@@ -1,0 +1,69 @@
+.retro-os .os-profile-window { max-width: 1000px; margin-inline: auto; }
+.retro-os .os-profile { max-width: 850px; margin: 0 auto; }
+.retro-os .os-profile-card { display: grid; grid-template-columns: 175px minmax(0, 1fr); gap: clamp(20px, 4cqw, 42px); padding: clamp(18px, 3cqw, 30px); border: 1px solid var(--os-frame); background: linear-gradient(145deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px var(--os-highlight); }
+.retro-os .os-profile-photo { margin: 0; align-self: start; }
+.retro-os .os-profile-photo img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; background: #fff; border: 1px solid var(--os-frame); }
+.retro-os .os-profile-identity h2 { font-size: clamp(25px, 4cqw, 36px); line-height: 1.14; letter-spacing: -.05em; }
+.retro-os .os-profile-intro { max-width: 43ch; font: 18px/1.55 Georgia, "Times New Roman", serif; margin: 18px 0 22px; }
+.retro-os .os-profile .os-button { font-size: 13px; gap: 20px; }
+.retro-os .os-profile-approach { padding: 30px 8px; border-bottom: 1px solid var(--os-line); }
+.retro-os .os-profile h3 { font-size: 17px; line-height: 1.4; margin-bottom: 16px; }
+.retro-os .os-profile section > p { font: 17px/1.65 Georgia, "Times New Roman", serif; max-width: 68ch; }
+.retro-os .os-profile section > p + p { margin-top: 12px; }
+.retro-os .os-profile-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; padding: 30px 8px; }
+.retro-os .os-profile-links { display: flex; flex-wrap: wrap; gap: 14px 28px; padding: 20px 8px 10px; border-top: 1px solid var(--os-line); }
+.retro-os .os-profile-links button { display: flex; align-items: center; gap: 10px; font-size: 12px; text-align: left; }
+.retro-os .os-profile-links button .os-icon { width: 23px; height: 23px; }
+.retro-os .os-profile-links button:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+.retro-os .os-contact-window { max-width: 740px; }
+.retro-os .os-contact-window .os-window-content { display: block; }
+.retro-os .os-contact-panel { width: 100%; max-width: 540px; min-height: 100%; margin-inline: auto; display: flex; flex-direction: column; justify-content: center; padding: 20px 0; }
+.retro-os .os-contact-view { width: 100%; }
+.retro-os .os-contact-identity { display: flex; align-items: center; justify-content: flex-start; gap: 20px; padding: 16px 0 28px; }
+.retro-os .os-contact-identity > .os-icon { width: 60px; height: 60px; }
+.retro-os .os-contact-identity h2 { font-size: clamp(25px, 4cqw, 34px); line-height: 1.15; letter-spacing: -.04em; }
+.retro-os .os-contact-identity p { font-size: 12px; color: var(--os-muted); margin-top: 9px; line-height: 1.5; }
+.retro-os .os-write-author { width: 100%; display: flex; justify-content: space-between; font-size: 15px; min-height: 52px; }
+.retro-os .os-contact-mail { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; border: 1px solid var(--os-frame); background: linear-gradient(var(--os-highlight), var(--os-surface)); padding: 18px; margin-top: 20px; }
+.retro-os .os-contact-mail > span { grid-column: 1 / -1; font-size: 11px; color: var(--os-muted); }
+.retro-os .os-contact-mail > a { font-size: 14px; font-weight: 700; overflow-wrap: anywhere; line-height: 1.6; }
+.retro-os .os-contact-mail > a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-contact-mail > button { align-self: center; font-size: 11px; text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-contact-options { display: flex; justify-content: space-between; gap: 12px; padding: 20px 0 10px; }
+.retro-os .os-contact-options button { font-size: 12px; padding-block: 5px; }
+.retro-os .os-contact-options button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-contact-status { min-height: 1.6em; font-size: 11px; color: var(--os-muted); }
+.retro-os .os-contact-write { width: 100%; }
+.retro-os .os-draft-back { padding: 4px 0; font-size: 12px; margin-bottom: 22px; }
+.retro-os .os-contact-write h2 { font-size: 24px; line-height: 1.3; letter-spacing: -.04em; outline: none; }
+.retro-os .os-contact-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 22px 0; }
+.retro-os .os-contact-presets button { font-size: 12px; line-height: 1.4; padding: 11px 12px; min-height: 44px; text-align: left; border: 1px solid var(--os-frame); background: linear-gradient(var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px var(--os-highlight); }
+.retro-os .os-contact-presets button[aria-pressed=true] { background: var(--os-ink); color: var(--os-paper); box-shadow: inset 0 1px #ffffff22; }
+.retro-os .os-contact-presets button:hover:not([aria-pressed=true]) { background: var(--os-soft); }
+.retro-os .os-draft-label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 9px; }
+.retro-os .os-contact-write textarea { display: block; width: 100%; min-height: 155px; resize: vertical; border: 1px solid var(--os-frame); background: var(--os-highlight); color: var(--os-ink); padding: 13px; font: 16px/1.5 Georgia, "Times New Roman", serif; border-radius: 0; box-shadow: inset 0 2px 3px #2428230b; }
+.retro-os .os-contact-write textarea:focus { outline: 2px solid var(--os-frame); outline-offset: 2px; }
+.retro-os .os-draft-hint { margin: 12px 0 20px; font-size: 11px; line-height: 1.6; color: var(--os-muted); }
+.retro-os .os-draft-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px 22px; }
+.retro-os .os-draft-actions > a { font-size: 12px; }
+.retro-os .os-draft-actions > a:not(.os-button) { text-decoration: underline; text-underline-offset: 4px; }
+@container retro-screen (max-width: 570px) {
+  .retro-os .os-profile-card { grid-template-columns: 105px minmax(0, 1fr); gap: 17px; padding: 17px; }
+  .retro-os .os-profile-identity { display: contents; }
+  .retro-os .os-profile-identity h2 { grid-column: 2; grid-row: 1; align-self: center; font-size: 23px; overflow-wrap: anywhere; }
+  .retro-os .os-profile-intro { grid-column: 1 / -1; font-size: 17px; margin: 0; }
+  .retro-os .os-profile-identity > .os-button { grid-column: 1 / -1; justify-self: start; }
+  .retro-os .os-profile-notes { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+  .retro-os .os-profile-links button { min-height: 44px; }
+  .retro-os .os-contact-panel { padding: 10px 0; }
+  .retro-os .os-contact-identity { gap: 14px; }
+  .retro-os .os-contact-identity > .os-icon { width: 45px; height: 45px; }
+  .retro-os .os-contact-mail { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .retro-os .os-contact-mail > button { justify-self: start; }
+}
+@container retro-screen (max-width: 400px) {
+  .retro-os .os-profile-approach, .retro-os .os-profile-notes { padding-inline: 2px; }
+  .retro-os .os-contact-presets { gap: 8px; }
+  .retro-os .os-contact-presets button { padding: 10px; font-size: 11px; }
+}

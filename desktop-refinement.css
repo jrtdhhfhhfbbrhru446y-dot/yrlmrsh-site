@@ -1,0 +1,365 @@
+/* Graphite frames and softly lit paper faces keep the computer tactile.
+   Every rule stays inside this computer interface. */
+.retro-os {
+  --os-paper: #f5f5ef;
+  --os-ink: #242823;
+  --os-muted: #52594f;
+  --os-line: #777e73;
+  --os-frame: #50574d;
+  --os-soft: #dfe6d7;
+  --os-surface: #e7eae1;
+  --os-surface-low: #d9ded2;
+  --os-highlight: #fffffa;
+  --os-chrome-height: clamp(34px, 6.8cqw, 42px);
+  background-image: none;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.retro-os :is(button, a, input, canvas):focus-visible {
+  outline-width: 1px;
+  outline-offset: 3px;
+}
+.retro-os .os-workspace {
+  background: var(--os-paper);
+  background-image: none !important;
+  padding: clamp(10px, 1.6cqw, 18px);
+}
+.retro-os .os-menubar {
+  height: var(--os-chrome-height);
+  min-height: var(--os-chrome-height);
+  font-size: clamp(12px, 2.35cqw, 17px);
+  border-bottom: 1px solid var(--os-line);
+  background: linear-gradient(180deg, var(--os-highlight), var(--os-surface));
+  box-shadow: inset 0 1px 0 var(--os-highlight);
+  gap: .3em;
+  padding-inline: .7em;
+}
+.retro-os .os-brand { font-size: 1.08em; letter-spacing: -.055em; font-weight: 700; }
+.retro-os .os-main-menu { margin-left: .35em; }
+.retro-os .os-main-menu > button { padding-inline: .55em; font-weight: 600; }
+.retro-os .os-clock { margin-left: auto; padding-left: .6em; font-size: .85em; font-weight: 400; }
+.retro-os .os-menu-layer { inset: var(--os-chrome-height) 0 auto; }
+.retro-os .os-dropdown {
+  border: 1px solid var(--os-frame);
+  box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -1px 0 var(--os-surface-low);
+  background: var(--os-paper);
+  padding-block: .4em;
+}
+.retro-os .os-dropdown button { padding: .5em .85em; font-weight: 400; }
+.retro-os .os-taskbar {
+  min-height: 38px;
+  height: clamp(38px, 6cqw, 44px);
+  font-size: clamp(11px, 2.1cqw, 15px);
+  border-top: 1px solid var(--os-line);
+  background: linear-gradient(180deg, var(--os-highlight), var(--os-surface));
+}
+.retro-os .os-taskbar > button {
+  border-right: 1px solid var(--os-line) !important;
+  padding-inline: .6em;
+  font-weight: 600;
+}
+.retro-os .os-taskbar > .os-tv-button { border-right: 0 !important; }
+.retro-os .os-taskbar > button:hover {
+  background: var(--os-soft);
+  color: var(--os-ink);
+  --os-icon-face: var(--os-soft);
+}
+.retro-os .os-taskbar .os-icon { width: 1.45em; height: 1.45em; }
+.retro-os .os-notice { font-weight: 600; box-shadow: none; }
+
+/* A graphite outline and a low relief face, with no offset silhouette. */
+.retro-os :is(.os-button, .os-small-button, .os-window-controls button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-folder-return, .os-window-footer button) {
+  --key-ink: var(--os-ink);
+  --key-face: var(--os-surface);
+  --key-edge: var(--os-frame);
+  --key-highlight: var(--os-highlight);
+  --key-inset: var(--os-surface-low);
+  --key-depth: transparent;
+  filter: none;
+  font-weight: 600;
+}
+.retro-os :is(.os-button, .os-small-button, .os-window-controls button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-folder-return, .os-window-footer button)::before {
+  clip-path: none;
+}
+.retro-os :is(.os-button, .os-small-button, .os-window-controls button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-folder-return, .os-window-footer button)::after {
+  inset: 1px;
+  clip-path: none;
+  background: linear-gradient(180deg, var(--key-highlight), var(--key-face) 22%, var(--key-face) 78%, var(--key-inset));
+  box-shadow: inset 0 1px 0 var(--key-highlight), inset 0 -1px 0 var(--key-inset);
+}
+.retro-os :is(.os-button, .os-small-button, .os-window-controls button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-folder-return, .os-window-footer button):where(:hover:not(:disabled)) {
+  --key-face: var(--os-soft);
+  --key-edge: var(--os-ink);
+}
+.retro-os .os-button.os-button-dark,
+.retro-os .os-button.os-button-dark:hover {
+  --key-ink: var(--os-paper);
+  --key-face: #30372d;
+  --key-edge: #20261d;
+  --key-highlight: #535e4e;
+  --key-inset: #232a1f;
+  font-weight: 700;
+}
+.retro-os :is(.os-button, .os-small-button):disabled {
+  --key-ink: var(--os-muted);
+  --key-face: var(--os-paper);
+  --key-edge: var(--os-line);
+  opacity: .5;
+}
+.retro-os .os-button {
+  min-height: 2.5em;
+  max-width: 100%;
+  padding: .55em .9em !important;
+  letter-spacing: -.015em;
+  line-height: 1.35;
+  white-space: normal;
+}
+.retro-os .os-window {
+  min-width: 0;
+  border: 2px solid var(--os-frame);
+  box-shadow: none;
+}
+.retro-os .os-titlebar {
+  height: 36px;
+  min-height: 36px;
+  padding: 4px 7px;
+  gap: 7px;
+  border-bottom: 1px solid var(--os-frame);
+  background: linear-gradient(180deg, var(--os-highlight), var(--os-surface) 48%, var(--os-surface-low));
+  box-shadow: inset 0 1px 0 var(--os-highlight);
+  font-size: clamp(12px, 2cqw, 15px);
+}
+.retro-os .os-titlebar h1 { min-width: 0; font-size: 1em; font-weight: 700; padding-inline: .45em; line-height: 1.4; background: transparent; }
+.retro-os .os-titlebar > .os-icon { width: 21px; height: 21px; padding: 1px; background: transparent; }
+.retro-os .os-window-controls { gap: 5px; }
+.retro-os .os-window-controls > button {
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  min-height: 25px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+}
+.retro-os .os-window-content {
+  min-width: 0;
+  padding: clamp(12px, 1.7cqw, 22px);
+  scrollbar-color: var(--os-line) var(--os-paper);
+}
+.retro-os .os-window-content::-webkit-scrollbar { width: 10px; height: 10px; }
+.retro-os .os-window-content::-webkit-scrollbar-track { background: var(--os-paper); border-left: 1px solid var(--os-line); }
+.retro-os .os-window-content::-webkit-scrollbar-thumb { background: var(--os-surface-low); border: 1px solid var(--os-frame); box-shadow: inset 1px 0 0 var(--os-highlight); }
+.retro-os .os-window-content::-webkit-scrollbar-button { height: 10px; border-color: var(--os-line); }
+.retro-os .os-pathbar { min-width: 0; min-height: 43px; border-bottom: 1px solid var(--os-line); padding: 6px 9px; gap: 9px; background: var(--os-surface); box-shadow: inset 0 1px 0 var(--os-highlight); }
+.retro-os .os-pathbar > span { min-width: 0; font-size: .8em; font-weight: 400; }
+.retro-os .os-small-button { min-width: 29px; height: 29px; font-size: 17px; font-weight: 600; }
+.retro-os .os-layout-switch { gap: 5px; }
+.retro-os .os-layout-switch > button { width: 29px; height: 29px; font-size: 20px; line-height: 1; }
+.retro-os .os-layout-switch > button[aria-pressed=true],
+.retro-os .os-case-tabs > button[aria-current=page] {
+  --key-ink: var(--os-ink);
+  --key-face: var(--os-soft);
+  --key-edge: var(--os-frame);
+  --key-highlight: #f4f8ed;
+  --key-inset: #c1ccb6;
+  --os-icon-face: var(--os-soft);
+  font-weight: 700;
+}
+.retro-os .os-window-footer { border-top: 1px solid var(--os-line); min-height: 42px; gap: 1px; background: var(--os-line); }
+.retro-os .os-window-footer > button { min-width: 0; gap: .55em; padding: .55em .7em; font-size: .78em; line-height: 1.4; }
+.retro-os .os-window-footer strong { border: 0; font-weight: 400; }
+
+/* Desktop objects remain recognisable objects, rather than oversized keys. */
+.retro-os .os-desktop-item > span { font-weight: 600; letter-spacing: -.02em; }
+.retro-os .os-desktop-item:hover > span,
+.retro-os .os-desktop-item.is-selected > span { color: var(--os-ink); background: transparent; text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-desktop-item.is-selected { outline: 1px dotted var(--os-line); outline-offset: 4px; }
+.retro-os .os-desktop-signature { color: var(--os-muted); font-size: .8em; font-weight: 400; }
+.retro-os .os-project-grid { gap: clamp(18px, 3cqw, 28px) clamp(18px, 2.6cqw, 26px); max-width: 1040px; margin-inline: auto; padding: 5px 4px 18px; }
+.retro-os .os-project-card { background: transparent; outline-offset: 5px; }
+.retro-os .os-cover-frame { border: 1px solid var(--os-frame); box-shadow: inset 0 1px 0 var(--os-highlight); }
+.retro-os .os-project-card-label { gap: 8px; padding: 10px 1px 0; }
+.retro-os .os-project-card-label .os-icon { width: 24px; height: 24px; margin-top: 1px; }
+.retro-os .os-project-card-label strong { font-size: .94em; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; }
+.retro-os .os-project-card-label small { margin-top: 4px; font-size: .76em; line-height: 1.5; color: var(--os-muted); }
+.retro-os .os-project-card:hover,
+.retro-os .os-project-card.is-selected { outline: 1px solid var(--os-line); }
+.retro-os .os-project-card:hover .os-project-card-label,
+.retro-os .os-project-card.is-selected .os-project-card-label {
+  color: var(--os-ink);
+  background: transparent;
+  --os-icon-face: var(--os-paper);
+}
+.retro-os .os-project-card:hover small,
+.retro-os .os-project-card.is-selected small { color: var(--os-muted); }
+.retro-os[data-layout=list] .os-project-grid { gap: 16px; }
+.retro-os[data-layout=list] .os-project-card { grid-template-columns: 7em minmax(0, 1fr); gap: 18px; padding-bottom: 16px; }
+.retro-os[data-layout=list] .os-project-card-label { padding: 3px; }
+.retro-os .os-case-layout { grid-template-columns: clamp(118px, 19cqw, 155px) minmax(0, 1fr); }
+.retro-os .os-case-tabs { border-right: 1px solid var(--os-line); padding: 9px 6px; gap: 6px; background: var(--os-surface); box-shadow: inset 0 1px 0 var(--os-highlight); }
+.retro-os .os-case-tabs > button { padding: .7em .55em; font-weight: 600; font-size: .78em; line-height: 1.4; }
+.retro-os .os-case-body { padding: clamp(16px, 2.8cqw, 28px); }
+.retro-os .os-case-body > h2,
+.retro-os .os-demo-page > h2 { margin: .65em 0 .9em; font-size: clamp(22px, 1.5em, 29px); line-height: 1.3; font-weight: 700; letter-spacing: -.035em; }
+.retro-os .os-case-heading { margin-bottom: 22px; }
+.retro-os .os-case-heading h2 { font-size: 1.35em; font-weight: 700; line-height: 1.35; letter-spacing: -.025em; }
+.retro-os .os-status { font-size: .78em; line-height: 1.5; font-weight: 400; color: var(--os-muted); margin: 14px 0; }
+.retro-os .os-project-facts { gap: 16px; font-size: .9em; line-height: 1.6; }
+.retro-os .os-project-facts > div { grid-template-columns: 5.3em minmax(0, 1fr); gap: 14px; }
+.retro-os .os-project-facts dd { min-width: 0; }
+.retro-os .os-project-facts dt { font-weight: 700; color: var(--os-ink); }
+.retro-os .os-done-list { margin: 0; padding-left: 1.1em; }
+.retro-os .os-done-list li + li { margin-top: .5em; }
+.retro-os .os-actions { gap: 10px; margin: 24px 0 4px; }
+.retro-os .os-process { gap: 24px 28px; padding: 0 0 8px; }
+.retro-os .os-process-step { min-height: 68px; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 13px 15px; border: 1px solid var(--os-frame); background: linear-gradient(180deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -1px 0 var(--os-surface-low); text-align: left; }
+.retro-os .os-process-step .os-icon { width: 24px; height: 24px; margin: 0; }
+.retro-os .os-process-step strong { min-width: 0; overflow-wrap: anywhere; font-weight: 700; font-size: .85em; line-height: 1.4; }
+.retro-os .os-process-step.is-active,
+.retro-os .os-process-step:hover { background: linear-gradient(180deg, #edf3e5, var(--os-soft)); color: var(--os-ink); border-color: var(--os-frame); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -2px 0 #b9c5ad; --os-icon-face: var(--os-soft); }
+.retro-os .os-process-step[data-flow]::after { font-size: 18px; color: var(--os-muted); }
+.retro-os .os-step-detail { border-color: var(--os-line); background: var(--os-paper); box-shadow: inset 0 1px 0 var(--os-highlight); margin: 22px 0; padding: 18px; font-size: .9em; line-height: 1.6; }
+.retro-os .os-step-detail h3 { font-weight: 700; margin: 16px 0 10px; }
+.retro-os .os-tools { gap: 7px 12px; }
+.retro-os .os-tools span { border: 0; padding: 0; font-size: .72em; color: var(--os-muted); }
+.retro-os .os-tools span + span::before { content: "·"; margin-right: 12px; }
+.retro-os .os-material-grid { gap: 14px; }
+.retro-os .os-material-grid > button { border: 1px solid var(--os-frame); min-height: 110px; background: linear-gradient(180deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -1px 0 var(--os-surface-low); }
+.retro-os .os-material-grid > button:hover { background: var(--os-soft); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -2px 0 #b9c5ad; }
+.retro-os .os-material-cover { padding: 12px !important; gap: 16px; }
+.retro-os .os-material-file { padding: 14px !important; gap: 8px; }
+.retro-os .os-material-file strong { font-weight: 700; line-height: 1.4; }
+.retro-os .os-material-file span { font-size: .77em; line-height: 1.5; }
+.retro-os .os-footnote { margin-top: 20px !important; line-height: 1.6; }
+.retro-os .os-inset { border: 1px solid var(--os-line); padding: 16px; }
+.retro-os .os-inset h3 { font-size: 1em; font-weight: 700; background-image: none; border-bottom-color: var(--os-line); }
+.retro-os .os-skills-window .os-window-content { padding: 0; display: flex; min-height: 0; overflow: hidden; }
+.retro-os .os-skill-map-mount { display: flex; flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+
+/* Every browser navigation key has a fixed square footprint at every OS scale. */
+.retro-os .os-browser-toolbar { min-width: 0; min-height: 50px; padding: 7px 10px; gap: 6px; border-bottom: 1px solid var(--os-line); flex-wrap: nowrap; background: var(--os-surface); box-shadow: inset 0 1px 0 var(--os-highlight); }
+.retro-os .os-browser-toolbar > button {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  padding: 0 !important;
+  margin: 0;
+  font: 18px/1 "Courier New", Courier, monospace;
+}
+.retro-os .os-browser-toolbar .os-address { display: flex; align-items: center; flex: 1 1 0; min-width: 0; height: 34px; border: 1px solid var(--os-frame); background: var(--os-paper); box-shadow: inset 0 1px 2px #3d493018; padding: 5px 9px; font-size: clamp(11px, 1.9cqw, 14px); font-weight: 600; line-height: 1.4; }
+
+/* The journal reads as a page: serif text, a restrained system frame around it. */
+.retro-os .os-browser-window .os-window-content { padding: clamp(18px, 3cqw, 36px); }
+.retro-os .os-journal { display: block; width: 100%; max-width: 1040px; margin: 0 auto; }
+.retro-os .os-journal > article { width: 100%; max-width: 58ch; min-width: 0; margin-inline: auto; font-family: Georgia, "Times New Roman", serif; font-size: 1em; line-height: 1.7; }
+.retro-os .os-article-eyebrow { margin-bottom: 16px; color: var(--os-muted); font: .74em/1.5 "Courier New", Courier, monospace; letter-spacing: 0; }
+.retro-os .os-journal article > h2,
+.retro-os .os-article-heading h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(24px, 1.65em, 32px); font-weight: 600; line-height: 1.25; letter-spacing: -.025em; margin: .5em 0 .7em; overflow-wrap: break-word; }
+.retro-os .os-article-meta { display: flex; flex-wrap: wrap; gap: 7px 18px; padding: 0; margin: 0 0 14px; border: 0; color: var(--os-muted); font: .72em/1.6 "Courier New", Courier, monospace; }
+.retro-os .os-article-meta .os-status { font: inherit; margin: 0; }
+.retro-os .os-journal .os-case-cover { height: auto; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border: 1px solid var(--os-line); margin: 24px 0 28px; }
+.retro-os .os-article-image { width: 100%; margin: 24px 0 28px; }
+.retro-os .os-article-image .os-case-cover { margin: 0; }
+.retro-os .os-journal-lead { font-size: 1.06em; font-weight: 400; line-height: 1.7; margin-bottom: 1.5em; }
+.retro-os .os-journal-reading { width: 100%; max-width: 58ch; font: inherit; line-height: 1.7; }
+.retro-os .os-journal article > section,
+.retro-os .os-journal-reading > section { margin-top: 1.9em; }
+.retro-os .os-journal article > section h3,
+.retro-os .os-journal-reading h3 { font-family: Georgia, "Times New Roman", serif; font-size: 1.17em; font-weight: 600; line-height: 1.4; margin: 0 0 .7em; letter-spacing: -.015em; }
+.retro-os .os-journal article > section p,
+.retro-os .os-journal-reading > section p { font-size: 1em; font-weight: 400; line-height: 1.7; white-space: pre-line; }
+.retro-os .os-journal-reading > section p + p { margin-top: 1.1em; }
+.retro-os .os-journal-colophon { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; border-top: 1px solid var(--os-line); margin: 32px 0 8px; padding-top: 16px; color: var(--os-muted); font: .74em/1.6 "Courier New", Courier, monospace; }
+.retro-os .os-journal-colophon button { padding: 2px 0; color: var(--os-ink); font: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-journal-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 58ch; margin: 30px auto 0; border: 0; border-top: 1px solid var(--os-line); padding: 20px 0 0; font-family: Georgia, "Times New Roman", serif; }
+.retro-os .os-journal-sidebar .os-print-ad { grid-column: 1 / -1; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 16px; text-align: left; border: 1px solid var(--os-line); background: linear-gradient(180deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight); }
+.retro-os .os-journal-sidebar .os-print-ad > .os-icon { grid-column: 1; grid-row: 1 / 3; width: 30px; height: 30px; }
+.retro-os .os-journal-sidebar .os-print-ad :is(h3, strong) { display: block; grid-column: 2; font: 700 16px/1.4 "Courier New", Courier, monospace; letter-spacing: -.025em; margin: 0; }
+.retro-os .os-journal-sidebar .os-print-ad p { display: block; grid-column: 2; font-size: 12px; line-height: 1.5; color: var(--os-muted); margin: 0; }
+.retro-os .os-journal-sidebar .os-print-ad .os-button { grid-column: 3; grid-row: 1 / 3; width: auto; font-size: 13px; min-height: 36px; padding: 8px 12px !important; }
+.retro-os .os-journal-sidebar .os-folder-return { min-width: 0; border: 0 !important; filter: none; margin: 0; padding: 7px 0 !important; font: 12px/1.5 "Courier New", Courier, monospace; text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-journal-sidebar .os-folder-return::before,
+.retro-os .os-journal-sidebar .os-folder-return::after { display: none; }
+.retro-os .os-journal-sidebar .os-folder-return .os-icon { width: 20px; height: 20px; }
+
+.retro-os .os-contact-window { max-width: 650px; }
+.retro-os .os-contact { gap: 17px; padding: 28px 12px 36px; }
+.retro-os .os-contact > .os-icon { width: 62px; height: 62px; max-width: 16cqh; max-height: 16cqh; margin: 0 0 5px; }
+.retro-os .os-contact h2 { max-width: 100%; font-size: clamp(26px, 5cqw, 34px); font-weight: 400; line-height: 1.2; letter-spacing: -.045em; overflow-wrap: anywhere; }
+.retro-os .os-contact p { font-size: .88em; font-weight: 400; line-height: 1.6; }
+.retro-os .os-contact .os-button { min-width: 0; max-width: 100%; font-size: .82em; }
+.retro-os .os-empty-collection { gap: 20px; padding: 24px 14px; max-width: 390px; }
+.retro-os .os-empty-collection > .os-icon { width: 48px; height: 48px; }
+.retro-os .os-empty-collection h2 { font-size: 1.35em; font-weight: 700; line-height: 1.3; }
+.retro-os .os-empty-collection p { font-size: .85em; line-height: 1.65; }
+.retro-os .os-settings { gap: 18px; }
+.retro-os .os-settings fieldset { border: 1px solid var(--os-frame); background: linear-gradient(180deg, var(--os-paper), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight); padding: 12px 14px; }
+.retro-os .os-settings legend { font-weight: 700; padding-inline: 5px; }
+.retro-os .os-settings label { gap: 9px; margin-block: 10px; line-height: 1.4; }
+.retro-os .os-settings-actions { gap: 12px; padding-top: 10px; }
+.retro-os .os-settings-actions .os-button { min-width: 0; }
+
+@container retro-screen (min-width: 1000px) {
+  .retro-os .os-journal { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: start; gap: 32px; }
+  .retro-os .os-journal-sidebar { display: flex; flex-direction: column; max-width: none; margin: 0; border-top: 0; border-left: 1px solid var(--os-line); padding: 0 0 0 18px; }
+  .retro-os .os-journal-sidebar .os-print-ad { display: flex; flex-direction: column; align-items: stretch; gap: 9px; padding: 13px; }
+  .retro-os .os-journal-sidebar .os-print-ad .os-button { width: 100%; }
+}
+@container retro-screen (max-width: 570px) {
+  .retro-os .os-menubar { padding-inline: .45em; gap: .2em; }
+  .retro-os .os-main-menu { margin-left: .1em; }
+  .retro-os .os-main-menu > button { padding-inline: .4em; }
+  .retro-os .os-workspace { padding: 9px; }
+  .retro-os .os-window-content { padding: 14px; }
+  .retro-os .os-case-layout { grid-template-columns: minmax(0, 1fr); }
+  .retro-os .os-case-tabs { border-right: 0; border-bottom: 1px solid var(--os-line); padding: 6px; gap: 5px; }
+  .retro-os .os-case-tabs > button { min-width: 0; font-size: clamp(12px, 3cqw, 15px); padding: .55em .35em; }
+  .retro-os .os-case-body { padding: 18px 14px; }
+  .retro-os .os-process { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .retro-os .os-process-step { grid-row: auto !important; grid-column: 1 !important; min-height: 52px; padding: 11px 13px; }
+  .retro-os .os-process-step[data-flow]::after { content: "↓"; top: 100%; left: calc(50% - .55em); right: auto; }
+  .retro-os .os-process-step[data-flow=none]::after { display: none; }
+  .retro-os .os-material-grid { grid-template-columns: minmax(0, 1fr); }
+  .retro-os .os-material-cover { flex-direction: column; align-items: stretch; }
+  .retro-os .os-material-cover img { width: 100%; }
+  .retro-os .os-project-grid { gap: 22px 16px; }
+  .retro-os .os-project-card-label { gap: 6px; }
+  .retro-os .os-project-card-label .os-icon { width: 19px; height: 19px; }
+  .retro-os .os-project-card-label strong { font-size: .89em; }
+  .retro-os .os-browser-window .os-window-content { padding: 22px 16px; }
+  .retro-os .os-browser-toolbar { padding-inline: 7px; }
+  .retro-os .os-journal article > h2,
+  .retro-os .os-article-heading h2 { font-size: clamp(22px, 1.35em, 28px); line-height: 1.3; }
+  .retro-os .os-journal-sidebar { grid-template-columns: minmax(0, 1fr); }
+  .retro-os .os-journal-sidebar .os-print-ad { grid-template-columns: 28px minmax(0, 1fr); gap: 5px 12px; }
+  .retro-os .os-journal-sidebar .os-print-ad > .os-icon { width: 28px; height: 28px; }
+  .retro-os .os-journal-sidebar .os-print-ad .os-button { grid-column: 2; grid-row: 3; justify-self: start; margin-top: 5px; }
+  .retro-os .os-settings { grid-template-columns: minmax(0, 1fr); }
+}
+@container retro-screen (max-width: 400px) {
+  .retro-os .os-project-grid { grid-template-columns: minmax(0, 1fr); }
+  .retro-os[data-layout=list] .os-project-card { grid-template-columns: 5.8em minmax(0, 1fr); gap: 12px; }
+  .retro-os .os-project-facts > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .retro-os .os-contact { padding-inline: 0; }
+}
+@container retro-screen (max-height: 360px) {
+  .retro-os .os-titlebar { height: 31px; min-height: 31px; }
+  .retro-os .os-window-controls > button { width: 23px; height: 23px; min-width: 23px; min-height: 23px; flex-basis: 23px; }
+  .retro-os .os-window-content { padding: 12px; }
+  .retro-os .os-contact { gap: 10px; padding-block: 10px 20px; }
+  .retro-os .os-contact > .os-icon { width: 42px; height: 42px; }
+}

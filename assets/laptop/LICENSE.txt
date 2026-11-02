@@ -1,0 +1,12 @@
+Classic Laptop — Poly Haven
+Source: https://polyhaven.com/a/classic_laptop
+License: CC0 1.0 Universal (CC0-1.0)
+License terms: https://creativecommons.org/publicdomain/zero/1.0/
+
+The model and textures are from Poly Haven and dedicated to the public domain.
+This browser package uses the official 2K glTF export of the same asset supplied
+as classic_laptop_4k/classic_laptop_4k.blend. The original source is preserved.
+
+All browser resources are local: glTF, geometry buffer and 2K JPG textures.
+Geometry: 14,450 triangles.
+Three.js source and MIT license are in ../vendor/.

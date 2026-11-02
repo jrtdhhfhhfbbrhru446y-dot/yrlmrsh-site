@@ -1,0 +1,97 @@
+/* Optional editorial content; the existing system chrome and short cases keep
+   their established layout. All images show their complete native composition. */
+.retro-os .os-case-body > .os-case-cover,
+.retro-os .os-journal .os-article-image .os-case-cover { height: auto; aspect-ratio: auto; object-fit: contain; }
+.retro-os .os-content-figure { display: block; min-width: 0; width: 100%; margin: 26px 0; }
+.retro-os .os-content-figure > img,
+.retro-os .os-content-image-button > img { display: block; width: 100%; max-width: 100%; height: auto; object-fit: contain; border: 1px solid var(--os-line); background: var(--os-paper); }
+.retro-os .os-content-image-button { display: block; width: 100%; min-width: 0; padding: 0; border: 0; background: none; box-shadow: none; filter: none; }
+.retro-os .os-content-image-button:focus-visible { outline: 2px solid var(--os-ink); outline-offset: 4px; }
+.retro-os .os-content-image-button:hover > img { border-color: var(--os-ink); }
+.retro-os .os-content-figure > figcaption { max-width: 72ch; margin-top: 9px; color: var(--os-muted); font-size: .8em; line-height: 1.5; }
+.retro-os .os-journal-reading .os-article-list { margin: 18px 0 24px; padding-left: 1.2em; line-height: 1.7; }
+.retro-os .os-journal-reading .os-article-list li + li { margin-top: .45em; }
+.retro-os .os-journal-reading > section:focus { outline: none; }
+.retro-os .os-journal-with-toc { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: clamp(24px, 3cqw, 42px); align-items: start; }
+.retro-os .os-journal-with-toc > .os-journal-reading { margin: 0; }
+.retro-os .os-journal-with-toc > .os-journal-sidebar { position: sticky; top: 0; display: flex; flex-direction: column; gap: 12px; align-self: start; width: 100%; min-width: 0; max-height: calc(100cqh - 190px); margin: 0; padding: 0 0 0 18px; border-top: 0; border-left: 1px solid var(--os-line); overflow: auto; }
+.retro-os .os-article-toc { min-width: 0; width: 100%; }
+.retro-os .os-article-toc > summary { font-family: var(--system-type, "IBM Plex Mono", monospace) !important; font-size: 13px; line-height: 1.5; margin: 0; padding: 6px 0; font-weight: 400; cursor: pointer; }
+.retro-os .os-article-toc > summary:focus-visible { outline: 1px solid var(--os-ink); outline-offset: 4px; }
+.retro-os .os-article-toc[open] > summary { margin-bottom: 8px; }
+.retro-os .os-article-toc:not([open]) > nav { display: none; }
+.retro-os .os-article-toc ol { list-style: none; margin: 0; padding: 0; }
+.retro-os .os-article-toc li + li { margin-top: 3px; }
+.retro-os .os-article-toc .os-button { display: block; width: 100%; min-height: 34px; padding: 6px 0 !important; border: 0 !important; background: none; box-shadow: none; filter: none; text-align: left; font-size: 11px; line-height: 1.55; white-space: normal; overflow-wrap: anywhere; }
+.retro-os .os-article-toc .os-button::before,
+.retro-os .os-article-toc .os-button::after { display: none; }
+.retro-os .os-article-toc .os-button:hover { background: var(--os-surface); text-decoration: underline; text-underline-offset: 3px; }
+.retro-os .os-case-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 24px; }
+.retro-os .os-case-links > .os-button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; min-width: 0; min-height: 86px; text-align: left; white-space: normal; }
+.retro-os .os-case-links strong { font-size: 13px; line-height: 1.45; font-weight: 400; }
+.retro-os .os-case-links span { color: var(--os-muted); font-size: 11px; line-height: 1.5; }
+.retro-os .os-case-media-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px; margin: 28px 0 8px; }
+.retro-os .os-case-media-card { display: block; min-width: 0; width: 100%; padding: 0; border: 1px solid var(--os-line); background: var(--os-paper); text-align: left; }
+.retro-os .os-case-media-card > img { display: block; width: 100%; height: auto; object-fit: contain; border-bottom: 1px solid var(--os-line); }
+.retro-os .os-case-media-card > span { display: block; padding: 12px; }
+.retro-os .os-case-media-card strong { display: block; font-size: 13px; line-height: 1.45; font-weight: 500; }
+.retro-os .os-case-media-card small { display: block; margin-top: 6px; color: var(--os-muted); font-size: 11px; line-height: 1.55; }
+.retro-os .os-case-media-card:hover { border-color: var(--os-ink); background: var(--os-surface); }
+.retro-os .os-case-media-card:focus-visible { outline: 2px solid var(--os-ink); outline-offset: 4px; }
+.retro-os .os-step-actions,
+.retro-os .os-step-decisions { margin-top: 24px; }
+.retro-os .os-step-detail h4 { margin: 0 0 10px; font-size: 1em; line-height: 1.5; font-weight: 500; }
+.retro-os .os-step-actions ul { margin: 0; padding-left: 1.2em; }
+.retro-os .os-step-actions li + li { margin-top: 8px; }
+.retro-os .os-step-decision { margin-top: 16px; padding-left: 12px; border-left: 2px solid var(--os-line); }
+.retro-os .os-step-decision > strong { display: block; line-height: 1.5; font-size: 1em; font-weight: 500; }
+.retro-os .os-step-decision > p { margin: 7px 0 0; }
+.retro-os .os-step-tradeoff { color: var(--os-muted); }
+.retro-os .os-step-figure { margin: 24px 0; }
+.retro-os .os-process-long + .os-step-detail .os-map-return { display: inline-flex; align-items: center; min-height: 36px; margin-bottom: 12px; padding: 6px 10px; font-size: .85em; line-height: 1.4; }
+.retro-os .os-image-view .os-content-figure { margin-top: 0; }
+.retro-os .os-case-body-article-entry { display: grid; place-items: center; }
+.retro-os .os-case-article-entry { display: flex; justify-content: center; width: 100%; padding: 32px 0; }
+.retro-os .os-case-article-button { display: inline-flex; align-items: center; justify-content: center; gap: 24px; width: min(100%, 330px); min-height: 110px; padding: 22px 28px !important; font-size: 16px; line-height: 1.4; white-space: normal; --os-icon-face: var(--key-face); }
+.retro-os .os-case-article-button .os-case-article-icon { width: 58px; height: 58px; margin: 0; }
+.retro-os .os-case-article-button:focus-visible { outline: 2px solid var(--os-ink); outline-offset: 5px; }
+@container retro-screen (max-width: 780px) {
+  .retro-os .os-journal-with-toc { display: flex; flex-direction: column; gap: 24px; }
+  .retro-os .os-journal-with-toc > .os-journal-sidebar { position: static; order: -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 58ch; max-height: none; margin: 0 auto; padding: 0 0 16px; border-left: 0; border-bottom: 1px solid var(--os-line); overflow: visible; }
+  .retro-os .os-journal-with-toc > .os-journal-reading { margin-inline: auto; }
+  .retro-os .os-article-toc { grid-column: 1 / -1; }
+  .retro-os .os-article-toc ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; max-height: 165px; overflow: auto; padding-right: 8px; scrollbar-width: thin; }
+  .retro-os .os-article-toc li + li { margin: 0; }
+  .retro-os .os-article-toc > summary { min-height: 40px; }
+  .retro-os .os-article-toc .os-button { min-height: 38px; }
+}
+@container retro-screen (max-width: 480px) {
+  .retro-os .os-case-article-entry { padding: 22px 0; }
+  .retro-os .os-case-article-button { gap: 18px; min-height: 100px; padding: 18px 20px !important; font-size: 14px; }
+  .retro-os .os-case-article-button .os-case-article-icon { width: 52px; height: 52px; }
+  .retro-os .os-case-links,
+  .retro-os .os-case-media-gallery { grid-template-columns: 1fr; }
+  .retro-os .os-case-links { gap: 10px; }
+  .retro-os .os-case-links > .os-button { min-height: 76px; }
+  .retro-os .os-case-media-gallery { gap: 18px; }
+  .retro-os .os-content-figure { margin: 22px 0; }
+  .retro-os .os-article-toc ol { grid-template-columns: 1fr; max-height: 145px; }
+  .retro-os .os-article-toc .os-button { min-height: 40px; font-size: 11px; }
+  .retro-os .os-journal-with-toc > .os-journal-sidebar .os-folder-return { font-size: 10px; line-height: 1.4; }
+  .retro-os .os-step-detail { padding: 14px; }
+}
+
+@container retro-screen (max-width: 570px) {
+  .retro-os .os-case-layout-article-entry { grid-template-rows: auto minmax(0, 1fr); }
+}
+
+/* Scientific references stay close to the claim without competing with the article. */
+.retro-os .os-journal-reading .os-article-sources,
+.retro-os .os-journal-reading .os-article-sources * { font-family: var(--reading-type, "IBM Plex Mono", monospace) !important; }
+.retro-os .os-journal-reading .os-article-sources { margin: 22px 0 30px; padding-top: 12px; border-top: 1px solid var(--os-line); font-size: 12px; line-height: 1.65; color: var(--os-muted); }
+.retro-os .os-article-sources > p { margin: 0 0 7px; font-size: inherit; }
+.retro-os .os-article-sources > ul { margin: 0; padding: 0; list-style: none; }
+.retro-os .os-article-sources li + li { margin-top: 8px; }
+.retro-os .os-article-sources a { color: var(--os-ink); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.retro-os .os-article-sources a:focus-visible { outline: 2px solid var(--os-ink); outline-offset: 4px; }
+.retro-os .os-article-sources li > span { display: block; margin-top: 3px; }

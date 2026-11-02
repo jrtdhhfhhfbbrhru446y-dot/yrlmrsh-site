@@ -1,0 +1,89 @@
+/* Approved workstation type roles: Departure for system controls,
+   IBM Plex Mono for interface content, Oranienbaum for opened articles. */
+@font-face {
+  font-family: "Departure Mono";
+  src: url("./assets/fonts/DepartureMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Oranienbaum";
+  src: url("./assets/fonts/Oranienbaum-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.retro-os {
+  --reading-type: "IBM Plex Mono", "Courier New", Courier, monospace;
+  --system-type: "Departure Mono", "IBM Plex Mono", monospace;
+  --article-type: "Oranienbaum", Georgia, "Times New Roman", serif;
+}
+#screen-anchor .login-screen {
+  --system-type: "Departure Mono", "IBM Plex Mono", monospace;
+}
+
+/* These explicit roles override the finish's single-family important rule. */
+.retro-os :is(.os-menubar, .os-titlebar, .os-pathbar,
+  .os-browser-toolbar, .os-taskbar, .os-dropdown,
+  .os-case-tabs, .os-window-footer),
+.retro-os :is(.os-menubar, .os-titlebar, .os-pathbar,
+  .os-browser-toolbar, .os-taskbar, .os-dropdown,
+  .os-case-tabs, .os-window-footer) *,
+.retro-os :is(.os-button, .os-small-button, .os-map-return,
+  .os-folder-return, .os-layout-switch button, .os-draft-back,
+  .os-desktop-item > span),
+.retro-os :is(.os-button, .os-small-button, .os-map-return,
+  .os-folder-return, .os-layout-switch button, .os-draft-back) *,
+.retro-os :is(.os-contact-presets button, .os-contact-options button,
+  .os-contact-mail > button, .os-profile-links button,
+  .os-journal-colophon button, .os-settings legend,
+  .os-material-cover > span),
+.retro-os :is(.os-contact-presets button, .os-contact-options button,
+  .os-contact-mail > button, .os-profile-links button,
+  .os-journal-colophon button) *,
+.retro-os .pm-map :is(.pm-topbar button, .pm-detail-heading > button,
+  .pm-contact, .pm-related button, .pm-scale),
+.retro-os .pm-map :is(.pm-topbar button, .pm-detail-heading > button,
+  .pm-contact, .pm-related button) *,
+.retro-os .retro-games :is(.rg-tabs, .rg-actions, .rg-dpad,
+  .rg-mine-mode, .rg-bounce-pad) > button,
+.retro-os .retro-games :is(.rg-tabs, .rg-actions, .rg-dpad,
+  .rg-mine-mode, .rg-bounce-pad) > button *,
+.retro-os .retro-games .rg-bounce-message > button,
+.retro-os .retro-games .rg-toolbar > button,
+.retro-os .retro-games .rg-toolbar > button *,
+#screen-anchor #enter-desktop,
+#screen-anchor #enter-desktop * {
+  font-family: var(--system-type) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0;
+}
+
+/* The article is the only editorial surface. Explicit descendants override
+   the base finish's important IBM family on every element. */
+.retro-os .os-journal-reading,
+.retro-os .os-journal-reading * {
+  font-family: var(--article-type) !important;
+  letter-spacing: normal;
+}
+.retro-os .os-journal > .os-journal-reading {
+  font-size: 20px;
+  line-height: 1.65;
+}
+.retro-os .os-journal-reading :is(h2, h3) {
+  font-weight: 400 !important;
+}
+.retro-os .os-journal-reading .os-article-meta,
+.retro-os .os-journal-reading .os-article-meta *,
+.retro-os .os-journal-reading .os-journal-colophon,
+.retro-os .os-journal-reading .os-journal-colophon > span {
+  font-family: var(--reading-type) !important;
+}
+.retro-os .os-journal-reading .os-journal-colophon button,
+.retro-os .os-journal-reading .os-journal-colophon button * {
+  font-family: var(--system-type) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0;
+}

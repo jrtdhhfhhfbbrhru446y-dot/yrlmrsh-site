@@ -1,0 +1,274 @@
+/* Phone/tablet layout is an application-sized surface, not a projected LCD.
+   The class is also what prevents the 3D module from loading on entry. */
+body.mobile-mode {
+  --mobile-nav-height: calc(58px + env(safe-area-inset-bottom, 0px));
+  height: 100dvh;
+  overflow: hidden;
+}
+.mobile-mode .identity,
+.mobile-mode #computer-canvas,
+.mobile-mode #orbit-hint,
+.mobile-mode #object-view,
+.mobile-mode #expand-screen,
+.mobile-mode .os-taskbar { display: none !important; }
+.mobile-mode #experience {
+  position: fixed;
+  inset: 0 0 var(--mobile-nav-height) !important;
+  width: auto;
+  height: auto;
+  isolation: auto;
+}
+.mobile-mode .screen-anchor {
+  inset: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.mobile-mode .screen-inner { border-radius: 0; }
+.mobile-mode .screen-inner::after { display: none; }
+.mobile-mode .view-controls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  height: var(--mobile-nav-height);
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  border-top: 1.5px solid #55554f;
+  background: #eeede6;
+  gap: 0;
+}
+.mobile-mode .view-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  gap: 6px;
+  background: transparent;
+}
+.mobile-mode .view-switch > button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 4px;
+  font-size: 12px;
+}
+.mobile-mode .retro-os { font-size: calc(14px * var(--os-scale)); }
+.mobile-mode .retro-os .os-menubar {
+  height: calc(48px + env(safe-area-inset-top));
+  min-height: calc(48px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  gap: 3px;
+  border-bottom-width: 1.5px;
+}
+.mobile-mode .retro-os .os-brand { font-size: 13px; padding: 0 3px; }
+.mobile-mode .retro-os .os-main-menu { margin-left: 0; }
+.mobile-mode .retro-os .os-main-menu > button { min-height: 44px; padding: 0 6px; font-size: 11px; }
+.mobile-mode .retro-os .os-clock { margin-left: auto; font-size: 10px; }
+.mobile-mode .retro-os .os-menu-layer { top: calc(48px + env(safe-area-inset-top)); }
+.mobile-mode .retro-os .os-dropdown button { min-height: 44px; }
+.mobile-mode .retro-os [data-menu-action="expand"] { display: none; }
+.mobile-mode .retro-os .os-workspace { padding: 0; min-height: 0; }
+.mobile-mode .retro-os .os-window { border: 0; box-shadow: none; }
+.mobile-mode .retro-os .os-window::before,
+.mobile-mode .retro-os .os-window::after { display: none; }
+.mobile-mode .retro-os .os-titlebar { height: 52px; min-height: 52px; padding: 0 8px; border-bottom-width: 1.5px; }
+.mobile-mode .retro-os .os-titlebar h1 { font-size: 13px; min-width: 0; padding: 0 3px; }
+.mobile-mode .retro-os .os-window-controls { gap: 5px; }
+.mobile-mode .retro-os .os-window-controls button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+.mobile-mode .retro-os .os-pathbar,
+.mobile-mode .retro-os .os-browser-toolbar { min-height: 56px; padding: 4px 8px; gap: 7px; border-bottom-width: 1.5px; }
+.mobile-mode .retro-os .os-pathbar > span { font-size: 11px; }
+.mobile-mode .retro-os .os-small-button,
+.mobile-mode .retro-os .os-layout-switch button,
+.mobile-mode .retro-os .os-browser-toolbar button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  min-height: 44px;
+  max-height: 44px;
+}
+.mobile-mode .retro-os .os-window-content {
+  position: relative;
+  padding: 16px 14px 24px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.mobile-mode .retro-os img { -webkit-user-drag: none; user-select: none; }
+.mobile-mode .retro-os .os-project-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.mobile-mode .retro-os .os-project-card { padding: 0; }
+.mobile-mode .retro-os .os-project-card-label { padding: 10px 2px 0; gap: 9px; }
+.mobile-mode .retro-os .os-project-card-label strong { font-size: 15px; }
+.mobile-mode .retro-os .os-project-card-label small { font-size: 12px; line-height: 1.5; margin-top: 4px; }
+.mobile-mode .retro-os .os-window-content > .os-window-footer { margin-top: 24px; border: 1px solid var(--os-line); }
+.mobile-mode .retro-os .os-window-footer button { min-height: 52px; padding: 8px; font-size: 11px; }
+.mobile-mode .retro-os .os-case-window .os-window-content { padding: 0; }
+.mobile-mode .retro-os .os-case-layout { grid-template-columns: minmax(0, 1fr); }
+.mobile-mode .retro-os .os-case-tabs { position: sticky; top: 0; z-index: 3; flex-direction: row; border-right: 0; border-bottom: 1.5px solid var(--os-line); gap: 5px; padding: 6px; }
+.mobile-mode .retro-os .os-case-tabs button { flex: 1; justify-content: center; gap: 5px; min-height: 44px; padding: 5px; font-size: 11px; }
+.mobile-mode .retro-os .os-case-tabs button .os-icon { display: none; }
+.mobile-mode .retro-os .os-case-body { padding: 16px 14px 24px; }
+.mobile-mode .retro-os .os-project-facts > div { grid-template-columns: 1fr; gap: 5px; }
+.mobile-mode .retro-os .os-project-facts { font-size: 14px; line-height: 1.65; gap: 20px; }
+.mobile-mode .retro-os .os-actions { align-items: stretch; }
+.mobile-mode .retro-os .os-actions > * { flex: 1 1 140px; min-height: 44px; }
+.mobile-mode .retro-os .os-button,
+.mobile-mode .retro-os .os-journal-sidebar .os-folder-return { min-height: 44px; }
+.mobile-mode .retro-os textarea,
+.mobile-mode .retro-os input:not([type="range"]),
+.mobile-mode .retro-os select { font-size: 16px !important; }
+.mobile-mode .retro-os .os-journal > .os-journal-reading { font-size: 20px; line-height: 1.65; }
+.mobile-mode .retro-os .os-journal-with-toc > .os-journal-sidebar { gap: 7px; }
+.mobile-mode .retro-os .os-article-toc ol { max-height: none; overflow: visible; padding-right: 0; }
+.mobile-mode .retro-os .os-article-toc > summary { min-height: 44px; }
+.mobile-mode .retro-os .os-article-toc .os-button { min-height: 44px; font-size: 12px; }
+.mobile-mode .retro-os .os-notice { bottom: 10px; }
+/* The skill diagram deliberately retains its own pan/zoom surface. */
+.mobile-mode .pm-map .pm-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+}
+.mobile-mode .pm-map :is(.pm-lenses, .pm-display, .pm-zoom) {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  gap: 0;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-paper);
+}
+.mobile-mode .pm-map .pm-lenses { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mobile-mode .pm-map .pm-display { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mobile-mode .pm-map .pm-zoom { grid-template-columns: 44px 56px 44px minmax(0, 1fr); }
+.mobile-mode .pm-map .pm-topbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 4px;
+  border: 0;
+  border-right: 1px solid var(--pm-line);
+  box-shadow: inset 0 1px #fff8;
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+}
+.mobile-mode .pm-map .pm-lenses button { font-size: 11px; }
+.mobile-mode .pm-map .pm-topbar button:last-child { border-right: 0; }
+.mobile-mode .pm-map .pm-topbar button[aria-pressed="true"] { box-shadow: inset 0 1px #ffffff25; }
+.mobile-mode .pm-map .pm-zoom button:not([data-pm-action="fit"]) { font-size: 22px; }
+.mobile-mode .pm-map .pm-zoom button[data-pm-action="fit"] { padding: 5px 4px; font-size: 11px; }
+.mobile-mode .pm-map .pm-scale {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  border-right: 1px solid var(--pm-line);
+  color: var(--pm-ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.mobile-mode .pm-map[data-view="list"] .pm-zoom { display: none; }
+.mobile-mode .retro-os .os-skills-window .os-window-content { padding: 0; overflow: hidden; touch-action: auto; }
+.mobile-mode .pm-list,
+.mobile-mode .pm-detail-body { -webkit-overflow-scrolling: touch; touch-action: pan-y pinch-zoom; }
+.mobile-mode .pm-map button { min-height: 36px; }
+.mobile-mode .pm-map .pm-topbar button { min-height: 44px; }
+.mobile-mode .pm-map .pm-detail-heading > button { width: 44px; height: 44px; min-height: 44px; }
+.mobile-mode .pm-map .pm-list-node,
+.mobile-mode .pm-map .pm-list-heading { min-height: 46px; }
+.mobile-mode .retro-games :is(.rg-tabs, .rg-actions, .rg-dpad, .rg-bounce-pad) > button { min-width: 44px; min-height: 44px; }
+.mobile-mode .retro-games .rg-bounce-message > button { min-height: 44px; }
+/* Device controls share the same persistent bottom navigation. */
+.mobile-mode .radio-anchor {
+  position: fixed;
+  inset: 0 0 var(--mobile-nav-height);
+  width: 100%;
+  max-height: none;
+  transform: none;
+}
+.mobile-mode .radio-anchor #radio-root { width: 100%; height: 100%; max-height: none; }
+.mobile-mode .radio-anchor .radio-system { height: 100%; max-height: none; border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+.mobile-mode .radio-anchor .radio-heading { min-height: calc(80px + env(safe-area-inset-top)); padding: calc(22px + env(safe-area-inset-top)) 22px 20px; }
+.mobile-mode .radio-anchor .radio-heading h1 { font-size: 32px; }
+.mobile-mode .radio-anchor .radio-body { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; padding: 18px 22px 30px; }
+.mobile-mode .radio-anchor .radio-dial { padding: 20px; }
+.mobile-mode .radio-anchor .radio-stations button { min-height: 56px; }
+.mobile-mode .radio-anchor .radio-stations button > span { font-size: 13px; }
+.mobile-mode .radio-anchor .radio-controls { margin-top: 26px; }
+.mobile-mode .radio-anchor .radio-player .radio-controls { margin-top: 6px; }
+.mobile-mode .radio-anchor .radio-player-title,
+.mobile-mode .radio-anchor .radio-time { font-size: 13px; }
+.mobile-mode .radio-anchor .radio-library { min-height: 48px; font-size: 13px; }
+.mobile-mode .radio-anchor .radio-player input { touch-action: pan-y; }
+.mobile-mode .radio-anchor .radio-system .radio-power { min-width: 116px; font-size: 12px; }
+.mobile-mode .radio-anchor .radio-volume label { font-size: 12px; }
+.mobile-mode .radio-volume input { height: 44px; touch-action: pan-y; }
+@container radio-panel (max-width: 340px) {
+  .mobile-mode .radio-anchor .radio-levels { gap: 12px; }
+  .mobile-mode .radio-anchor .radio-levels .radio-volume label { gap: 4px; font-size: 11px; }
+}
+.mobile-mode .radio-anchor .radio-footer { min-height: 58px; padding: 0 22px; }
+.mobile-mode .radio-anchor .radio-footer button { font-size: 13px; }
+.mobile-mode .tv-anchor {
+  inset: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.mobile-mode .tv-system { border-radius: 0; }
+.mobile-mode .tv-film-screen .tv-picture > canvas { visibility: hidden; }
+.mobile-mode .tv-film-screen .tv-media-source { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1; object-fit: contain; }
+.mobile-mode .tv-system .tv-back { opacity: .9; font-size: 14px; }
+.mobile-mode .tv-library-heading { left: 22px; top: calc(28px + env(safe-area-inset-top)); }
+.mobile-mode .tv-carousel { inset: 21% 0 29%; }
+.mobile-mode .tv-system .tv-flow-card { width: 74%; }
+.mobile-mode .tv-flow-caption { left: 16px; right: 16px; bottom: 18%; gap: 8px; }
+.mobile-mode .tv-flow-caption p { font-size: 20px; }
+.mobile-mode .tv-bottom { left: 20px; right: 20px; bottom: 22px; }
+.mobile-mode .tv-library-screen .tv-bottom { display: none; }
+.mobile-mode .tv-player-heading { left: 16px; right: 16px; top: calc(14px + env(safe-area-inset-top)); }
+.mobile-mode .tv-player-controls { left: 12px; right: 12px; bottom: 22px; gap: 7px; }
+.mobile-mode .tv-system .tv-icon-button { min-width: 40px; min-height: 44px; }
+.mobile-mode .tv-player-controls > span { font-size: 10px; }
+.mobile-mode .tv-player-controls input { touch-action: pan-y; }
+.mobile-mode .device-status { right: 14px; bottom: calc(var(--mobile-nav-height) + 10px); }
+@media (min-width: 600px) {
+  .mobile-mode .pm-map .pm-topbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mobile-mode .pm-map .pm-lenses,
+  .mobile-mode .pm-map[data-view="list"] .pm-display { grid-column: 1 / -1; }
+}
+@media (max-height: 500px) {
+  .mobile-mode .retro-os .os-menubar { height: calc(40px + env(safe-area-inset-top)); min-height: calc(40px + env(safe-area-inset-top)); }
+  .mobile-mode .retro-os .os-menu-layer { top: calc(40px + env(safe-area-inset-top)); }
+  .mobile-mode .retro-os .os-titlebar { height: 48px; min-height: 48px; }
+  .mobile-mode .tv-system .tv-flow-card { width: 38%; }
+  .mobile-mode .tv-carousel { inset: 17% 0 25%; }
+  .mobile-mode .tv-flow-caption { bottom: 8%; left: 22%; right: 22%; }
+  .mobile-mode .tv-flow-caption p { font-size: 16px; }
+  .mobile-mode .tv-bottom { bottom: 6px; }
+}

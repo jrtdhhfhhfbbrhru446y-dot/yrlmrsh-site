@@ -1,0 +1,6 @@
+/* One black system arrow throughout the computer screen. Native cursors have
+   no following DOM layer, transformed coordinate calculations or render loop. */
+#screen-anchor,
+#screen-anchor * {
+  cursor: url("./assets/cursors/computer-arrow.png") 2 2, url("./assets/cursors/computer-arrow.svg") 2 2, default !important;
+}

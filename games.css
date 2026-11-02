@@ -1,0 +1,123 @@
+.retro-games {
+  --rg-paper: #f7f7f4;
+  --rg-ink: #232422;
+  --rg-muted: #e4e5df;
+  color: var(--rg-ink);
+  background: var(--rg-paper);
+  font: 14px/1.35 "Courier New", Courier, monospace;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  container-name: retro-games;
+  container-type: inline-size;
+}
+.retro-games, .retro-games * { box-sizing: border-box; }
+.retro-games button {
+  appearance: none;
+  border: 1px solid var(--rg-ink);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 5px 10px;
+  min-height: 30px;
+  background: var(--rg-paper);
+  color: var(--rg-ink);
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.retro-games button:hover { background: var(--rg-muted); }
+.retro-games button:active { transform: translate(1px, 1px); box-shadow: none; }
+.retro-games button:focus-visible, .retro-games canvas:focus-visible {
+  outline: 2px solid var(--rg-ink);
+  outline-offset: 3px;
+}
+.retro-games button[aria-pressed="true"] { background: var(--rg-ink); color: var(--rg-paper); }
+.retro-games .rg-tabs { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #c8cac4; padding: 0 0 12px; margin-bottom: 18px; }
+.retro-games .rg-stage { min-width: 0; }
+.retro-games .rg-toolbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.retro-games .rg-counters { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 22px; padding-top: 5px; }
+.retro-games .rg-counters strong { font-weight: bold; }
+.retro-games .rg-actions { display: flex; gap: 10px; }
+.retro-games .rg-snake-field { width: min(100%, 480px); position: relative; border: 1px solid #858780; margin: 0 auto; }
+.retro-games canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; background: var(--rg-paper); }
+.retro-games .rg-snake-message { position: absolute; left: 8%; top: 50%; transform: translateY(-50%); width: 84%; padding: 16px 12px; text-align: center; background: var(--rg-paper); border: 1px solid #b9bcb3; pointer-events: none; }
+.retro-games .rg-snake-message[hidden] { display: none; }
+.retro-games .rg-snake-message strong { display: block; font-size: 20px; line-height: 1.2; margin-bottom: 4px; }
+.retro-games .rg-snake-message span { display: block; font-size: 12px; }
+.retro-games .rg-snake-controls { display: flex; align-items: center; justify-content: space-between; gap: 18px; width: min(100%, 480px); margin: 14px auto 0; }
+.retro-games .rg-snake-controls p { font-size: 12px; line-height: 1.5; margin: 0; }
+.retro-games .rg-dpad { display: grid; grid-template-columns: repeat(3, 32px); grid-template-rows: repeat(2, 28px); gap: 3px; }
+.retro-games .rg-dpad button { padding: 0; min-height: 28px; font-size: 20px; line-height: 1; }
+.retro-games .rg-dpad [data-rg-direction="up"] { grid-column: 2; }
+.retro-games .rg-dpad [data-rg-direction="left"] { grid-column: 1; grid-row: 2; }
+.retro-games .rg-dpad [data-rg-direction="down"] { grid-column: 2; grid-row: 2; }
+.retro-games .rg-dpad [data-rg-direction="right"] { grid-column: 3; grid-row: 2; }
+.retro-games .rg-mines .rg-toolbar { align-items: center; }
+.retro-games .rg-mines .rg-counters { display: block; flex: 1; min-width: 160px; }
+.retro-games [data-rg-mines-left] { display: inline-block; min-width: 25px; text-align: center; padding: 0; font-size: 17px; }
+.retro-games [data-rg-mines-status] { display: block; font-size: 12px; margin-top: 3px; }
+.retro-games .rg-mines-layout { display: flex; align-items: flex-start; gap: 22px; justify-content: center; }
+.retro-games .rg-mine-grid { flex: 0 0 auto; border: 1px solid #989b92; padding: 4px; background: #d5d7ce; user-select: none; }
+.retro-games .rg-mine-row { display: flex; }
+.retro-games .rg-mine-grid button { width: 26px; height: 26px; padding: 0; min-height: 0; border-width: 1px; border-color: #babdb3; background: #e8eae2; box-shadow: none; font-size: 17px; line-height: 1; font-weight: bold; text-align: center; }
+.retro-games .rg-mine-grid button:hover { background: #f5f6f1; }
+.retro-games .rg-mine-grid button:active { transform: none; }
+.retro-games .rg-mine-grid button.is-open { background: var(--rg-paper); border: 1px solid #d7d9d2; }
+.retro-games .rg-mine-grid button.is-flag { background: #dce0d3; }
+.retro-games .rg-mine-grid button.is-exploded { color: var(--rg-paper); background: var(--rg-ink); }
+.retro-games .rg-mine-grid button.is-wrong { text-decoration: line-through; }
+.retro-games .rg-mine-grid button[data-number="1"] { font-weight: normal; }
+.retro-games .rg-mine-grid button[data-number="3"], .retro-games .rg-mine-grid button[data-number="4"] { text-decoration: underline; }
+.retro-games .rg-mine-grid button:focus-visible { position: relative; z-index: 1; outline-offset: -3px; }
+.retro-games .rg-mines-guide { max-width: 210px; min-width: 0; }
+.retro-games .rg-mines-guide p { margin: 10px 0 0; font-size: 12px; line-height: 1.4; }
+.retro-games .rg-mine-mode { display: flex; gap: 6px; flex-wrap: wrap; }
+.retro-games .rg-mine-mode button { padding: 5px 7px; font-size: 12px; }
+.retro-games .rg-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.retro-games .rg-bounce { width: 100%; max-width: 900px; margin: 0 auto; }
+.retro-games .rg-bounce .rg-toolbar { align-items: center; }
+.retro-games .rg-bounce .rg-counters { padding: 0; gap: 4px 16px; }
+.retro-games .rg-bounce .rg-counters > strong { font-size: 15px; }
+.retro-games .rg-bounce-field { position: relative; width: 100%; border: 2px solid #3b403b; background: #eeeadd; overflow: hidden; }
+.retro-games .rg-bounce-field canvas { width: 100%; background: #eeeadd; touch-action: none; }
+.retro-games .rg-bounce-message { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; padding: 18px; background: #eeeadddc; text-align: center; }
+.retro-games .rg-bounce-message[hidden] { display: none; }
+.retro-games .rg-bounce-message > strong { font-size: clamp(20px, 4cqw, 30px); line-height: 1.1; }
+.retro-games .rg-bounce-message > p { margin: 0; max-width: 36ch; font-size: 13px; line-height: 1.5; }
+.retro-games .rg-bounce-message > button { min-height: 36px; padding: 8px 22px; background: #303b35; color: #f7f4e9; border: 2px solid #303b35; box-shadow: inset 0 1px 0 #738074; }
+.retro-games .rg-bounce-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 15px; }
+.retro-games .rg-bounce-controls p { margin: 0; font-size: 12px; line-height: 1.6; }
+.retro-games .rg-bounce-controls p span { color: #545a53; }
+.retro-games .rg-bounce-pad { display: flex; gap: 7px; flex: 0 0 auto; }
+.retro-games .rg-bounce-pad > button { width: 43px; height: 39px; min-height: 39px; padding: 0; border: 2px solid #404a41; box-shadow: inset 1px 1px 0 #fffdf5, inset -1px -2px 0 #aaaF9f; background: #e7e7dc; font-size: 23px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.retro-games .rg-bounce-pad > button[data-bounce-hold="jump"] { margin-left: 9px; background: #d9e0cd; }
+.retro-games .rg-bounce-pad > button.is-held { background: #344038; color: #fffdf5; box-shadow: inset 1px 2px 0 #1c281f; }
+.retro-games .rg-bounce button:disabled { opacity: .45; cursor: default; }
+@container retro-games (max-width: 570px) {
+  .retro-games .rg-bounce-pad > button { width: 48px; height: 44px; min-height: 44px; }
+}
+@container retro-games (max-width: 520px) {
+  .retro-games .rg-bounce-controls { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+  .retro-games .rg-bounce-pad { margin-left: auto; }
+  .retro-games .rg-bounce-message { gap: 7px; padding: 10px; }
+  .retro-games .rg-bounce-message > p { font-size: 11px; max-width: 34ch; line-height: 1.3; }
+  .retro-games .rg-bounce-message > button { min-height: 30px; padding: 5px 13px; font-size: 12px; }
+  .retro-games .rg-bounce .rg-toolbar { gap: 10px; }
+  .retro-games .rg-bounce .rg-counters > strong { font-size: 13px; }
+  .retro-games .rg-bounce .rg-actions { gap: 6px; }
+}
+@container retro-games (max-width: 430px) {
+  .retro-games .rg-mines-layout { flex-direction: column; align-items: center; gap: 12px; }
+  .retro-games .rg-mines-guide { max-width: 100%; width: 100%; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 9px 15px; }
+  .retro-games .rg-mines-guide p { margin: 0; }
+  .retro-games .rg-mine-mode { width: 100%; justify-content: center; }
+  .retro-games .rg-mines-key-hint { display: none; }
+  .retro-games .rg-snake-message strong { font-size: 18px; }
+}
+@media (max-width: 430px) {
+  .retro-games { font-size: 13px; }
+  .retro-games .rg-counters { gap: 5px 12px; }
+  .retro-games .rg-mines-layout { flex-direction: column; align-items: center; gap: 12px; }
+  .retro-games .rg-mines-guide { max-width: 100%; }
+}
