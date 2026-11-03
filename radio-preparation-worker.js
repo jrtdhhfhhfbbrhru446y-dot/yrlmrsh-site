@@ -1,6 +1,6 @@
 import * as THREE from './assets/vendor/three.module.js';
-import { createRadioModel } from './radio-model.js?v=studio-65-final';
-import { packRadioModel } from './radio-preparation.js?v=studio-65-final';
+import { createRadioModel } from './radio-model.js?v=studio-66-final';
+import { packRadioModel } from './radio-preparation.js?v=studio-66-final';
 
 let model, prepared;
 try {

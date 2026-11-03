@@ -1,4 +1,4 @@
-import { createEyeLoader } from './loading-eye.js?v=studio-65-final';
+import { createEyeLoader } from './loading-eye.js?v=studio-66-final';
 
 let initialSession = null;
 

@@ -7,7 +7,7 @@ export async function createScene3D(options) {
     import('./assets/vendor/OrbitControls.js'),
     import('./assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-65-final')
+    import('./radio-preparation.js?v=studio-66-final')
   ]);
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
   const { canvas, anchor, tvAnchor, tvCanvas } = options;
@@ -47,7 +47,7 @@ export async function createScene3D(options) {
   let entered = Boolean(options.getEntered?.() ?? options.entered);
   let ready = false, tvReady = false, tvLoading = false, tvFailed = false, disposed = false;
   let initialFramePending = false, initialReadyFired = false;
-  let initialWarmupDone = false;
+  let initialWarmupDone = false, initialGpuStarted = null, initialGpuAttempts = 0;
   let laptopModel, tvModel, tvTexture, radioObject, laptopScreenMaterial, desktopTexture, tween = null, frame = 0, lastFrame = 0;
   let idleHandle = null, idleTimer = null, pointerStart = null, radioDrag = null, televisionConsumed = false;
   let cameraDirty = true, interacting = false, totalFrames = 0, lastStats = -Infinity, latestMetrics = null;
@@ -75,6 +75,28 @@ export async function createScene3D(options) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
+  const initialGpuGate = createInitialGpuGate({
+    getContext: () => renderer.getContext(), canRun: () => canRender(),
+    onSettled: result => {
+      canvas.dataset.initialGpuStatus = result.status;
+      canvas.dataset.initialGpuWaitMs = result.elapsedMs.toFixed(1);
+      if (initialGpuAttempts <= 8) startupMeasure(`GPU wait ${initialGpuAttempts}`, result.started);
+      if (!canRender() || initialReadyFired) return;
+      if (result.status === 'timeout' || result.status === 'wait-failed') {
+        options.onError?.(new Error(`Initial GPU frame ${result.status}`)); return;
+      }
+      // Any change received while the previous frame was in flight must be
+      // drawn and fenced too, before the loader may reveal the composition.
+      if (result.dirty || tween || (televisionWanted() && !tvReady && !tvFailed)) {
+        requestFrame(); return;
+      }
+      if (initialFramePending) {
+        initialFramePending = false; initialReadyFired = true;
+        if (initialGpuStarted !== null) startupMeasure('GPU readiness total', initialGpuStarted);
+        options.onReady?.();
+      }
+    }
+  });
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf7f7f4);
   scene.fog = new THREE.Fog(0xf7f7f4, 4, 10);
@@ -451,6 +473,7 @@ export async function createScene3D(options) {
   function requestFrame(textureChanged = false) {
     if (!canRender()) return;
     if (textureChanged && tvTexture) tvTexture.needsUpdate = true;
+    if (initialGpuGate.pending) { initialGpuGate.invalidate(); return; }
     if (!initialWarmupDone) {
       if (ready && (!televisionWanted() || tvReady || tvFailed)) initialWarmup.start();
       return;
@@ -476,6 +499,7 @@ export async function createScene3D(options) {
   function tick(now) {
     frame = 0;
     if (!canRender()) return;
+    if (initialGpuGate.pending) { initialGpuGate.invalidate(); return; }
     const frameMs = lastFrame && now - lastFrame < 200 ? now - lastFrame : 0;
     const deltaSeconds = Math.min(.05, frameMs ? frameMs / 1000 : 1 / 60);
     lastFrame = now;
@@ -496,10 +520,15 @@ export async function createScene3D(options) {
       firstRenderMeasured = true;
       startupMeasure('first render', renderStarted);
     }
-    // Reveal only a frame that has actually drawn the fitted initial composition.
-    // If paused/hidden, this remains pending until a real frame can run again.
+    // Keep the initial frame off the compositor until the GPU has completed it.
+    // No second frame is submitted while its completion fence is pending.
     if (initialFramePending && !initialReadyFired && !tween && (!televisionWanted() || tvReady || tvFailed)) {
-      initialFramePending = false; initialReadyFired = true; options.onReady?.();
+      if (frame) { cancelAnimationFrame(frame); frame = 0; }
+      if (initialGpuStarted === null) initialGpuStarted = performance.now();
+      initialGpuAttempts++;
+      canvas.dataset.initialGpuAttempts = String(initialGpuAttempts);
+      canvas.dataset.initialGpuStatus = 'pending';
+      initialGpuGate.start();
     }
     totalFrames++;
     latestMetrics = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, width: renderer.domElement.width, height: renderer.domElement.height, mode, frameMs, renderMs };
@@ -512,10 +541,12 @@ export async function createScene3D(options) {
         resolutionScale = Math.max(.65, resolutionScale * .88); slowRenders = 0; applyResolution();
       }
     } else if (!moving) recoverQualityWhenIdle();
-    if (moving && !frame) frame = requestAnimationFrame(tick);
+    if (moving && !frame && !initialGpuGate.pending) frame = requestAnimationFrame(tick);
   }
   function stopFrames() {
     initialWarmup.stop();
+    if (initialGpuGate.pending) canvas.dataset.initialGpuStatus = 'cancelled';
+    initialGpuGate.stop();
     cancelAnimationFrame(frame); frame = 0; tween = null; lastFrame = 0;
     clearTimeout(qualityTimer); qualityTimer = null; reportStats(performance.now(), true);
   }
@@ -757,7 +788,7 @@ export async function createScene3D(options) {
     controls.removeEventListener('change', changed); controls.removeEventListener('start', interactionStarted); controls.removeEventListener('end', interactionEnded);
   });
   const controller = {
-    get ready() { return ready; },
+    get ready() { return initialReadyFired; },
     get tvReady() { return tvReady; },
     setMode(next, { animate = true } = {}) {
       if (disposed) return;
@@ -831,6 +862,54 @@ export async function createScene3D(options) {
     requestFrame(); scheduleTelevision();
   }).catch(error => { if (!disposed) options.onError?.(error); });
   return controller;
+}
+
+// One fence per submitted initial composition. Zero-timeout polls always run in
+// later tasks: WebGL2 fences cannot become signalled within the creating task.
+export function createInitialGpuGate({ getContext, canRun, onSettled, deadlineMs = 15000 }) {
+  let generation = 0, pending = false, dirty = false, timer = null, gl = null, sync = null;
+  const release = () => {
+    if (sync !== null) { try { gl.deleteSync(sync); } catch { /* Context may already be lost. */ } }
+    sync = null;
+  };
+  function stop() {
+    generation++; pending = false; dirty = false; clearTimeout(timer); timer = null; release();
+  }
+  function start() {
+    if (pending || !canRun()) return;
+    pending = true; dirty = false;
+    const ticket = ++generation, started = performance.now();
+    const finish = status => {
+      if (!pending || ticket !== generation) return;
+      clearTimeout(timer); timer = null; release(); pending = false;
+      if (canRun()) onSettled({ status, started, elapsedMs: performance.now() - started, dirty });
+    };
+    const later = (callback, delay = 0) => { timer = setTimeout(() => {
+      timer = null;
+      if (ticket !== generation || !pending) return;
+      if (!canRun()) { stop(); return; }
+      callback();
+    }, delay); };
+    const poll = () => {
+      try {
+        const status = gl.clientWaitSync(sync, 0, 0);
+        if (status === gl.ALREADY_SIGNALED || status === gl.CONDITION_SATISFIED) { finish('signaled'); return; }
+        if (status === gl.WAIT_FAILED) { finish('wait-failed'); return; }
+        if (performance.now() - started >= deadlineMs) { finish('timeout'); return; }
+        later(poll, 8);
+      } catch { finish('wait-failed'); }
+    };
+    try {
+      gl = getContext();
+      if (!gl || !['fenceSync', 'clientWaitSync', 'deleteSync', 'flush'].every(name => typeof gl[name] === 'function')) {
+        later(() => finish('unsupported')); return;
+      }
+      sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (sync === null) { later(() => finish('wait-failed')); return; }
+      gl.flush(); later(poll);
+    } catch { later(() => finish('wait-failed')); }
+  }
+  return { start, stop, invalidate() { if (pending) dirty = true; }, get pending() { return pending; } };
 }
 
 // The vendored compileAsync uses an uncancellable polling timer. Submit the same

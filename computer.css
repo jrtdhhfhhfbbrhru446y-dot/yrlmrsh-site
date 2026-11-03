@@ -44,3 +44,4 @@
 #enter-desktop:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #161714}
 @container (max-width:400px){.login-screen>header{padding:0 14px;min-height:32px}.login-center{gap:24px;padding-bottom:30px}#enter-desktop{min-width:146px;min-height:48px;padding:8px 16px}}
 .is-tv #expand-screen{display:none}
+.is-loading #computer-canvas{visibility:hidden}

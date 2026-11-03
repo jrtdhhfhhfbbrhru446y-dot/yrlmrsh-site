@@ -1,9 +1,9 @@
-import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-65-final';
+import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-66-final';
 
 // Keep the four desktop icons synchronous: the 3D screen compiles their SVGs
 // immediately after initOS. Larger sections are fetched only when opened.
 const sections = {
-  skills: { load: () => import('./skill-map.js?v=studio-65-final') },
+  skills: { load: () => import('./skill-map.js?v=studio-66-final') },
   games: { load: () => import('./games.js?v=studio-16-final') },
   profile: { load: () => import('./profile.js?v=studio-56-final') },
 };
