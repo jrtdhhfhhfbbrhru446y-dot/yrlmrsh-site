@@ -47,7 +47,7 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
       <nav class="radio-stations" aria-label="Фоновый звук">${STATIONS.map(station => `<button type="button" data-radio-station="${station.id}" aria-pressed="false"><span>${station.title}</span></button>`).join('')}</nav>
       <div class="radio-player" aria-label="Аудиозапись">
         <div class="radio-player-heading"><span class="radio-player-title">Запись</span><span class="radio-time"><output data-radio-elapsed>00:00</output><span aria-hidden="true">/</span><output data-radio-duration>--:--</output></span></div>
-        <div class="radio-controls"><button type="button" class="radio-power" data-radio-action="power" aria-label="Воспроизвести запись" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v9m-5.3-6.1a8 8 0 1 0 10.6 0"/></svg><span data-radio-power-text>Слушать</span></button><div class="radio-seek"><label class="radio-visually-hidden" for="archive-radio-seek">Перемотка записи</label><input id="archive-radio-seek" data-radio-seek type="range" min="0" max="0" step="1" value="0" disabled></div></div>
+        <div class="radio-controls"><button type="button" class="radio-power" data-radio-action="power" aria-label="Воспроизвести запись" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v9m-5.3-6.1a8 8 0 1 0 10.6 0"/></svg><span data-radio-power-text>Слушать</span></button><div class="radio-seek"><label class="radio-visually-hidden" for="archive-radio-seek">Перемотка записи</label><span class="radio-seek-track" aria-hidden="true"><span class="radio-buffered" data-radio-buffered></span><span class="radio-played"></span></span><span id="archive-radio-buffer-status" class="radio-visually-hidden" data-radio-buffer-status></span><input id="archive-radio-seek" data-radio-seek type="range" min="0" max="0" step="1" value="0" aria-describedby="archive-radio-buffer-status" disabled></div></div>
       </div>
       <div class="radio-levels">
         <div class="radio-volume radio-noise-volume"><label for="archive-radio-noise-volume">Громкость шумов <output data-radio-noise-volume-label for="archive-radio-noise-volume">25</output></label><input id="archive-radio-noise-volume" data-radio-noise-volume type="range" min="0" max="100" step="1" value="25" aria-valuetext="25 процентов"></div>
@@ -72,6 +72,9 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
     band: root.querySelector('[data-radio-band]'),
     format: root.querySelector('[data-radio-format]'),
     player: root.querySelector('.radio-player'),
+    seekArea: root.querySelector('.radio-seek'),
+    buffered: root.querySelector('[data-radio-buffered]'),
+    bufferStatus: root.querySelector('[data-radio-buffer-status]'),
     seek: root.querySelector('[data-radio-seek]'),
     elapsed: root.querySelector('[data-radio-elapsed]'),
     duration: root.querySelector('[data-radio-duration]'),
@@ -93,9 +96,54 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
     ui.seek.disabled = !duration || Boolean(recording.error);
     if (Number(ui.seek.max) !== duration) ui.seek.max = String(duration);
     if (!seeking) ui.seek.value = String(Math.min(current, duration));
-    ui.seek.style.setProperty('--radio-progress', `${duration ? Math.min(100, current / duration * 100) : 0}%`);
+    ui.seekArea.style.setProperty('--radio-progress', `${duration ? Math.max(0, Math.min(100, current / duration * 100)) : 0}%`);
+    ui.seekArea.classList.toggle('is-unavailable', ui.seek.disabled);
     ui.seek.setAttribute('aria-valuetext', `${formatTime(current)} из ${duration ? formatTime(duration) : '--:--'}`);
   }
+
+  let lastBufferedKey = '';
+  function updateBuffered() {
+    if (disposed) return;
+    const duration = Number.isFinite(recording.duration) && recording.duration > 0 ? recording.duration : 0;
+    const intervals = [];
+    if (duration && recording.buffered) {
+      try {
+        const buffered = recording.buffered;
+        for (let index = 0; index < buffered.length; index++) {
+          const suppliedStart = buffered.start(index), suppliedEnd = buffered.end(index);
+          if (!Number.isFinite(suppliedStart) || !Number.isFinite(suppliedEnd)) continue;
+          const start = Math.max(0, suppliedStart), end = Math.min(duration, suppliedEnd);
+          if (end > start) intervals.push([start, end]);
+        }
+      } catch { intervals.length = 0; /* A changing TimeRanges snapshot is retried on the next media event. */ }
+    }
+    intervals.sort((a, b) => a[0] - b[0]);
+    const ranges = [];
+    for (const interval of intervals) {
+      const previous = ranges[ranges.length - 1];
+      if (previous && interval[0] <= previous[1]) previous[1] = Math.max(previous[1], interval[1]);
+      else ranges.push([...interval]);
+    }
+    const key = JSON.stringify([duration, ranges]);
+    if (key !== lastBufferedKey) {
+      lastBufferedKey = key;
+      const fragments = ranges.map(([start, end]) => {
+        const fragment = document.createElement('span');
+        fragment.style.setProperty('left', `${start / duration * 100}%`);
+        fragment.style.setProperty('width', `${(end - start) / duration * 100}%`);
+        return fragment;
+      });
+      ui.buffered.replaceChildren(...fragments);
+      const loaded = ranges.reduce((total, [start, end]) => total + end - start, 0);
+      const percent = duration ? Math.floor(Math.min(1, loaded / duration) * 100) : null;
+      ui.buffered.dataset.ranges = JSON.stringify(ranges);
+      ui.buffered.dataset.percent = percent === null ? '' : String(percent);
+      ui.bufferStatus.textContent = percent === null
+        ? 'Загруженные участки появятся после получения сведений о записи.'
+        : `Загружено ${percent}% записи. Светлые участки шкалы показывают готовые фрагменты.`;
+    }
+  }
+  function updateTimeline() { updateProgress(); updateBuffered(); }
 
   function render() {
     if (disposed) return;
@@ -424,8 +472,9 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
     recording.pause(); notify();
   }
   const mediaListeners = [
-    ['loadedmetadata', updateProgress], ['durationchange', updateProgress],
-    ['timeupdate', updateProgress], ['seeked', updateProgress],
+    ['loadedmetadata', updateTimeline], ['durationchange', updateTimeline],
+    ['progress', updateBuffered], ['loadeddata', updateBuffered], ['emptied', updateTimeline],
+    ['timeupdate', updateProgress], ['seeked', updateTimeline],
     ['playing', recordingPlaying], ['pause', recordingPaused],
     ['waiting', recordingWaiting], ['ended', recordingEnded], ['error', recordingFailed]
   ];
@@ -444,12 +493,12 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
   root.addEventListener('input', input);
   root.addEventListener('keydown', keyboard);
   document.addEventListener('visibilitychange', visibility);
-  render();
+  render(); updateBuffered();
 
   return {
     get state() { return snapshot(); },
     setState, toggleNoise, toggleRecording,
-    setActive(value) { active = Boolean(value); if (!active) rangeDrags.forEach(drag => drag.cancel()); render(); },
+    setActive(value) { active = Boolean(value); if (!active) rangeDrags.forEach(drag => drag.cancel()); render(); updateBuffered(); },
     focus() { if (!disposed) ui.power.focus({ preventScroll: true }); },
     dispose() {
       if (disposed) return;

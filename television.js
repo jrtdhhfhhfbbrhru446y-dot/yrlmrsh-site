@@ -45,9 +45,30 @@ function contain(ratio, width, height) {
   return { x: (width - w) / 2, y: (height - h) / 2, width: w, height: h };
 }
 
+// Keep gaps in the browser's real buffer visible instead of treating the last
+// downloaded frame as if everything before it had already arrived.
+export function videoBufferedSegments(buffered, total) {
+  if (!buffered || !Number.isFinite(total) || total <= 0) return [];
+  const ranges = [];
+  try {
+    for (let index = 0; index < buffered.length; index++) {
+      const start = Math.max(0, Math.min(total, buffered.start(index)));
+      const end = Math.max(0, Math.min(total, buffered.end(index)));
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start) ranges.push({ start, end });
+    }
+  } catch { return []; }
+  ranges.sort((a, b) => a.start - b.start);
+  return ranges.reduce((merged, range) => {
+    const previous = merged[merged.length - 1];
+    if (previous && range.start <= previous.end) previous.end = Math.max(previous.end, range.end);
+    else merged.push({ ...range });
+    return merged;
+  }, []);
+}
+
 // Real project films and local screen studies share the same CRT canvas.
 // One canvas feeds the physical television texture and its HTML controls.
-export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } = {}) {
+export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   const canvas = document.createElement('canvas');
   canvas.width = 960; canvas.height = 720;
   canvas.setAttribute('aria-label', 'Экранный этюд выбранного проекта');
@@ -77,8 +98,8 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   const posterImages = new Map();
   const previewImages = new Map();
   let media = null, mediaProject = null, mediaListeners = [], muted = false, volume = .8;
-  let lastAudibleVolume = volume, lastMutedState = null, fullscreenVideo = null, postersRequested = false;
-  let lastFullscreenExit = -Infinity;
+  let lastAudibleVolume = volume, lastMutedState = null, postersRequested = false;
+  let mediaLoading = false, mediaFailed = false, loadingReason = 'loading', lastBufferKey = '';
   const hasFilm = project => Boolean(project?.video?.available && typeof project.video.src === 'string' && project.video.src.trim());
   const currentFilm = () => hasFilm(current) && media && mediaProject === current.id;
   const duration = () => {
@@ -91,52 +112,108 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     const element = root.querySelector('[data-tv-message]');
     if (element) element.textContent = value;
   }
+  function updateLoading() {
+    const visible = Boolean(active && view === 'player' && currentFilm() && mediaLoading && !mediaFailed);
+    const loader = root.querySelector('[data-tv-loading]');
+    if (loader) loader.hidden = !visible;
+    const label = root.querySelector('[data-tv-loading-text]');
+    if (label) label.textContent = loadingReason === 'seek' ? 'Загрузка фрагмента…' : 'Загрузка видео…';
+    root.querySelector('[data-tv-picture]')?.setAttribute('aria-busy', String(visible));
+    root.dataset.videoLoadState = currentFilm() ? mediaFailed ? 'error' : mediaLoading ? 'loading' : 'ready' : 'idle';
+  }
+  function setLoading(value, reason = 'loading') {
+    mediaLoading = Boolean(value);
+    if (value) loadingReason = reason;
+    updateLoading();
+  }
+  function updateBuffered() {
+    const holder = root.querySelector('[data-tv-buffered]');
+    if (!holder) return;
+    const total = duration();
+    const ranges = currentFilm() ? videoBufferedSegments(media.buffered, total) : [];
+    const key = `${total}:` + ranges.map(({ start, end }) => `${start.toFixed(4)}:${end.toFixed(4)}`).join('|');
+    if (key !== lastBufferKey) {
+      holder.innerHTML = ranges.map(({ start, end }) => `<span style="left:${(start / total * 100).toFixed(4)}%;width:${((end - start) / total * 100).toFixed(4)}%"></span>`).join('');
+      holder.dataset.ranges = JSON.stringify(ranges);
+      lastBufferKey = key;
+    }
+    const percent = total > 0 ? Math.floor(ranges.reduce((sum, range) => sum + range.end - range.start, 0) / total * 100) : 0;
+    const summary = root.querySelector('[data-tv-buffer-summary]');
+    if (summary) summary.textContent = `Загружено ${Math.min(100, percent)}% видео`;
+  }
+  function timeIsBuffered(time) {
+    return currentFilm() && videoBufferedSegments(media.buffered, duration()).some(range => time >= range.start && time <= range.end);
+  }
   function releaseMedia() {
     if (!media) return;
-    if (fullscreenVideo === media) leaveFullscreen();
     for (const [event, listener] of mediaListeners) media.removeEventListener(event, listener);
     mediaListeners = [];
     media.pause(); media.removeAttribute('src'); media.load(); media.remove();
     media = null; mediaProject = null;
+    mediaLoading = false; mediaFailed = false; lastBufferKey = '';
+    updateLoading();
   }
   function prepareMedia(project) {
     releaseMedia();
     if (!hasFilm(project)) return;
     const video = document.createElement('video');
     media = video; mediaProject = project.id;
-    video.className = 'tv-media-source'; video.preload = 'metadata';
+    // Selection is the first request for the film. Preload its first frame and
+    // buffer here, while the unopened TV still makes no movie requests.
+    video.className = 'tv-media-source'; video.preload = 'auto';
     video.playsInline = true; video.setAttribute('playsinline', '');
     video.setAttribute('aria-hidden', 'true'); video.tabIndex = -1;
     video.muted = muted; video.volume = volume;
     if (project.video.poster) video.poster = project.video.poster;
-    const listen = (event, listener) => { video.addEventListener(event, listener); mediaListeners.push([event, listener]); };
+    const listen = (event, listener) => {
+      const guarded = (...args) => { if (!disposed && media === video) listener(...args); };
+      video.addEventListener(event, guarded); mediaListeners.push([event, guarded]);
+    };
     const sync = () => {
       if (disposed || media !== video || mediaProject !== current?.id) return;
+      if (mediaLoading && !video.seeking && video.readyState >= 3) setLoading(false);
       seconds = Number.isFinite(video.currentTime) ? video.currentTime : 0;
-      updateTime();
+      updateTime(); updateBuffered();
       if (!playing || seeking) draw();
     };
+    listen('loadstart', () => { mediaFailed = false; message(); setLoading(video.readyState < 2); });
     listen('loadedmetadata', () => { message(); sync(); draw(); });
-    listen('loadeddata', () => { message(); sync(); draw(); });
-    listen('timeupdate', sync); listen('seeked', () => { sync(); draw(); });
+    listen('loadeddata', () => { if (!video.seeking) setLoading(video.readyState < (video.paused ? 2 : 3)); message(); sync(); draw(); });
+    listen('canplay', () => { if (!video.seeking) setLoading(false); sync(); });
+    listen('playing', () => { setLoading(false); message(); sync(); });
+    const waitingForData = () => {
+      if (video.readyState < 3 && (!video.paused || video.seeking || video.readyState < 2)) setLoading(true, 'buffer');
+    };
+    listen('waiting', waitingForData); listen('stalled', waitingForData);
+    listen('suspend', () => {
+      // Data Saver and some phone browsers can intentionally stop preloading.
+      // A paused poster is not an endlessly buffering playback request.
+      if (video.paused && !video.seeking) {
+        setLoading(false);
+        if (video.readyState < 2) message('Нажмите воспроизведение, чтобы загрузить видео.');
+      }
+    });
+    listen('seeking', () => { if (video.readyState < 3) setLoading(true, 'seek'); });
+    listen('progress', updateBuffered); listen('durationchange', sync);
+    listen('timeupdate', sync);
+    listen('seeked', () => { setLoading(video.readyState < (video.paused ? 2 : 3), 'seek'); sync(); draw(); });
     listen('volumechange', () => {
       if (media !== video) return;
       muted = video.muted; volume = video.volume;
       if (volume > 0) lastAudibleVolume = volume;
       updateSound();
     });
-    listen('webkitbeginfullscreen', () => { fullscreenVideo = video; });
-    listen('webkitendfullscreen', () => restoreInline(video));
     listen('play', () => {
       if (!active || document.hidden || view !== 'player') { video.pause(); return; }
       playing = true; message(); updateTime(); schedule();
     });
-    listen('pause', () => { playing = false; stop(); sync(); revealControls(); });
-    listen('ended', () => { playing = false; stop(); sync(); revealControls(); });
+    listen('pause', () => { playing = false; if (video.readyState >= 2 && !video.seeking) setLoading(false); stop(); sync(); revealControls(); });
+    listen('ended', () => { playing = false; setLoading(false); stop(); sync(); revealControls(); });
     listen('error', () => {
-      playing = false; stop(); updateTime(); revealControls();
+      mediaFailed = true; setLoading(false); playing = false; stop(); updateTime(); revealControls();
       message('Видео не загрузилось. Попробуйте запустить ещё раз.');
     });
+    mediaFailed = false; setLoading(true);
     video.src = project.video.src;
   }
   function playMedia() {
@@ -144,19 +221,20 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     const video = media;
     if (video.ended || seconds >= duration()) { video.currentTime = 0; seconds = 0; }
     if (video.error) video.load();
-    message(); playing = true; updateTime(); revealControls(); schedule();
+    message(); mediaFailed = false; setLoading(video.readyState < 3, 'buffer'); playing = true; updateTime(); revealControls(); schedule();
     const promise = video.play();
     promise?.then(() => {
       if (disposed || media !== video || !active || document.hidden || view !== 'player') video.pause();
     }).catch(() => {
       if (disposed || media !== video) return;
-      playing = false; stop(); updateTime(); revealControls();
+      setLoading(false); playing = false; stop(); updateTime(); revealControls();
       message('Нажмите воспроизведение, чтобы запустить видео.');
     });
   }
   function seekTo(value) {
     seconds = Math.max(0, Math.min(duration(), Number(value) || 0));
     if (currentFilm()) {
+      if (!media.error && !timeIsBuffered(seconds)) setLoading(true, 'seek');
       try { media.currentTime = seconds; } catch { /* Metadata may still be loading. */ }
     }
     draw(); updateTime(); revealControls();
@@ -191,50 +269,6 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     muted = media.muted; volume = media.volume;
     updateSound(); revealControls();
   }
-  function restoreInline(video = fullscreenVideo) {
-    if (!video) return;
-    lastFullscreenExit = performance.now();
-    video.controls = false; video.tabIndex = -1; video.setAttribute('aria-hidden', 'true');
-    if (fullscreenVideo === video) fullscreenVideo = null;
-    if (media === video && !disposed) {
-      muted = video.muted; volume = video.volume; updateSound(); updateTime(); revealControls(); draw();
-      root.querySelector('[data-tv-action="fullscreen"]')?.focus({ preventScroll: true });
-      requestAnimationFrame(() => {
-        if (media === video && !disposed && !fullscreenVideo) root.querySelector('[data-tv-action="fullscreen"]')?.focus({ preventScroll: true });
-      });
-    }
-  }
-  function leaveFullscreen() {
-    const video = fullscreenVideo;
-    if (!video) return;
-    if (document.fullscreenElement === video && document.exitFullscreen) {
-      document.exitFullscreen().then(() => restoreInline(video)).catch(() => restoreInline(video));
-    } else if (document.webkitFullscreenElement === video && document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (video.webkitDisplayingFullscreen && video.webkitExitFullscreen) {
-      video.webkitExitFullscreen();
-    } else restoreInline(video);
-  }
-  function fullscreenChange() {
-    if (fullscreenVideo && document.fullscreenElement !== fullscreenVideo && document.webkitFullscreenElement !== fullscreenVideo && !fullscreenVideo.webkitDisplayingFullscreen) restoreInline();
-  }
-  function showFullscreen() {
-    if (!currentFilm()) return;
-    const video = media;
-    video.controls = true; video.tabIndex = 0; video.removeAttribute('aria-hidden');
-    fullscreenVideo = video;
-    const failed = () => {
-      restoreInline(video);
-      if (media === video && !disposed) message('Полный экран недоступен в этом браузере. Можно продолжить просмотр здесь.');
-    };
-    try {
-      if (video.requestFullscreen) video.requestFullscreen().catch(failed);
-      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
-      else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-      else failed();
-    } catch { failed(); }
-  }
-
   function paintText(ctx, str, x, y, size = 32, { color = WHITE, family = 'Arial', weight = 400, italic = false } = {}) {
     ctx.fillStyle = color;
     ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px "${family}", sans-serif`;
@@ -395,7 +429,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     if (!ctx || disposed) return;
     // The browser displays the native film on phones. Avoid decoding and
     // painting every video frame a second time into an invisible CRT texture.
-    if ((mobilePresentation || fullscreenVideo === media) && view === 'player' && currentFilm()) return;
+    if (mobilePresentation && view === 'player' && currentFilm()) return;
     ctx.fillStyle = BLACK; ctx.fillRect(0, 0, 960, 720);
     ctx.save();
     const t = reduced.matches || document.body.classList.contains('motion-off') ? 0 : seconds;
@@ -421,6 +455,8 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       toggle.innerHTML = playing ? pauseIcon : playIcon;
       lastPlayingState = playing;
     }
+    const played = root.querySelector('[data-tv-played]');
+    if (played) played.style.width = `${Math.max(0, Math.min(100, seconds / duration() * 100))}%`;
     root.querySelector('.tv-system')?.classList.toggle('is-playing', playing);
     updateSound();
   }
@@ -442,7 +478,6 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   function stop() { cancelAnimationFrame(raf); raf = 0; last = 0; }
   const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>';
   const pauseIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M17 5v14" fill="none" stroke="currentColor" stroke-width="4"/></svg>';
-  const expandIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
   const previousIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
   const nextIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
   const restartIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9a8 8 0 1 1-1 7M5 3v6h6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
@@ -485,14 +520,14 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     if (disposed) return;
     seekDrag?.dispose(); seekDrag = null;
     volumeDrag?.dispose(); volumeDrag = null;
-    lastTimeLabel = ''; lastPlayingState = null; lastMutedState = null;
+    lastTimeLabel = ''; lastPlayingState = null; lastMutedState = null; lastBufferKey = '';
     if (view === 'library') {
-      root.innerHTML = `<section class="tv-system tv-library-screen" aria-label="Видеотека"><div class="tv-picture tv-library-picture" data-tv-picture></div><h1 class="tv-library-heading">${tvServiceLogo()}</h1><div class="tv-carousel" role="group" aria-roledescription="карусель" aria-label="Видеотека">${programs.map(p => `<button class="tv-flow-card" data-tv-card="${p.id}" data-tv-aspect="${previewAspectRatio(p)}" type="button"><span class="tv-flow-media" data-tv-poster="${p.id}"></span><span class="tv-flow-play" aria-hidden="true">${playIcon}</span></button>`).join('')}</div><div class="tv-flow-caption"><button data-tv-action="previous" class="tv-icon-button" aria-label="Предыдущее видео">${previousIcon}</button><p data-tv-title aria-live="polite">${esc(preview.title)}</p><button data-tv-action="next" class="tv-icon-button" aria-label="Следующее видео">${nextIcon}</button></div><footer class="tv-bottom"><button data-tv-action="back" class="tv-back">← К компьютеру</button><button data-tv-action="expand" class="tv-back tv-flat-button" aria-label="Смотреть телевизор без 3D">Без 3D</button></footer></section>`;
+      root.innerHTML = `<section class="tv-system tv-library-screen" aria-label="Видеотека"><div class="tv-picture tv-library-picture" data-tv-picture></div><h1 class="tv-library-heading">${tvServiceLogo()}</h1><div class="tv-carousel" role="group" aria-roledescription="карусель" aria-label="Видеотека">${programs.map(p => `<button class="tv-flow-card" data-tv-card="${p.id}" data-tv-aspect="${previewAspectRatio(p)}" type="button"><span class="tv-flow-media" data-tv-poster="${p.id}"></span><span class="tv-flow-play" aria-hidden="true">${playIcon}</span></button>`).join('')}</div><div class="tv-flow-caption"><button data-tv-action="previous" class="tv-icon-button" aria-label="Предыдущее видео">${previousIcon}</button><p data-tv-title aria-live="polite">${esc(preview.title)}</p><button data-tv-action="next" class="tv-icon-button" aria-label="Следующее видео">${nextIcon}</button></div><footer class="tv-bottom"><button data-tv-action="back" class="tv-back">← К компьютеру</button></footer></section>`;
       for (const project of programs) root.querySelector(`[data-tv-poster="${project.id}"]`)?.append(posters.get(project.id));
       updateSelection();
     } else {
       const film = hasFilm(current);
-      root.innerHTML = `<section class="tv-system tv-player-screen is-controls-visible${playing ? ' is-playing' : ''}${film ? ' tv-film-screen' : ''}" aria-label="${esc(current.title)} — ${film ? 'видео' : 'экранный этюд'}" tabindex="-1"><div class="tv-picture" data-tv-picture></div><header class="tv-player-heading"><button data-tv-action="library" class="tv-back">← Видеотека</button><span>${esc(current.title)}</span><button data-tv-action="expand" class="tv-back tv-flat-button" aria-label="Смотреть телевизор без 3D">Без 3D</button></header><p class="tv-player-message" data-tv-message role="status"></p><div class="tv-player-controls"><div class="tv-player-timeline"><input data-tv-seek type="range" min="0" max="${duration()}" step=".1" value="${seconds}" aria-label="${film ? 'Позиция видео' : 'Позиция заставки'}"><span data-tv-time>${clock(seconds)} / ${clock(duration())}</span></div><div class="tv-player-actions"><button data-tv-action="toggle" class="tv-icon-button tv-toggle" aria-label="${playing ? 'Пауза' : 'Воспроизвести'}" title="Воспроизведение / пауза">${playing ? pauseIcon : playIcon}</button>${film ? `<button data-tv-action="restart" class="tv-icon-button tv-restart" aria-label="Сначала" title="Сначала">${restartIcon}</button><div class="tv-player-audio"><button data-tv-action="mute" class="tv-icon-button tv-mute" aria-label="${muted ? 'Включить звук' : 'Выключить звук'}" aria-pressed="${muted}">${muted ? mutedIcon : soundIcon}</button><input class="tv-volume-range" data-tv-volume type="range" min="0" max="100" step="1" value="${Math.round(volume * 100)}" aria-label="Громкость видео"></div><button data-tv-action="fullscreen" class="tv-icon-button tv-fullscreen" aria-label="Видео на весь экран" title="Видео на весь экран">${expandIcon}</button>` : ''}</div></div></section>`;
+      root.innerHTML = `<section class="tv-system tv-player-screen is-controls-visible${playing ? ' is-playing' : ''}${film ? ' tv-film-screen' : ''}" aria-label="${esc(current.title)} — ${film ? 'видео' : 'экранный этюд'}" tabindex="-1"><div class="tv-picture" data-tv-picture><div class="tv-video-loading" data-tv-loading role="status" aria-live="polite" hidden><span class="tv-loading-ring" aria-hidden="true"></span><span data-tv-loading-text>Загрузка видео…</span></div></div><div class="tv-player-shade" aria-hidden="true"></div><header class="tv-player-heading"><button data-tv-action="library" class="tv-back">← Видеотека</button><span>${esc(current.title)}</span></header><p class="tv-player-message" data-tv-message role="status"></p><div class="tv-player-controls"><div class="tv-player-timeline"><div class="tv-seek-shell"><div class="tv-seek-track" aria-hidden="true"><span class="tv-buffered" data-tv-buffered data-ranges="[]"></span><span class="tv-played" data-tv-played></span></div><input data-tv-seek type="range" min="0" max="${duration()}" step=".1" value="${seconds}" aria-label="${film ? 'Позиция видео' : 'Позиция заставки'}" aria-describedby="tv-buffer-summary"></div><span id="tv-buffer-summary" class="tv-buffer-summary" data-tv-buffer-summary>Загружено 0% видео</span><span data-tv-time>${clock(seconds)} / ${clock(duration())}</span></div><div class="tv-player-actions"><button data-tv-action="toggle" class="tv-icon-button tv-toggle" aria-label="${playing ? 'Пауза' : 'Воспроизвести'}" title="Воспроизведение / пауза">${playing ? pauseIcon : playIcon}</button>${film ? `<button data-tv-action="restart" class="tv-icon-button tv-restart" aria-label="Сначала" title="Сначала">${restartIcon}</button><div class="tv-player-audio"><button data-tv-action="mute" class="tv-icon-button tv-mute" aria-label="${muted ? 'Включить звук' : 'Выключить звук'}" aria-pressed="${muted}">${muted ? mutedIcon : soundIcon}</button><input class="tv-volume-range" data-tv-volume type="range" min="0" max="100" step="1" value="${Math.round(volume * 100)}" aria-label="Громкость видео"></div>` : ''}</div></div></section>`;
     }
     const picture = root.querySelector('[data-tv-picture]');
     picture.append(canvas);
@@ -512,7 +547,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     });
     draw();
     canvas.setAttribute('aria-label', view === 'player' && hasFilm(current) ? `Видео ${current.title}` : 'Экранный этюд выбранного проекта');
-    syncNoise(); updateTime(); revealControls();
+    syncNoise(); updateTime(); updateBuffered(); updateLoading(); revealControls();
   }
   function open(id) {
     requestPosters();
@@ -549,12 +584,10 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     }
     const action = event.target.closest('[data-tv-action]')?.dataset.tvAction;
     if (action === 'back') onBack?.();
-    if (action === 'expand') onExpand?.();
     if (action === 'library') library();
     if (action === 'toggle') togglePlaying();
     if (action === 'restart' && currentFilm()) { seekTo(0); playMedia(); }
     if (action === 'mute') toggleMute();
-    if (action === 'fullscreen') showFullscreen();
     if (action === 'previous') selectRelative(-1);
     if (action === 'next') selectRelative(1);
   }
@@ -597,11 +630,6 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   function keyboard(event) {
     pointerIntent = null;
     if (event.key === 'Escape') {
-      // Native fullscreen may exit before its Escape reaches the page. Consume
-      // that same key rather than also closing the player and losing position.
-      if (fullscreenVideo || performance.now() - lastFullscreenExit < 200) {
-        event.preventDefault(); if (fullscreenVideo) leaveFullscreen(); return;
-      }
       event.preventDefault(); if (view === 'player') library(); else onBack?.(); return;
     }
     if (view === 'library' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
@@ -641,8 +669,6 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   root.addEventListener('pointerup', pointerUp); root.addEventListener('pointercancel', pointerCancel);
   root.addEventListener('pointermove', revealControls); root.addEventListener('focusin', revealControls);
   document.addEventListener('visibilitychange', visibility);
-  document.addEventListener('fullscreenchange', fullscreenChange);
-  document.addEventListener('webkitfullscreenchange', fullscreenChange);
   for (const project of programs) {
     const previewPoster = TV_PROGRAMS.find(program => program.projectId === project.id)?.previewPoster;
     const poster = document.createElement('canvas'), ratio = previewAspectRatio(project);
@@ -686,7 +712,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       const changed = active !== value; active = value;
       if (!active) { seekDrag?.cancel(); volumeDrag?.cancel(); playing = false; media?.pause(); stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; updateTime(); }
       else { requestPosters(); schedule(); }
-      syncNoise(); if (changed) draw();
+      syncNoise(); updateLoading(); if (changed) draw();
     },
     focus() {
       if (view === 'library') root.querySelector(`[data-tv-card="${preview.id}"]`)?.focus({ preventScroll: true });
@@ -701,8 +727,6 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       for (const image of previewImages.values()) image.onload = image.onerror = null;
       previewImages.clear();
       document.removeEventListener('visibilitychange', visibility);
-      document.removeEventListener('fullscreenchange', fullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', fullscreenChange);
       root.removeEventListener('click', click); root.removeEventListener('input', input); root.removeEventListener('keydown', keyboard);
       root.removeEventListener('pointerover', previewProgram); root.removeEventListener('focusin', previewProgram);
       root.removeEventListener('pointerout', cancelHover); root.removeEventListener('pointerdown', pointerDown);

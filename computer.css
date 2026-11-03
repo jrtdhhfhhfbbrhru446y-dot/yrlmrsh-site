@@ -30,9 +30,6 @@
 /* One opaque cover fades off the fully prepared scene. No competing fades. */
 #loading-eye{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto}
 .intro-revealing .loading-cover{opacity:0;pointer-events:none}
-.skip-intro{position:absolute;bottom:max(28px,calc(18px + env(safe-area-inset-bottom)));left:50%;transform:translateX(-50%);min-height:44px;padding:10px 18px;border:1px solid #777a70;background:#f7f7f4;color:#20211e;white-space:nowrap;font-size:14px}
-.skip-intro:hover{background:#20211e;color:#f7f7f4}.skip-intro:disabled{cursor:wait;opacity:.65}
-.loading-cover[data-visit="repeat"] #loading-eye{visibility:hidden}
 .os-case-intro{max-width:64ch;line-height:1.65;margin:14px 0 26px}
 .os-project-summary{display:block;font-size:13px;line-height:1.55;margin-top:8px;font-weight:400;letter-spacing:0}
 .os-window-controls [data-expand] .os-icon{width:19px;height:19px}
@@ -44,3 +41,4 @@
 #enter-desktop:hover{background:#161714;color:#f6f5ef;box-shadow:3px 3px 0 #777a70}
 #enter-desktop:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #161714}
 @container (max-width:400px){.login-screen>header{padding:0 14px;min-height:32px}.login-center{gap:24px;padding-bottom:30px}#enter-desktop{min-width:146px;min-height:48px;padding:8px 16px}}
+.is-tv #expand-screen{display:none}

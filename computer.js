@@ -1,7 +1,7 @@
-import { initOS } from './os-ui.js?v=studio-60-final';
+import { initOS } from './os-ui.js?v=studio-61-final';
 import { createEyeLoader } from './loading-eye.js?v=studio-22-loader';
-import { createTelevision } from './television.js?v=studio-60-final&revision=fullscreen-exit2';
-import { createRadio } from './radio.js?v=studio-60-final';
+import { createTelevision } from './television.js?v=studio-61-final';
+import { createRadio } from './radio.js?v=studio-61-final';
 
 const $ = selector => document.querySelector(selector);
 const anchor = $('#screen-anchor'), root = $('#os-root');
@@ -28,18 +28,14 @@ document.body.classList.toggle('mobile-mode', mobile);
 let engine = null, scenePromise = null, sceneFailed = false, tvFailed = false;
 let bootDone = false, entered = false, motionDisabled = reduced.matches;
 let loadingEye = null, loadingTicket = 0;
-const introKey = 'yrlmrsh:intro-seen:1';
-let introSeen = false, introSkipped = false;
-try { introSeen = localStorage.getItem(introKey) === 'yes'; } catch { /* The intro also works without storage. */ }
-const loadingCover = $('#loading-cover'), skipIntroButton = $('#skip-intro');
-
-function rememberIntro() {
-  introSeen = true;
-  try { localStorage.setItem(introKey, 'yes'); } catch { /* Private browsing may disable storage. */ }
+const loadingCover = $('#loading-cover');
+function setLoadingInteraction(loading) {
+  $('#experience').inert = loading;
+  $('.view-controls').inert = loading;
+  $('.identity').inert = loading;
 }
 function markReveal() {
   if (!loadingCover.dataset.revealMs) loadingCover.dataset.revealMs = performance.now().toFixed(1);
-  rememberIntro();
 }
 
 const os = initOS(root, {
@@ -54,7 +50,6 @@ const os = initOS(root, {
 const desktopIconMarkup = Object.fromEntries([...root.querySelectorAll('.os-desktop-item')].map(button => [button.dataset.go, button.querySelector('svg')?.outerHTML]));
 const television = createTelevision(tvRoot, {
   onBack: () => { setMode('work'); focusComputer(); },
-  onExpand: () => setFlat(true),
   onFrame: () => { if (!flat) engine?.requestFrame(); }
 });
 const radio = createRadio(radioRoot, {
@@ -86,20 +81,19 @@ enterButton.addEventListener('click', () => {
 });
 function showLoading() {
   ++loadingTicket; loadingEye?.dispose();
-  loadingEye = null; introSkipped = introSeen;
-  loadingCover.dataset.visit = introSeen ? 'repeat' : 'first';
+  loadingEye = null;
+  setLoadingInteraction(true);
   delete loadingCover.dataset.revealMs; delete loadingCover.dataset.loadedMs;
-  skipIntroButton.disabled = false; skipIntroButton.textContent = 'Пропустить заставку';
   document.body.classList.remove('intro-revealing');
   $('#loading-cover').classList.remove('is-loaded'); document.body.classList.add('is-loading');
   const ticket = loadingTicket;
-  if (introSeen) return;
   loadingEye = createEyeLoader($('#loading-eye'), {
     reducedMotion: reduced.matches || motionDisabled,
     onReveal: () => {
       if (ticket !== loadingTicket) return;
       markReveal();
       document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading');
+      setLoadingInteraction(false);
       finishBoot();
     }
   });
@@ -108,26 +102,17 @@ async function showReady({ immediate = false } = {}) {
   anchor.classList.add('is-ready');
   loadingCover.dataset.readyMs = performance.now().toFixed(1);
   const eye = loadingEye, ticket = loadingTicket;
-  if (eye && !immediate && !introSkipped) await eye.finish();
+  if (eye && !immediate) await eye.finish();
   if (ticket !== loadingTicket || eye !== loadingEye) return;
   eye?.dispose(); loadingEye = null;
   markReveal(); loadingCover.dataset.loadedMs = performance.now().toFixed(1);
   $('#loading-cover').classList.add('is-loaded'); document.body.classList.remove('is-loading');
+  setLoadingInteraction(false);
   document.body.classList.remove('intro-revealing');
   if (!bootDone) finishBoot();
   else if (mode === 'work' || mode === 'desk') focusComputer();
 }
 function skipBoot() { finishBoot(); }
-function skipIntro() {
-  if (loadingCover.classList.contains('is-loaded')) return;
-  introSkipped = true;
-  if (flat || engine?.ready) void showReady({ immediate: true });
-  else { skipIntroButton.textContent = 'Открываем студию…'; skipIntroButton.disabled = true; }
-}
-skipIntroButton.addEventListener('click', skipIntro);
-addEventListener('keydown', event => {
-  if (!loadingCover.classList.contains('is-loaded') && (event.key === 'Enter' || event.key === 'Escape') && !document.body.classList.contains('intro-revealing')) { event.preventDefault(); skipIntro(); }
-});
 root.addEventListener('retro-settings', event => {
   motionDisabled = Boolean(event.detail.reducedMotion);
   document.body.classList.toggle('crt-off', event.detail.crt === false);
@@ -191,7 +176,7 @@ function setFlat(value, { persist = true } = {}) {
   if (flat && (mode === 'object' || mode === 'desk')) mode = 'work';
   if (!flat && mode === 'tv' && tvFailed) mode = 'work';
   engine?.setSuspended(flat);
-  if (flat) { skipBoot(); void showReady({ immediate: true }); updateStatus(); }
+  if (flat) { skipBoot(); void showReady({ immediate: !loadingEye }); updateStatus(); }
   syncModes();
   engine?.setMode(mode, { animate: false });
   if (!flat) {

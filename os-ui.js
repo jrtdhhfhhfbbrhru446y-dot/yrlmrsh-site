@@ -142,7 +142,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   function renderDesktop() {
     // Raster copies avoid transformed-SVG painting differences in Chrome. Keep
     // the original hidden SVG for the unchanged 3D Canvas icon compiler.
-    return `<div class="os-desktop"><header class="os-desktop-intro"><h1>Проекты, идеи<br>и эксперименты.</h1><p>Продукт, маркетинг, креатив<br>и реализация решений.</p></header><div class="os-desktop-icons">${HOME.map(([key, label, image]) => `<button class="os-desktop-item" data-select data-go="${key}"><img class="os-icon os-icon-pixel" src="${DESKTOP_ICON_IMAGES[image]}" width="64" height="64" alt="" aria-hidden="true" draggable="false">${icon(image).replace('<svg ', '<svg hidden ')}<span>${label}</span></button>`).join('')}</div></div>`;
+    return `<div class="os-desktop"><div class="os-desktop-icons">${HOME.map(([key, label, image]) => `<button class="os-desktop-item" data-select data-go="${key}"><img class="os-icon os-icon-pixel" src="${DESKTOP_ICON_IMAGES[image]}" width="64" height="64" alt="" aria-hidden="true" draggable="false">${icon(image).replace('<svg ', '<svg hidden ')}<span>${label}</span></button>`).join('')}</div></div>`;
   }
   function renderExperiments() {
     const cards = projects.map(p => `<button class="os-project-card" data-select data-go="case:${p.id}" aria-label="${esc(p.title)} — ${esc(p.cardSummary || p.kind)}"><span class="os-cover-frame">${cover(p)}</span><span class="os-project-card-label">${icon('folder')}<span><strong>${esc(p.title)}</strong><small>${esc(p.kind)}</small>${p.cardSummary ? `<span class="os-project-summary">${esc(p.cardSummary)}</span>` : ''}</span></span></button>`).join('');
