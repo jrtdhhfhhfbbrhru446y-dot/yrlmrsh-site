@@ -1,7 +1,20 @@
-import { projects, getProject } from './portfolio-data.js?v=studio-60-final';
-import { mountSkillMap } from './skill-map.js?v=studio-35-final2';
-import { mountGames } from './games.js?v=studio-16-final';
-import { renderAbout as profileAbout, renderContact as profileContact, mountContact } from './profile.js?v=studio-56-final';
+import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-62-final';
+
+// Keep the four desktop icons synchronous: the 3D screen compiles their SVGs
+// immediately after initOS. Larger sections are fetched only when opened.
+const sections = {
+  skills: { load: () => import('./skill-map.js?v=studio-62-final') },
+  games: { load: () => import('./games.js?v=studio-16-final') },
+  profile: { load: () => import('./profile.js?v=studio-56-final') },
+};
+function loadSection(name) {
+  const section = sections[name];
+  if (!section.pending) section.pending = section.load().then(module => {
+    section.module = module;
+    return module;
+  }).catch(error => { section.pending = null; throw error; });
+  return section.pending;
+}
 
 const DRAWINGS = {
   profile: '<rect x="5" y="10" width="58" height="44"/><circle cx="23" cy="26" r="7"/><path d="M12 46v-3c0-11 22-11 22 0v3M41 24h14m-14 9h14m-14 9h9"/>',
@@ -83,7 +96,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   let view = 'home', selected = -1, history = [], forward = [], destroyed = false;
   let activeMenu = '', cleanupView = () => {}, clockTimer, copyTimer, noticeTimer, menuCloseTimer;
   let hoverMenu = false;
-  let processIndex = 0, skillMap = null;
+  let processIndex = 0, skillMap = null, viewTicket = 0, viewPending = false, viewActive = true;
   const scrollPositions = new Map();
   root.classList.add('retro-os');
   root.setAttribute('aria-label', 'Личный компьютер YRLMRSH');
@@ -200,10 +213,10 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     return windowFrame('Навыки', '<div class="os-skill-map-mount"></div>', { type: 'os-skills-window', iconName: 'skills' });
   }
   function renderAbout() {
-    return windowFrame('Обо мне', profileAbout(icon), { type: 'os-profile-window', iconName: 'profile' });
+    return windowFrame('Обо мне', sections.profile.module.renderAbout(icon), { type: 'os-profile-window', iconName: 'profile' });
   }
   function renderContact() {
-    return windowFrame('Контакт', profileContact(icon), { type: 'os-contact-window', iconName: 'contact' });
+    return windowFrame('Контакт', sections.profile.module.renderContact(icon), { type: 'os-contact-window', iconName: 'contact' });
   }
   function renderSettings() {
     return windowFrame('Вид', `<form class="os-settings"><fieldset><legend>Размер интерфейса</legend>${[100,125,150].map(scale => `<label><input type="radio" name="scale" value="${scale}" ${preferences.scale === scale ? 'checked' : ''}>${scale}%</label>`).join('')}</fieldset><fieldset><legend>Рабочий стол</legend><label><input type="radio" name="layout" value="icons" ${preferences.layout === 'icons' ? 'checked' : ''}>Значки</label><label><input type="radio" name="layout" value="list" ${preferences.layout === 'list' ? 'checked' : ''}>Список</label></fieldset><fieldset><legend>Экран</legend><label><input type="checkbox" name="crt" ${preferences.crt ? 'checked' : ''}>Линии ЭЛТ</label><label><input type="checkbox" name="contrast" ${preferences.contrast ? 'checked' : ''}>Больше контраста</label></fieldset><fieldset><legend>Движение</legend><label><input type="checkbox" name="reduce" ${preferences.motion ? '' : 'checked'}>Меньше анимации</label><p>Для спокойного просмотра.</p></fieldset><div class="os-settings-actions">${button('Применить', 'type="submit"', true)}${button('Сбросить', 'type="button" data-reset-settings')}</div></form>`, { type: 'os-settings-window', iconName: 'monitor' });
@@ -224,16 +237,48 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     if (destroyed) return;
     next = normalized(next);
     if (next === 'videos') { closeMenu(false); onTelevision(null); return; }
+    const ticket = ++viewTicket;
     const previousContent = main.querySelector('.os-window-content');
-    if (previousContent) scrollPositions.set(view, previousContent.scrollTop);
+    if (previousContent && !viewPending) scrollPositions.set(view, previousContent.scrollTop);
     if (remember && next !== view) { history.push(view); forward = []; }
     if (history.length > 60) history.shift();
     cleanupView(); cleanupView = () => {};
     closeMenu(false); selected = -1;
-    const [page, id, tab = 'overview'] = next.split(':');
+    const [page, id] = next.split(':');
     const project = id ? getProject(id) : null;
+    const needsProject = ['case','article','demo','image'].includes(page) && Boolean(project);
     if (['case','article','demo','image'].includes(page) && !project) next = 'experiments';
     view = next; root.dataset.view = view;
+    const sectionName = next === 'skills' || next === 'games' ? next : next === 'about' || next === 'contact' ? 'profile' : '';
+    const pending = needsProject && !getLoadedProject(id) ? loadProject(id)
+      : sectionName && !sections[sectionName].module ? loadSection(sectionName) : null;
+    if (pending) {
+      viewPending = true;
+      const label = project?.title || ({ skills: 'Навыки', games: 'Игры', about: 'Обо мне', contact: 'Контакт' }[next]);
+      main.setAttribute('aria-busy', 'true');
+      main.innerHTML = windowFrame(label, '<div class="os-empty-collection"><p role="status">Загрузка…</p></div>');
+      location.textContent = label;
+      if (focus) main.querySelector('.os-window-content')?.focus({ preventScroll: true });
+      pending.then(loaded => {
+        if (destroyed || ticket !== viewTicket) return;
+        // A section finishing in the background must not steal focus from a
+        // menu, another device, or a different page the visitor has opened.
+        const restoreFocus = focus && main.contains(document.activeElement) && !root.inert && !root.hidden;
+        completeView(next, needsProject ? loaded : project, { remember, focus: restoreFocus });
+      }).catch(() => {
+        if (destroyed || ticket !== viewTicket) return;
+        const restoreFocus = focus && main.contains(document.activeElement) && !root.inert && !root.hidden;
+        main.removeAttribute('aria-busy');
+        main.innerHTML = windowFrame(label, `<div class="os-empty-collection"><p role="alert">Не удалось загрузить раздел. Проверь соединение и попробуй ещё раз.</p>${button('Попробовать снова', 'data-retry-view', true)}${button('На рабочий стол', 'data-go="home"')}</div>`);
+        if (restoreFocus) main.querySelector('[data-retry-view]')?.focus({ preventScroll: true });
+      });
+    } else completeView(next, needsProject ? getLoadedProject(id) : project, { remember, focus });
+    onViewChange(view);
+  }
+  function completeView(next, project, { remember, focus }) {
+    viewPending = false;
+    main.removeAttribute('aria-busy');
+    const [page, , tab = 'overview'] = next.split(':');
     let label = 'Рабочий стол';
     if (next === 'home') main.innerHTML = renderDesktop();
     else if (next === 'experiments') { main.innerHTML = renderExperiments(); label = 'Эксперименты'; }
@@ -248,18 +293,17 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
       const title = asset?.title || (asset ? 'Иллюстрация' : 'Обложка');
       main.innerHTML = windowFrame(`${project.title} / ${title}`, `<div class="os-image-view">${asset ? `<figure class="os-content-figure"><img src="${esc(asset.src)}" alt="${esc(asset.alt || asset.title || project.title)}"${imageDimensions(asset)} decoding="async">${asset.caption ? `<figcaption>${esc(asset.caption)}</figcaption>` : ''}</figure>` : `${cover(project)}<p>${esc(project.coverAlt || project.title)}</p>`}${articleAsset && !galleryAsset ? button('К статье', `data-go="article:${project.id}"`) : button('К материалам', `data-go="case:${project.id}:materials"`)}</div>`, { iconName: 'design' }); label = 'Просмотр';
     }
-    else if (next === 'skills') { main.innerHTML = renderSkills(); skillMap = mountSkillMap(main.querySelector('.os-skill-map-mount'), { onProject: id => show(`case:${id}`), onContact: () => show('contact') }); cleanupView = () => { skillMap?.dispose(); skillMap = null; }; label = 'Навыки'; }
+    else if (next === 'skills') { main.innerHTML = renderSkills(); skillMap = sections.skills.module.mountSkillMap(main.querySelector('.os-skill-map-mount'), { onProject: id => show(`case:${id}`), onContact: () => show('contact') }); skillMap.setActive?.(viewActive); cleanupView = () => { skillMap?.dispose(); skillMap = null; }; label = 'Навыки'; }
     else if (next === 'about') { main.innerHTML = renderAbout(); label = 'Обо мне'; }
-    else if (next === 'contact') { main.innerHTML = renderContact(); cleanupView = mountContact(main.querySelector('.os-contact-panel')); label = 'Контакт'; }
+    else if (next === 'contact') { main.innerHTML = renderContact(); cleanupView = sections.profile.module.mountContact(main.querySelector('.os-contact-panel')); label = 'Контакт'; }
     else if (next === 'settings') { main.innerHTML = renderSettings(); label = 'Вид'; }
     else if (next === 'completed' || next === 'upcoming') { main.innerHTML = renderCollection(next); label = next === 'completed' ? 'Завершённые' : 'Скоро'; }
-    else if (next === 'games') { main.innerHTML = windowFrame('Игры', '<div class="os-games-mount"></div>', { type: 'os-games-window', iconName: 'games' }); const mounted = mountGames(main.querySelector('.os-games-mount')); cleanupView = typeof mounted === 'function' ? mounted : () => mounted?.dispose?.(); label = 'Игры'; }
+    else if (next === 'games') { main.innerHTML = windowFrame('Игры', '<div class="os-games-mount"></div>', { type: 'os-games-window', iconName: 'games' }); const mounted = sections.games.module.mountGames(main.querySelector('.os-games-mount')); cleanupView = typeof mounted === 'function' ? mounted : () => mounted?.dispose?.(); root.dispatchEvent(new CustomEvent('retro-activity', { bubbles: true, detail: { active: viewActive } })); label = 'Игры'; }
     else { view = 'home'; root.dataset.view = 'home'; main.innerHTML = renderDesktop(); }
     syncViewportLayout();
     location.textContent = next === 'home' ? '' : label;
     if (!remember && scrollPositions.has(view)) main.querySelector('.os-window-content')?.scrollTo({ top: scrollPositions.get(view) });
     if (focus) { const target = next === 'home' ? main : main.querySelector('.os-window-content'); (target || main).focus({ preventScroll: true }); }
-    onViewChange(view);
   }
   function goBack() { const previous = history.pop(); if (previous) { forward.push(view); show(previous, { remember: false }); } else show('home', { remember: false }); }
   function goForward() { const next = forward.pop(); if (next) { history.push(view); show(next, { remember: false }); } }
@@ -355,6 +399,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
       return;
     }
     closeMenu();
+    if (target.hasAttribute('data-retry-view')) { show(view, { remember: false }); return; }
     if (target.hasAttribute('data-tv')) { onTelevision(target.dataset.tv || null); return; }
     if (target.hasAttribute('data-radio')) { onRadio(); return; }
     if (target.hasAttribute('data-go')) { const next = target.dataset.go; if (!next.endsWith(':process')) processIndex = 0; show(next); return; }
@@ -398,7 +443,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     }
   }
   function outsidePointer(event) { if (!root.contains(event.target)) closeMenu(); }
-  function activity(event) { skillMap?.setActive?.(event.detail?.active !== false); }
+  function activity(event) { viewActive = event.detail?.active !== false; skillMap?.setActive?.(viewActive); }
   function syncViewportLayout() {
     const frame = main.querySelector('.os-window');
     const content = frame?.querySelector('.os-window-content');

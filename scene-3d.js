@@ -1,16 +1,34 @@
 /** Optional, demand-rendered studio. This module is never imported in the 2D view. */
 export async function createScene3D(options) {
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
-  const [THREE, { GLTFLoader }, { OrbitControls }, { RoomEnvironment }, { removeLaptopLabels }, { createRadioModel }] = await Promise.all([
+  const [THREE, { GLTFLoader }, { OrbitControls }, { RoomEnvironment }, { removeLaptopLabels }, { prepareRadioModel }] = await Promise.all([
     import('./assets/vendor/three.module.js'),
     import('./assets/vendor/GLTFLoader.js'),
     import('./assets/vendor/OrbitControls.js'),
     import('./assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-model.js?v=studio-40-final')
+    import('./radio-preparation.js?v=studio-62-final')
   ]);
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
   const { canvas, anchor, tvAnchor, tvCanvas } = options;
+  // Fetch both complete models while a worker prepares the unchanged radio.
+  // Store failures as values until their normal scene error handlers are ready.
+  const modelLoader = new GLTFLoader();
+  const requestModel = url => modelLoader.loadAsync(url).then(gltf => ({ gltf }), error => ({ error }));
+  const laptopRequest = requestModel('./assets/laptop/classic_laptop_2k.gltf');
+  const televisionRequest = requestModel('./assets/television/Television_01_2k.gltf');
+  const preparedRadio = await prepareRadioModel(THREE);
+  const discardStartup = () => {
+    preparedRadio.dispose();
+    for (const request of [laptopRequest, televisionRequest]) void request.then(({ gltf }) => { if (gltf) disposeTree(gltf.scene); });
+  };
+  if (options.isSuspended?.()) {
+    discardStartup();
+    throw new DOMException('The 3D view is not active.', 'AbortError');
+  }
+  canvas.dataset.radioPreparation = preparedRadio.preparationStats.mode;
+  canvas.dataset.radioMainMs = preparedRadio.preparationStats.mainThreadMs.toFixed(1);
+  canvas.dataset.radioWorkerMs = (preparedRadio.preparationStats.workerMs || 0).toFixed(1);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const screen = { left: -.22408510, right: .22431661, top: .51288581, bottom: .14632967, z: -.20660 };
   const laptopOffset = new THREE.Vector3(-.26, 0, 0);
@@ -28,8 +46,9 @@ export async function createScene3D(options) {
   let entered = Boolean(options.getEntered?.() ?? options.entered);
   let ready = false, tvReady = false, tvLoading = false, tvFailed = false, disposed = false;
   let initialFramePending = false, initialReadyFired = false;
+  let initialWarmupDone = false;
   let laptopModel, tvModel, tvTexture, radioObject, laptopScreenMaterial, desktopTexture, tween = null, frame = 0, lastFrame = 0;
-  let idleHandle = null, idleTimer = null, pointerStart = null, radioDrag = null;
+  let idleHandle = null, idleTimer = null, pointerStart = null, radioDrag = null, televisionConsumed = false;
   let cameraDirty = true, interacting = false, totalFrames = 0, lastStats = -Infinity, latestMetrics = null;
   let baseDPR = 1, resolutionScale = 1, slowRenders = 0, qualityTimer = null;
   let lastControlUpdate = performance.now();
@@ -39,7 +58,9 @@ export async function createScene3D(options) {
     ? '"IBM Plex Mono", "Courier New", monospace'
     : '"Departure Mono", "IBM Plex Mono", monospace';
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true, powerPreference: 'default' });
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true, powerPreference: 'default' }); }
+  catch (error) { discardStartup(); throw error; }
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
@@ -50,6 +71,19 @@ export async function createScene3D(options) {
   scene.background = new THREE.Color(0xf7f7f4);
   scene.fog = new THREE.Fog(0xf7f7f4, 4, 10);
   const camera = new THREE.PerspectiveCamera(30, width / height, .01, 25);
+  const initialWarmup = createSceneWarmup({
+    renderer, scene, camera, canRun: () => canRender(),
+    onReady: stats => {
+      initialWarmupDone = true;
+      canvas.dataset.warmupMs = stats.elapsedMs.toFixed(1);
+      canvas.dataset.warmupMainMs = stats.mainThreadMs.toFixed(1);
+      canvas.dataset.warmupMaxChunkMs = stats.maxChunkMs.toFixed(1);
+      canvas.dataset.warmupTextures = String(stats.textures);
+      canvas.dataset.warmupPrograms = String(stats.programs);
+      canvas.dataset.warmupStatus = stats.status;
+      requestFrame();
+    }
+  });
   const controls = new OrbitControls(camera, canvas);
   controls.enabled = false;
   controls.enableDamping = !reduced.matches;
@@ -90,7 +124,7 @@ export async function createScene3D(options) {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0xf7f7f4, roughness: 1 }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -.0012; floor.receiveShadow = true;
   scene.add(floor);
-  radioObject = createRadioModel(THREE);
+  radioObject = preparedRadio;
   radioObject.group.position.copy(radioPosition); radioObject.group.scale.setScalar(radioScale); radioObject.group.rotation.y = .07;
   radioObject.setState(options.getRadioState?.() || { powered: false, station: 'rain', volume: .25 });
   scene.add(radioObject.group);
@@ -407,6 +441,10 @@ export async function createScene3D(options) {
   function requestFrame(textureChanged = false) {
     if (!canRender()) return;
     if (textureChanged && tvTexture) tvTexture.needsUpdate = true;
+    if (!initialWarmupDone) {
+      if (ready && (!televisionWanted() || tvReady || tvFailed)) initialWarmup.start();
+      return;
+    }
     if (!frame) frame = requestAnimationFrame(tick);
   }
   function reportStats(now, force = false) {
@@ -463,6 +501,7 @@ export async function createScene3D(options) {
     if (moving && !frame) frame = requestAnimationFrame(tick);
   }
   function stopFrames() {
+    initialWarmup.stop();
     cancelAnimationFrame(frame); frame = 0; tween = null; lastFrame = 0;
     clearTimeout(qualityTimer); qualityTimer = null; reportStats(performance.now(), true);
   }
@@ -575,7 +614,10 @@ export async function createScene3D(options) {
     if (tvLoading || tvReady || tvFailed || !canRender()) return;
     tvLoading = true;
     try {
-      const gltf = await new GLTFLoader().loadAsync('./assets/television/Television_01_2k.gltf');
+      televisionConsumed = true;
+      const result = await televisionRequest;
+      if (result.error) throw result.error;
+      const gltf = result.gltf;
       if (disposed) { disposeTree(gltf.scene); return; }
       tvModel = gltf.scene; tvModel.position.set(.34, 0, -.28); tvModel.scale.setScalar(.76); tvModel.rotation.y = -.07;
       tvTexture = new THREE.CanvasTexture(tvCanvas); tvTexture.colorSpace = THREE.SRGBColorSpace;
@@ -743,11 +785,14 @@ export async function createScene3D(options) {
       disposed = true; stopFrames(); cancelDeferredTV(); clearGestures();
       unlisten.forEach(remove => remove()); controls.dispose();
       scene.remove(radioObject.group); radioObject.dispose();
+      if (!televisionConsumed) void televisionRequest.then(({ gltf }) => { if (gltf) disposeTree(gltf.scene); });
       disposeTree(scene); environmentTarget.dispose(); keyLight.shadow.map?.dispose(); renderer.dispose();
     }
   };
   resize(); syncVisibility(); applyPose(deskPose()); requestFrame();
-  void new GLTFLoader().loadAsync('./assets/laptop/classic_laptop_2k.gltf').then(gltf => {
+  void laptopRequest.then(result => {
+    if (result.error) throw result.error;
+    const gltf = result.gltf;
     if (disposed) { disposeTree(gltf.scene); return; }
     laptopModel = gltf.scene; laptopModel.position.copy(laptopOffset);
     createDesktopLCD();
@@ -772,4 +817,98 @@ export async function createScene3D(options) {
     requestFrame(); scheduleTelevision();
   }).catch(error => { if (!disposed) options.onError?.(error); });
   return controller;
+}
+
+// The vendored compileAsync uses an uncancellable polling timer. Submit the same
+// programs in small batches and own the readiness polling so hide/dispose can
+// stop it immediately. The real scene supplies the identical lights and IBL.
+export function createSceneWarmup({ renderer, scene, camera, canRun, onReady }) {
+  let generation = 0, running = false, completed = false, paintFrame = 0, taskTimer = null, resumePaint = null;
+  function stop() {
+    generation++; running = false;
+    cancelAnimationFrame(paintFrame); paintFrame = 0;
+    clearTimeout(taskTimer); taskTimer = null;
+    resumePaint?.(false); resumePaint = null;
+  }
+  function start() {
+    if (running || completed || !canRun()) return;
+    running = true;
+    const ticket = ++generation, started = performance.now();
+    const current = () => ticket === generation && canRun();
+    const stats = { elapsedMs: 0, mainThreadMs: 0, maxChunkMs: 0, textures: 0, programs: 0, status: 'ready' };
+    let chunkStart = performance.now();
+    const measure = action => {
+      const before = performance.now(), result = action();
+      stats.mainThreadMs += performance.now() - before;
+      stats.maxChunkMs = Math.max(stats.maxChunkMs, performance.now() - chunkStart);
+      return result;
+    };
+    const paint = () => new Promise(resolve => {
+      if (!current()) { resolve(false); return; }
+      resumePaint = resolve;
+      paintFrame = requestAnimationFrame(() => {
+        paintFrame = 0;
+        taskTimer = setTimeout(() => {
+          taskTimer = null; resumePaint = null; chunkStart = performance.now(); resolve(current());
+        }, 0);
+      });
+    });
+    void (async () => {
+      try {
+        if (!await paint()) return;
+        const objects = [], textures = new Set(), programs = new Set();
+        scene.traverseVisible(object => {
+          if (!object.isMesh) return;
+          objects.push(object);
+          for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+            for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+          }
+        });
+        for (const texture of textures) {
+          if (!current()) return;
+          measure(() => renderer.initTexture(texture)); stats.textures++;
+          if (performance.now() - chunkStart >= 8 && !await paint()) return;
+        }
+        for (const object of objects) {
+          if (!current()) return;
+          // Shallow clones preserve InstancedMesh flags and material hooks,
+          // without recursively recompiling a cabinet's attached display.
+          const materials = measure(() => renderer.compile(object.clone(false), camera, scene));
+          for (const material of materials) {
+            const program = renderer.properties.get(material).currentProgram;
+            if (program) programs.add(program);
+          }
+          if (performance.now() - chunkStart >= 8 && !await paint()) return;
+        }
+        stats.programs = programs.size;
+        const compiledPrograms = [...programs];
+        // This also gives drivers without parallel-compile support a paint
+        // interval after program submission, matching compileAsync's fallback.
+        if (!await paint()) return;
+        const deadline = performance.now() + 1500;
+        while (programs.size && current()) {
+          for (const program of programs) if (measure(() => program.isReady())) programs.delete(program);
+          if (!programs.size) break;
+          if (performance.now() >= deadline) { stats.status = 'compile-timeout'; break; }
+          if (!await paint()) return;
+        }
+        // Uniform/attribute reflection normally runs on first use. Move those
+        // per-program queries into the same bounded batches after GPU readiness.
+        for (const program of compiledPrograms) {
+          if (!current()) return;
+          if (measure(() => program.isReady())) measure(() => { program.getUniforms(); program.getAttributes(); });
+          if (performance.now() - chunkStart >= 8 && !await paint()) return;
+        }
+      } catch {
+        // Warmup is optional; a driver that rejects it retains the ordinary
+        // first render and the existing scene error/fallback handling.
+        stats.status = 'fallback';
+      } finally {
+        if (ticket === generation) running = false;
+      }
+      if (!current()) return;
+      completed = true; stats.elapsedMs = performance.now() - started; onReady(stats);
+    })();
+  }
+  return { start, stop };
 }

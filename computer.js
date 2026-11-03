@@ -1,6 +1,7 @@
-import { initOS } from './os-ui.js?v=studio-61-final';
-import { createEyeLoader } from './loading-eye.js?v=studio-22-loader';
-import { createTelevision } from './television.js?v=studio-61-final';
+import { initOS } from './os-ui.js?v=studio-62-final';
+import { createEyeLoader } from './loading-eye.js?v=studio-62-final';
+import { takeStartupLoader } from './startup-loader.js?v=studio-62-final';
+import { createTelevision } from './television.js?v=studio-62-final';
 import { createRadio } from './radio.js?v=studio-61-final';
 
 const $ = selector => document.querySelector(selector);
@@ -28,6 +29,7 @@ document.body.classList.toggle('mobile-mode', mobile);
 let engine = null, scenePromise = null, sceneFailed = false, tvFailed = false;
 let bootDone = false, entered = false, motionDisabled = reduced.matches;
 let loadingEye = null, loadingTicket = 0;
+let initialLoadingSession = takeStartupLoader();
 const loadingCover = $('#loading-cover');
 function setLoadingInteraction(loading) {
   $('#experience').inert = loading;
@@ -87,15 +89,20 @@ function showLoading() {
   document.body.classList.remove('intro-revealing');
   $('#loading-cover').classList.remove('is-loaded'); document.body.classList.add('is-loading');
   const ticket = loadingTicket;
-  loadingEye = createEyeLoader($('#loading-eye'), {
-    reducedMotion: reduced.matches || motionDisabled,
-    onReveal: () => {
+  const onReveal = () => {
       if (ticket !== loadingTicket) return;
       markReveal();
       document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading');
       setLoadingInteraction(false);
       finishBoot();
-    }
+  };
+  if (initialLoadingSession) {
+    loadingEye = initialLoadingSession.eye;
+    initialLoadingSession.onReveal = onReveal;
+    initialLoadingSession = null;
+  } else loadingEye = createEyeLoader($('#loading-eye'), {
+    reducedMotion: reduced.matches || motionDisabled,
+    onReveal
   });
 }
 async function showReady({ immediate = false } = {}) {
@@ -214,7 +221,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (flat || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-61-final&revision=tv-corners2');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-62-final');
     if (flat) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,

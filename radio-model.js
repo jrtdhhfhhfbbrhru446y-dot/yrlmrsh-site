@@ -2,24 +2,22 @@ import { createRadioSurfaceTools } from './radio-surfaces.js?v=studio-19-final';
 import { smoothRadioNormals } from './radio-geometry.js?v=studio-20-final';
 
 /** A small, self-contained receiver. All artwork and surface detail are local. */
-export function createRadioModel(THREE) {
+export function createRadioModel(THREE, options = {}) {
   const group = new THREE.Group();
   group.name = 'PONY';
   group.userData.device = 'radio';
   const geometries = new Set(), materials = new Set(), textures = new Set();
   const knobs = { volume: new THREE.Group(), tuning: new THREE.Group() };
-  const state = { powered: false, source: null, recording: false, noiseEnabled: false, volume: .35, station: 'rain' };
-  const stationPositions = { rain: .22, noise: .5, wind: .79 };
   const stationButtons = new Map();
-  let disposed = false;
-
   const geometry = value => (geometries.add(value), value);
   const material = value => (materials.add(value), value);
   const standard = options => material(new THREE.MeshStandardMaterial(options));
   const canvas = (width, height) => {
-    const element = document.createElement('canvas');
+    const element = options.createCanvas ? options.createCanvas(width, height) : document.createElement('canvas');
     element.width = width; element.height = height;
-    return { element, ctx: element.getContext('2d') };
+    // Static PBR artwork is read back for normal maps; keep those pixels local
+    // rather than repeatedly round-tripping a GPU-backed 2D surface.
+    return { element, ctx: element.getContext('2d', { willReadFrequently: true }) };
   };
   const texture = element => {
     const result = new THREE.CanvasTexture(element);
@@ -275,11 +273,7 @@ export function createRadioModel(THREE) {
     for (let j = 0; j < 7; j++) surfaces.scratch(ribArt, random() * 1024, y + random() * 25, 4 + random() * 45, .01, .23, .7);
   }
   const ribMat = standard({ ...surfaces.maps(ribArt, 1.3), roughness: 1, metalness: .025 });
-  ribMat.onBeforeCompile = shader => {
-    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float wearRow;');
-    shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv.y = vMapUv.y * (1.0 / 17.0 - 4.0 / 512.0) + wearRow + 2.0 / 512.0;\n#endif\n#ifdef USE_NORMALMAP\nvNormalMapUv.y = vNormalMapUv.y * (1.0 / 17.0 - 4.0 / 512.0) + wearRow + 2.0 / 512.0;\n#endif\n#ifdef USE_ROUGHNESSMAP\nvRoughnessMapUv.y = vRoughnessMapUv.y * (1.0 / 17.0 - 4.0 / 512.0) + wearRow + 2.0 / 512.0;\n#endif');
-  };
-  ribMat.customProgramCacheKey = () => 'radio-rib-wear-atlas-v1';
+  configureRadioRibMaterial(ribMat);
   instanced(ribGeometry, ribMat, Array.from({ length: 17 }, (_, i) => ({ p: [-.075, .049 + i * .0093, .057] })));
 
   mesh(rounded(.138, .041, .004, .004, .0007), dark, [.118, .193, .053]);
@@ -409,6 +403,25 @@ export function createRadioModel(THREE) {
   instanced(rounded(.111, .002, .0015, .001, .0002), dark,
     Array.from({ length: 12 }, (_, i) => ({ p: [-.075, .087 + i * .0072, -.069] })));
 
+  return createRadioController(THREE, {
+    group, knobs, pointer, lamp, dialMat, powerKey, stationButtons, geometries, materials, textures
+  });
+}
+
+// Shared by the generator and its worker-prepared reconstruction.
+export function configureRadioRibMaterial(material) {
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float wearRow;');
+    shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv.y = vMapUv.y * (1.0 / 17.0 - 4.0 / 512.0) + wearRow + 2.0 / 512.0;\n#endif\n#ifdef USE_NORMALMAP\nvNormalMapUv.y = vNormalMapUv.y * (1.0 / 17.0 - 4.0 / 512.0) + wearRow + 2.0 / 512.0;\n#endif\n#ifdef USE_ROUGHNESSMAP\nvRoughnessMapUv.y = vRoughnessMapUv.y * (1.0 / 17.0 - 4.0 / 512.0) + wearRow + 2.0 / 512.0;\n#endif');
+  };
+  material.customProgramCacheKey = () => 'radio-rib-wear-atlas-v1';
+}
+
+export function createRadioController(THREE, { group, knobs, pointer, lamp, dialMat, powerKey, stationButtons, geometries, materials, textures, images = [] }) {
+  const state = { powered: false, source: null, recording: false, noiseEnabled: false, volume: .35, station: 'rain' };
+  const stationPositions = { rain: .22, noise: .5, wind: .79 };
+  const lampMat = lamp.material;
+  let disposed = false;
   function setState(next = {}) {
     if (disposed) return;
     if ('powered' in next) state.powered = Boolean(next.powered);
@@ -433,10 +446,17 @@ export function createRadioModel(THREE) {
   setState(state);
   return {
     group, knobs, pointer, lamp, setState,
+    resources: { geometries, materials, textures },
+    preparation: {
+      volume: knobs.volume.uuid, tuning: knobs.tuning.uuid, pointer: pointer.uuid, lamp: lamp.uuid,
+      dialMaterial: dialMat.uuid, powerKey: powerKey.uuid,
+      stations: [...stationButtons].map(([id, button]) => [id, button.uuid])
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
       geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose());
+      images.forEach(image => image.close?.());
       group.removeFromParent();
     }
   };

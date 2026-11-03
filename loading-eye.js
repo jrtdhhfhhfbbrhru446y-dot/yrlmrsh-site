@@ -150,7 +150,8 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
   // A blocked main thread or a background tab must not consume the line/opening.
   let elapsed = 0, previousTick = null;
   let viewWidth = WIDTH, viewHeight = HEIGHT, ratio = 1, eyeWidth = WIDTH, eyeHeight = HEIGHT;
-  let eyeLeft = 0, eyeTop = 0, fadingStarted = null, restingRows = [], lastDiagnostic = -Infinity, lastTransitionProgress = -1;
+  let characterAdvance = 0, drawingConfigured = false, fadingStarted = null, restingRows = [], lastDiagnostic = -Infinity, lastTransitionProgress = -1;
+  const surface = canvas?.parentElement;
   const phase = value => { if (canvas?.dataset) canvas.dataset.phase = value; };
   const font = () => `600 ${eyeWidth / COLUMNS / .6001}px "Courier New", monospace`;
   const clear = () => {
@@ -160,19 +161,27 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     context.globalAlpha = 1;
   };
-  const drawRows = (lines, alpha = 1) => {
-    if (!context || alpha <= 0) return;
+  const configureText = () => {
     context.font = font(); context.fillStyle = INK;
     context.textBaseline = 'middle'; context.textAlign = 'left'; context.fontKerning = 'none';
-    context.globalAlpha = alpha;
+    characterAdvance = context.measureText(' ').width;
+  };
+  const drawRows = lines => {
+    if (!context) return;
     const lineHeight = eyeHeight / ROWS;
-    for (let row = 0; row < ROWS; row++) context.fillText(lines[row], eyeLeft, eyeTop + (row + .5) * lineHeight);
-    context.globalAlpha = 1;
+    for (let row = 0; row < ROWS; row++) {
+      const line = lines[row], first = line.search(/\S/);
+      if (first < 0) continue;
+      // Courier is monospaced and kerning is off. Removing invisible padding
+      // keeps every visible character at its original column without shaping it.
+      context.fillText(line.trim(), first * characterAdvance, (row + .5) * lineHeight);
+    }
   };
   const cleanup = () => {
     cancelAnimationFrame(raf); raf = 0;
     clearTimeout(startTimer); clearTimeout(revealTimer); clearTimeout(completeTimer);
     observer?.disconnect();
+    globalThis.removeEventListener?.('resize', resize);
     document.removeEventListener('visibilitychange', visibility);
     motionQuery?.removeEventListener?.('change', motionChanged);
   };
@@ -180,6 +189,7 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     if (done) return;
     done = true;
     cleanup(); clear();
+    canvas?.classList.remove('is-eye-fading');
     if (!disposed) phase('done');
     restingRows = [];
     finishResolve?.(); finishResolve = null;
@@ -200,7 +210,6 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     if (revealed) { clear(); return; }
     if (fadingStarted !== null) {
       const progress = clamp((now - fadingStarted) / EYE_FADE_TIME);
-      clear(); drawRows(restingRows, 1 - smooth(progress));
       if (canvas?.dataset && (now - lastDiagnostic >= 100 || (progress === 1 && lastTransitionProgress !== 1))) {
         lastDiagnostic = now;
         lastTransitionProgress = progress;
@@ -257,7 +266,9 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     // A late resource may finish during a blink. armFinish waits for its end,
     // then the open eye rests in the exact same size and position while fading.
     restingRows = renderEyeAscii(gazeAt(elapsed, false));
+    clear(); drawRows(restingRows);
     fadingStarted = performance.now(); phase('fading');
+    canvas.classList.add('is-eye-fading');
     revealTimer = setTimeout(reveal, EYE_FADE_TIME + PAPER_HOLD);
     if (!document.hidden) paint(fadingStarted, true);
     schedule();
@@ -273,16 +284,27 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
   };
   const resize = () => {
     if (!context || disposed || done) return;
-    const rect = canvas.getBoundingClientRect();
-    viewWidth = Math.max(1, rect.width || globalThis.innerWidth || WIDTH);
-    viewHeight = Math.max(1, rect.height || globalThis.innerHeight || HEIGHT);
-    ratio = Math.min(globalThis.devicePixelRatio || 1, 1.25, Math.sqrt(1800000 / (viewWidth * viewHeight)));
-    canvas.width = Math.max(1, Math.round(viewWidth * ratio));
-    canvas.height = Math.max(1, Math.round(viewHeight * ratio));
-    eyeWidth = Math.min(WIDTH, viewWidth * .90, viewHeight * 1.45);
-    eyeHeight = eyeWidth * HEIGHT / WIDTH;
-    eyeLeft = (viewWidth - eyeWidth) / 2; eyeTop = viewHeight * .49 - eyeHeight / 2;
-    paint(performance.now(), true);
+    const rect = surface?.getBoundingClientRect();
+    viewWidth = Math.max(1, rect?.width || globalThis.innerWidth || WIDTH);
+    viewHeight = Math.max(1, rect?.height || globalThis.innerHeight || HEIGHT);
+    const nextRatio = Math.min(globalThis.devicePixelRatio || 1, 1.25, Math.sqrt(1800000 / (viewWidth * viewHeight)));
+    const nextWidth = Math.min(WIDTH, viewWidth * .90, viewHeight * 1.45);
+    const nextHeight = nextWidth * HEIGHT / WIDTH;
+    const bitmapWidth = Math.max(1, Math.round(nextWidth * nextRatio));
+    const bitmapHeight = Math.max(1, Math.round(nextHeight * nextRatio));
+    const drawingChanged = !drawingConfigured || ratio !== nextRatio || eyeWidth !== nextWidth || eyeHeight !== nextHeight
+      || canvas.width !== bitmapWidth || canvas.height !== bitmapHeight;
+    ratio = nextRatio; eyeWidth = nextWidth; eyeHeight = nextHeight;
+    canvas.style.width = `${eyeWidth}px`; canvas.style.height = `${eyeHeight}px`;
+    canvas.style.left = `${(viewWidth - eyeWidth) / 2}px`;
+    canvas.style.top = `${viewHeight * .49 - eyeHeight / 2}px`;
+    if (!drawingChanged) return;
+    // Resizing a canvas resets its bitmap and text state, even at the same size.
+    if (canvas.width !== bitmapWidth) canvas.width = bitmapWidth;
+    if (canvas.height !== bitmapHeight) canvas.height = bitmapHeight;
+    configureText(); drawingConfigured = true;
+    if (fadingStarted !== null) { clear(); drawRows(restingRows); }
+    else paint(performance.now(), true);
   };
   const visibility = () => {
     previousTick = null;
@@ -300,14 +322,16 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     } else schedule();
     if (requested) armFinish();
   };
-  const observer = context && typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
+  const observer = context && surface && typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
   if (canvas) {
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', 'Шкала загрузки превращается в моргающий глаз из символов ASCII');
     if (canvas.dataset) canvas.dataset.transitionProgress = '0';
+    canvas.classList.remove('is-eye-fading');
   }
   if (context) {
-    resize(); observer?.observe(canvas);
+    resize(); observer?.observe(surface);
+    if (!observer) globalThis.addEventListener?.('resize', resize);
     document.addEventListener('visibilitychange', visibility);
     motionQuery?.addEventListener?.('change', motionChanged);
     schedule();

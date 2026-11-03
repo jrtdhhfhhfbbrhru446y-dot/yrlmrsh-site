@@ -19,7 +19,7 @@
 /* The intro lives in ordinary 2D; orbiting never transforms a full HTML desktop. */
 .loading-cover{position:fixed;inset:0;overflow:hidden;z-index:40;opacity:1;transition:opacity .72s cubic-bezier(.22,.61,.36,1)}
 .loading-cover.is-loaded{display:flex;opacity:0;visibility:hidden;pointer-events:none}
-#loading-eye{width:min(720px,90vw);height:auto;aspect-ratio:720/344;display:block}
+#loading-eye{position:absolute;inset:auto;width:min(720px,90vw);height:auto;aspect-ratio:720/344;display:block;opacity:1;will-change:opacity}
 .loading-a11y{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .identity{z-index:12}
 .is-loading .screen-anchor,.is-loading .tv-anchor,.is-loading .radio-anchor{visibility:hidden!important;pointer-events:none!important}
@@ -28,7 +28,7 @@
 .retro-os.os-crt:after{display:none!important}
 .screen-inner:after{background:repeating-linear-gradient(0deg,#00000002 0 1px,transparent 1px 5px);box-shadow:inset 0 0 10px #00000015;mix-blend-mode:normal}
 /* One opaque cover fades off the fully prepared scene. No competing fades. */
-#loading-eye{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto}
+#loading-eye.is-eye-fading{opacity:0;transition:opacity .26s cubic-bezier(.333333,0,.666667,1)}
 .intro-revealing .loading-cover{opacity:0;pointer-events:none}
 .os-case-intro{max-width:64ch;line-height:1.65;margin:14px 0 26px}
 .os-project-summary{display:block;font-size:13px;line-height:1.55;margin-top:8px;font-weight:400;letter-spacing:0}
