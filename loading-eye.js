@@ -139,7 +139,9 @@ function gazeAt(elapsed, still) {
 }
 
 export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () => {} } = {}) {
-  const context = canvas?.getContext?.('2d', { alpha: true });
+  // Chromium can stall flushing an accelerated 2D canvas beside WebGL.
+  // Keep this small text surface in software without changing its artwork.
+  const context = canvas?.getContext?.('2d', { alpha: true, willReadFrequently: true });
   const started = performance.now();
   const motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let still = reducedMotion || !!motionQuery?.matches;

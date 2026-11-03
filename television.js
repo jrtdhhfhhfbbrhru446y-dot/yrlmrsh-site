@@ -1,4 +1,4 @@
-import { projects } from './portfolio-data.js?v=studio-62-final';
+import { projects } from './portfolio-data.js?v=studio-63-final';
 import { tvServiceLogo, drawTVServiceLogo } from './screen-brand.js?v=studio-11';
 import { bindRangeDrag } from './range-drag.js?v=studio-59-final';
 

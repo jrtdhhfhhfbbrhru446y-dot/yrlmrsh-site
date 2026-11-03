@@ -19,7 +19,8 @@
 /* The intro lives in ordinary 2D; orbiting never transforms a full HTML desktop. */
 .loading-cover{position:fixed;inset:0;overflow:hidden;z-index:40;opacity:1;transition:opacity .72s cubic-bezier(.22,.61,.36,1)}
 .loading-cover.is-loaded{display:flex;opacity:0;visibility:hidden;pointer-events:none}
-#loading-eye{position:absolute;inset:auto;width:min(720px,90vw);height:auto;aspect-ratio:720/344;display:block;opacity:1;will-change:opacity}
+/* Match the loader's first resize before JavaScript paints the first line. */
+#loading-eye{--eye-width:min(720px,90vw,145vh);position:absolute;inset:auto;left:calc((100% - var(--eye-width))/2);top:calc(49% - var(--eye-width)*.2388888889);width:var(--eye-width);height:auto;aspect-ratio:720/344;display:block;opacity:1;will-change:opacity}
 .loading-a11y{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .identity{z-index:12}
 .is-loading .screen-anchor,.is-loading .tv-anchor,.is-loading .radio-anchor{visibility:hidden!important;pointer-events:none!important}

@@ -7,7 +7,7 @@ export async function createScene3D(options) {
     import('./assets/vendor/OrbitControls.js'),
     import('./assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-62-final')
+    import('./radio-preparation.js?v=studio-63-final')
   ]);
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
   const { canvas, anchor, tvAnchor, tvCanvas } = options;
@@ -27,6 +27,7 @@ export async function createScene3D(options) {
     throw new DOMException('The 3D view is not active.', 'AbortError');
   }
   canvas.dataset.radioPreparation = preparedRadio.preparationStats.mode;
+  canvas.dataset.radioFallbackReason = preparedRadio.preparationStats.fallbackReason || '';
   canvas.dataset.radioMainMs = preparedRadio.preparationStats.mainThreadMs.toFixed(1);
   canvas.dataset.radioWorkerMs = (preparedRadio.preparationStats.workerMs || 0).toFixed(1);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');

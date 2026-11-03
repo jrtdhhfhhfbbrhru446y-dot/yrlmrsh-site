@@ -1,4 +1,4 @@
-import { createRadioModel, createRadioController, configureRadioRibMaterial } from './radio-model.js?v=studio-62-final';
+import { createRadioModel, createRadioController, configureRadioRibMaterial } from './radio-model.js?v=studio-63-final';
 
 // Geometry arrays and bitmaps transfer ownership; no large JSON pixel arrays or
 // geometry regeneration are needed on the UI thread.
@@ -74,11 +74,13 @@ export function restoreRadioModel(THREE, packet) {
 
 export async function prepareRadioModel(THREE) {
   const started = performance.now();
-  if (typeof Worker === 'function' && typeof OffscreenCanvas === 'function' && typeof createImageBitmap === 'function') {
-    let worker;
+  const unsupported = ['Worker', 'OffscreenCanvas', 'createImageBitmap'].filter(name => typeof globalThis[name] !== 'function');
+  let fallbackReason = unsupported.length ? `Unavailable: ${unsupported.join(', ')}` : '';
+  if (!unsupported.length) {
+    let worker, phase = 'worker';
     try {
       const result = await new Promise((resolve, reject) => {
-        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-62-final', import.meta.url), { type: 'module' });
+        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-63-final', import.meta.url), { type: 'module' });
         let settled = false;
         const settle = action => value => { if (settled) return; settled = true; clearTimeout(timer); action(value); };
         const fail = settle(reject);
@@ -91,23 +93,25 @@ export async function prepareRadioModel(THREE) {
         worker.onerror = event => { event.preventDefault?.(); fail(new Error(event.message || 'Radio preparation failed.')); };
         worker.onmessageerror = () => fail(new Error('Radio preparation could not be transferred.'));
       });
+      phase = 'restore';
       const restoreStarted = performance.now();
       try {
         const model = restoreRadioModel(THREE, result.packet);
         model.preparationStats = { mode: 'worker', elapsedMs: performance.now() - started,
-          workerMs: result.workerMs, mainThreadMs: performance.now() - restoreStarted };
+          workerMs: result.workerMs, mainThreadMs: performance.now() - restoreStarted, fallbackReason: '' };
         return model;
       } catch (error) {
         result.packet.images.forEach(({ bitmap }) => bitmap.close?.());
         throw error;
       }
-    } catch {
+    } catch (error) {
+      fallbackReason = `${phase}: ${String(error?.message || error || 'Preparation failed').slice(0, 240)}`;
       // Older engines, blocked module workers and bounded failures retain the
       // original generator and appearance. Give the loader a paint opportunity.
     } finally { worker?.terminate(); }
   }
   await new Promise(resolve => setTimeout(resolve, 0));
   const fallbackStarted = performance.now(), model = createRadioModel(THREE);
-  model.preparationStats = { mode: 'main-fallback', elapsedMs: performance.now() - started, mainThreadMs: performance.now() - fallbackStarted };
+  model.preparationStats = { mode: 'main-fallback', elapsedMs: performance.now() - started, mainThreadMs: performance.now() - fallbackStarted, fallbackReason };
   return model;
 }
