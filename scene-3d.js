@@ -7,7 +7,7 @@ export async function createScene3D(options) {
     import('./assets/vendor/OrbitControls.js'),
     import('./assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-63-final')
+    import('./radio-preparation.js?v=studio-64-final')
   ]);
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
   const { canvas, anchor, tvAnchor, tvCanvas } = options;

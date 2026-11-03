@@ -1,5 +1,5 @@
 // A typographic eye intro with a quiet, opacity-only handoff.
-// This is an ordinary 2D canvas: no image, WebGL context or network request.
+// Ordinary text rows avoid Canvas2D/WebGL flush stalls during scene startup.
 const COLUMNS = 121;
 const ROWS = 43;
 const WIDTH = 720;
@@ -138,10 +138,7 @@ function gazeAt(elapsed, still) {
   };
 }
 
-export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () => {} } = {}) {
-  // Chromium can stall flushing an accelerated 2D canvas beside WebGL.
-  // Keep this small text surface in software without changing its artwork.
-  const context = canvas?.getContext?.('2d', { alpha: true, willReadFrequently: true });
+export function createEyeLoader(element, { reducedMotion = false, onReveal = () => {} } = {}) {
   const started = performance.now();
   const motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let still = reducedMotion || !!motionQuery?.matches;
@@ -151,32 +148,29 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
   // Count presented animation time, not time spent preparing the 3D scene.
   // A blocked main thread or a background tab must not consume the line/opening.
   let elapsed = 0, previousTick = null;
-  let viewWidth = WIDTH, viewHeight = HEIGHT, ratio = 1, eyeWidth = WIDTH, eyeHeight = HEIGHT;
-  let characterAdvance = 0, drawingConfigured = false, fadingStarted = null, restingRows = [], lastDiagnostic = -Infinity, lastTransitionProgress = -1;
-  const surface = canvas?.parentElement;
-  const phase = value => { if (canvas?.dataset) canvas.dataset.phase = value; };
-  const font = () => `600 ${eyeWidth / COLUMNS / .6001}px "Courier New", monospace`;
+  let viewWidth = WIDTH, viewHeight = HEIGHT, eyeWidth = WIDTH, eyeHeight = HEIGHT;
+  let drawingConfigured = false, fadingStarted = null, restingRows = [], lastDiagnostic = -Infinity, lastTransitionProgress = -1;
+  const surface = element?.parentElement;
+  const rowText = Array(ROWS).fill('');
+  const rowElements = element ? Array.from({ length: ROWS }, () => {
+    const row = document.createElement('span');
+    row.className = 'loading-eye-row'; row.setAttribute('aria-hidden', 'true');
+    return row;
+  }) : [];
+  element?.replaceChildren(...rowElements);
+  const phase = value => { if (element?.dataset) element.dataset.phase = value; };
   const clear = () => {
-    if (!context) return;
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    context.globalAlpha = 1;
-  };
-  const configureText = () => {
-    context.font = font(); context.fillStyle = INK;
-    context.textBaseline = 'middle'; context.textAlign = 'left'; context.fontKerning = 'none';
-    characterAdvance = context.measureText(' ').width;
+    rowElements.forEach((row, index) => {
+      if (rowText[index]) { row.textContent = ''; rowText[index] = ''; }
+    });
   };
   const drawRows = lines => {
-    if (!context) return;
-    const lineHeight = eyeHeight / ROWS;
+    if (!element) return;
     for (let row = 0; row < ROWS; row++) {
-      const line = lines[row], first = line.search(/\S/);
-      if (first < 0) continue;
-      // Courier is monospaced and kerning is off. Removing invisible padding
-      // keeps every visible character at its original column without shaping it.
-      context.fillText(line.trim(), first * characterAdvance, (row + .5) * lineHeight);
+      // Leading spaces retain the font's exact column advance. Unchanged rows
+      // keep their text nodes and need no repeated text shaping or DOM writes.
+      const text = lines[row].trimEnd();
+      if (text !== rowText[row]) { rowElements[row].textContent = text; rowText[row] = text; }
     }
   };
   const cleanup = () => {
@@ -191,7 +185,7 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     if (done) return;
     done = true;
     cleanup(); clear();
-    canvas?.classList.remove('is-eye-fading');
+    element?.classList.remove('is-eye-fading');
     if (!disposed) phase('done');
     restingRows = [];
     finishResolve?.(); finishResolve = null;
@@ -201,21 +195,21 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     revealed = true;
     cancelAnimationFrame(raf); raf = 0;
     clear(); phase('reveal');
-    if (canvas?.dataset) canvas.dataset.transitionProgress = '1';
+    if (element?.dataset) element.dataset.transitionProgress = '1';
     // Reserve the complete CSS cross-fade interval. No eye is redrawn beneath it.
-    if (!still && context) completeTimer = setTimeout(complete, SITE_REVEAL_TIME);
+    if (!still && element) completeTimer = setTimeout(complete, SITE_REVEAL_TIME);
     try { onReveal(); } catch (error) { console.warn('Intro reveal callback failed.', error); }
-    if (still || !context) complete();
+    if (still || !element) complete();
   };
   const paint = (now, force = false) => {
-    if (!context || disposed || done) return;
+    if (!element || disposed || done) return;
     if (revealed) { clear(); return; }
     if (fadingStarted !== null) {
       const progress = clamp((now - fadingStarted) / EYE_FADE_TIME);
-      if (canvas?.dataset && (now - lastDiagnostic >= 100 || (progress === 1 && lastTransitionProgress !== 1))) {
+      if (element?.dataset && (now - lastDiagnostic >= 100 || (progress === 1 && lastTransitionProgress !== 1))) {
         lastDiagnostic = now;
         lastTransitionProgress = progress;
-        canvas.dataset.transitionProgress = progress.toFixed(3);
+        element.dataset.transitionProgress = progress.toFixed(3);
       }
       return;
     }
@@ -240,7 +234,7 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     }
     if (!force && key === previousKey) return;
     previousKey = key;
-    clear(); drawRows(lines);
+    drawRows(lines);
   };
   const frame = now => {
     raf = 0;
@@ -259,25 +253,25 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     schedule();
   };
   const schedule = () => {
-    if (context && !disposed && !done && !revealed && !document.hidden && (!still || fadingStarted !== null) && !raf) raf = requestAnimationFrame(frame);
+    if (element && !disposed && !done && !revealed && !document.hidden && (!still || fadingStarted !== null) && !raf) raf = requestAnimationFrame(frame);
   };
   const beginFade = () => {
     startTimer = 0;
     if (disposed || done || fadingStarted !== null || revealed) return;
-    if (still || !context) { reveal(); return; }
+    if (still || !element) { reveal(); return; }
     // A late resource may finish during a blink. armFinish waits for its end,
     // then the open eye rests in the exact same size and position while fading.
     restingRows = renderEyeAscii(gazeAt(elapsed, false));
-    clear(); drawRows(restingRows);
+    drawRows(restingRows);
     fadingStarted = performance.now(); phase('fading');
-    canvas.classList.add('is-eye-fading');
+    element.classList.add('is-eye-fading');
     revealTimer = setTimeout(reveal, EYE_FADE_TIME + PAPER_HOLD);
     if (!document.hidden) paint(fadingStarted, true);
     schedule();
   };
   const armFinish = () => {
     clearTimeout(startTimer);
-    if (still || !context) {
+    if (still || !element) {
       startTimer = setTimeout(beginFade, Math.max(0, 120 - (performance.now() - started)));
       return;
     }
@@ -285,27 +279,24 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     schedule();
   };
   const resize = () => {
-    if (!context || disposed || done) return;
+    if (!element || disposed || done) return;
     const rect = surface?.getBoundingClientRect();
     viewWidth = Math.max(1, rect?.width || globalThis.innerWidth || WIDTH);
     viewHeight = Math.max(1, rect?.height || globalThis.innerHeight || HEIGHT);
-    const nextRatio = Math.min(globalThis.devicePixelRatio || 1, 1.25, Math.sqrt(1800000 / (viewWidth * viewHeight)));
     const nextWidth = Math.min(WIDTH, viewWidth * .90, viewHeight * 1.45);
     const nextHeight = nextWidth * HEIGHT / WIDTH;
-    const bitmapWidth = Math.max(1, Math.round(nextWidth * nextRatio));
-    const bitmapHeight = Math.max(1, Math.round(nextHeight * nextRatio));
-    const drawingChanged = !drawingConfigured || ratio !== nextRatio || eyeWidth !== nextWidth || eyeHeight !== nextHeight
-      || canvas.width !== bitmapWidth || canvas.height !== bitmapHeight;
-    ratio = nextRatio; eyeWidth = nextWidth; eyeHeight = nextHeight;
-    canvas.style.width = `${eyeWidth}px`; canvas.style.height = `${eyeHeight}px`;
-    canvas.style.left = `${(viewWidth - eyeWidth) / 2}px`;
-    canvas.style.top = `${viewHeight * .49 - eyeHeight / 2}px`;
+    const drawingChanged = !drawingConfigured || eyeWidth !== nextWidth || eyeHeight !== nextHeight;
+    eyeWidth = nextWidth; eyeHeight = nextHeight;
+    element.style.width = `${eyeWidth}px`; element.style.height = `${eyeHeight}px`;
+    element.style.left = `${(viewWidth - eyeWidth) / 2}px`;
+    element.style.top = `${viewHeight * .49 - eyeHeight / 2}px`;
     if (!drawingChanged) return;
-    // Resizing a canvas resets its bitmap and text state, even at the same size.
-    if (canvas.width !== bitmapWidth) canvas.width = bitmapWidth;
-    if (canvas.height !== bitmapHeight) canvas.height = bitmapHeight;
-    configureText(); drawingConfigured = true;
-    if (fadingStarted !== null) { clear(); drawRows(restingRows); }
+    element.style.fontSize = `${eyeWidth / COLUMNS / .6001}px`;
+    // A zero-height line box centers its font metrics on the former Canvas
+    // `middle` baseline; each row keeps the same (row + .5) * lineHeight center.
+    rowElements.forEach((row, index) => { row.style.top = `${(index + .5) * eyeHeight / ROWS}px`; });
+    drawingConfigured = true;
+    if (fadingStarted !== null) drawRows(restingRows);
     else paint(performance.now(), true);
   };
   const visibility = () => {
@@ -324,14 +315,15 @@ export function createEyeLoader(canvas, { reducedMotion = false, onReveal = () =
     } else schedule();
     if (requested) armFinish();
   };
-  const observer = context && surface && typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
-  if (canvas) {
-    canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Шкала загрузки превращается в моргающий глаз из символов ASCII');
-    if (canvas.dataset) canvas.dataset.transitionProgress = '0';
-    canvas.classList.remove('is-eye-fading');
+  const observer = element && surface && typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
+  if (element) {
+    element.setAttribute('role', 'img');
+    element.setAttribute('aria-label', 'Шкала загрузки превращается в моргающий глаз из символов ASCII');
+    element.style.color = INK;
+    if (element.dataset) element.dataset.transitionProgress = '0';
+    element.classList.remove('is-eye-fading');
   }
-  if (context) {
+  if (element) {
     resize(); observer?.observe(surface);
     if (!observer) globalThis.addEventListener?.('resize', resize);
     document.addEventListener('visibilitychange', visibility);
