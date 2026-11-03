@@ -1,10 +1,12 @@
-import { initOS } from './os-ui.js?v=studio-64-final';
-import { createEyeLoader } from './loading-eye.js?v=studio-64-final';
-import { takeStartupLoader } from './startup-loader.js?v=studio-64-final';
-import { createTelevision } from './television.js?v=studio-64-final';
+import { initOS } from './os-ui.js?v=studio-65-final';
+import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-65-final';
+import { takeStartupLoader } from './startup-loader.js?v=studio-65-final';
+import { createTelevision } from './television.js?v=studio-65-final';
 import { createRadio } from './radio.js?v=studio-61-final';
 
 const $ = selector => document.querySelector(selector);
+const startupTimings = createStartupTimingRecorder();
+let startupCompleteMarked = false;
 const anchor = $('#screen-anchor'), root = $('#os-root');
 const loginScreen = $('#login-screen'), enterButton = $('#enter-desktop');
 const tvAnchor = $('#tv-anchor'), tvRoot = $('#tv-root');
@@ -72,11 +74,11 @@ function setRadioFromScene(patch) {
   radio.setState({ ...rest, ...level });
 }
 
-function finishBoot({ focus = true } = {}) {
+function finishBoot({ focus = true } = {}) { return startupTimings.run('startup finishBoot max', () => {
   bootDone = true; root.hidden = !entered; loginScreen.hidden = entered;
   if (focus && (mode === 'work' || mode === 'desk')) focusComputer();
-}
-function focusComputer() { if (entered) os.focus?.(); else enterButton.focus({ preventScroll: true }); }
+}); }
+function focusComputer() { return startupTimings.run('startup focus max', () => { if (entered) os.focus?.(); else enterButton.focus({ preventScroll: true }); }); }
 enterButton.addEventListener('click', () => {
   entered = true; loginScreen.hidden = true; root.hidden = false;
   engine?.setEntered(true); setMode('work'); focusComputer();
@@ -92,9 +94,10 @@ function showLoading() {
   const onReveal = () => {
       if (ticket !== loadingTicket) return;
       markReveal();
-      document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading');
-      setLoadingInteraction(false);
+      startupTimings.run('startup reveal classes', () => { document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading'); });
+      startupTimings.run('startup reveal inert', () => setLoadingInteraction(false));
       finishBoot();
+      startupTimings.flush();
   };
   if (initialLoadingSession) {
     loadingEye = initialLoadingSession.eye;
@@ -118,6 +121,16 @@ async function showReady({ immediate = false } = {}) {
   document.body.classList.remove('intro-revealing');
   if (!bootDone) finishBoot();
   else if (mode === 'work' || mode === 'desk') focusComputer();
+  startupTimings.stop();
+  if (!startupCompleteMarked) {
+    startupCompleteMarked = true;
+    // Elapsed readiness is distinct from CPU cost and from the loader's LCP.
+    // Wait for two paint opportunities after the cover and inert are removed.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try { performance.measure?.('YRLMRSH full startup elapsed', { start: 0, end: performance.now() }); }
+      catch { /* Unsupported diagnostics must never affect the interface. */ }
+    }));
+  }
 }
 function skipBoot() { finishBoot(); }
 root.addEventListener('retro-settings', event => {
@@ -221,7 +234,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (flat || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-64-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-65-final');
     if (flat) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,

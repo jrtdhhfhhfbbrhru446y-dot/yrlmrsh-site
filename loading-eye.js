@@ -18,6 +18,37 @@ const SITE_REVEAL_TIME = 760;
 const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
 const smooth = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
 const mix = (a, b, amount) => a + (b - a) * amount;
+let startupTimingAvailable = true;
+
+// Bounded, local User Timing entries expose actual calls in Lighthouse's
+// "User Timing marks and measures" audit, independently of URL attribution.
+export function createStartupTimingRecorder() {
+  let active = typeof performance.measure === 'function';
+  const maxima = new Map();
+  const emit = (name, span) => {
+    try {
+      performance.clearMeasures?.(`YRLMRSH ${name}`);
+      performance.measure(`YRLMRSH ${name}`, { start: span.start, end: span.end });
+    } catch { /* Diagnostics must never interrupt startup. */ }
+  };
+  return {
+    run(name, work) {
+      if (!active) return work();
+      const start = performance.now();
+      try { return work(); }
+      finally {
+        const end = performance.now(), previous = maxima.get(name);
+        if (!previous || end - start > previous.end - previous.start) {
+          const span = { start, end, emitted: previous?.emitted || 0 };
+          maxima.set(name, span);
+          if (span.emitted < 12) { emit(name, span); span.emitted++; }
+        }
+      }
+    },
+    flush() { if (active) for (const [name, span] of maxima) emit(name, span); },
+    stop() { this.flush(); active = false; }
+  };
+}
 
 function irisDensity(x, y, pupil) {
   const radius = Math.hypot(x, y);
@@ -139,6 +170,9 @@ function gazeAt(elapsed, still) {
 }
 
 export function createEyeLoader(element, { reducedMotion = false, onReveal = () => {} } = {}) {
+  const timings = startupTimingAvailable ? createStartupTimingRecorder() : null;
+  startupTimingAvailable = false;
+  const timed = (name, work) => timings ? timings.run(name, work) : work();
   const started = performance.now();
   const motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let still = reducedMotion || !!motionQuery?.matches;
@@ -159,12 +193,12 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
   }) : [];
   element?.replaceChildren(...rowElements);
   const phase = value => { if (element?.dataset) element.dataset.phase = value; };
-  const clear = () => {
+  const clear = () => timed('eye DOM writes max', () => {
     rowElements.forEach((row, index) => {
       if (rowText[index]) { row.textContent = ''; rowText[index] = ''; }
     });
-  };
-  const drawRows = lines => {
+  });
+  const drawRows = lines => timed('eye DOM writes max', () => {
     if (!element) return;
     for (let row = 0; row < ROWS; row++) {
       // Leading spaces retain the font's exact column advance. Unchanged rows
@@ -172,7 +206,7 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
       const text = lines[row].trimEnd();
       if (text !== rowText[row]) { rowElements[row].textContent = text; rowText[row] = text; }
     }
-  };
+  });
   const cleanup = () => {
     cancelAnimationFrame(raf); raf = 0;
     clearTimeout(startTimer); clearTimeout(revealTimer); clearTimeout(completeTimer);
@@ -188,6 +222,7 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
     element?.classList.remove('is-eye-fading');
     if (!disposed) phase('done');
     restingRows = [];
+    timings?.stop();
     finishResolve?.(); finishResolve = null;
   };
   const reveal = () => {
@@ -198,7 +233,8 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
     if (element?.dataset) element.dataset.transitionProgress = '1';
     // Reserve the complete CSS cross-fade interval. No eye is redrawn beneath it.
     if (!still && element) completeTimer = setTimeout(complete, SITE_REVEAL_TIME);
-    try { onReveal(); } catch (error) { console.warn('Intro reveal callback failed.', error); }
+    try { timed('eye onReveal callback', onReveal); } catch (error) { console.warn('Intro reveal callback failed.', error); }
+    timings?.flush();
     if (still || !element) complete();
   };
   const paint = (now, force = false) => {
@@ -230,13 +266,13 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
       const gaze = gazeAt(elapsed, still);
       key = `${Math.round(emergence * 45)}:${Math.round(closure * 35)}:${Math.round(gaze.gazeX * 600)}:${Math.round(gaze.gazeY * 600)}`;
       if (!force && key === previousKey) return;
-      lines = renderEyeAscii({ emergence, closure, ...gaze });
+      lines = timed('eye math max', () => renderEyeAscii({ emergence, closure, ...gaze }));
     }
     if (!force && key === previousKey) return;
     previousKey = key;
     drawRows(lines);
   };
-  const frame = now => {
+  const frame = now => timed('eye frame max', () => {
     raf = 0;
     if (disposed || done || revealed || document.hidden || (still && fadingStarted === null)) return;
     if (previousTick !== null) elapsed += Math.min(50, Math.max(0, now - previousTick));
@@ -251,7 +287,7 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
       if (blink < 0 || blink > BLINK_LENGTH) beginFade();
     }
     schedule();
-  };
+  });
   const schedule = () => {
     if (element && !disposed && !done && !revealed && !document.hidden && (!still || fadingStarted !== null) && !raf) raf = requestAnimationFrame(frame);
   };
@@ -261,7 +297,7 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
     if (still || !element) { reveal(); return; }
     // A late resource may finish during a blink. armFinish waits for its end,
     // then the open eye rests in the exact same size and position while fading.
-    restingRows = renderEyeAscii(gazeAt(elapsed, false));
+    restingRows = timed('eye math max', () => renderEyeAscii(gazeAt(elapsed, false)));
     drawRows(restingRows);
     fadingStarted = performance.now(); phase('fading');
     element.classList.add('is-eye-fading');
@@ -278,9 +314,9 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
     // Finish only after the visible line, opening and first blink have played.
     schedule();
   };
-  const resize = () => {
+  const resize = () => timed('eye resize max', () => {
     if (!element || disposed || done) return;
-    const rect = surface?.getBoundingClientRect();
+    const rect = timed('eye getRect max', () => surface?.getBoundingClientRect());
     viewWidth = Math.max(1, rect?.width || globalThis.innerWidth || WIDTH);
     viewHeight = Math.max(1, rect?.height || globalThis.innerHeight || HEIGHT);
     const nextWidth = Math.min(WIDTH, viewWidth * .90, viewHeight * 1.45);
@@ -298,7 +334,7 @@ export function createEyeLoader(element, { reducedMotion = false, onReveal = () 
     drawingConfigured = true;
     if (fadingStarted !== null) drawRows(restingRows);
     else paint(performance.now(), true);
-  };
+  });
   const visibility = () => {
     previousTick = null;
     if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }

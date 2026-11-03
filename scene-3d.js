@@ -7,7 +7,7 @@ export async function createScene3D(options) {
     import('./assets/vendor/OrbitControls.js'),
     import('./assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-64-final')
+    import('./radio-preparation.js?v=studio-65-final')
   ]);
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
   const { canvas, anchor, tvAnchor, tvCanvas } = options;
@@ -59,9 +59,16 @@ export async function createScene3D(options) {
     ? '"IBM Plex Mono", "Courier New", monospace'
     : '"Departure Mono", "IBM Plex Mono", monospace';
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+  const startupMeasure = (name, start) => {
+    try { performance.measure?.(`YRLMRSH scene ${name}`, { start, end: performance.now() }); }
+    catch { /* Optional local diagnostics cannot interrupt rendering. */ }
+  };
+  let firstRenderMeasured = false;
   let renderer;
+  const rendererStarted = performance.now();
   try { renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true, powerPreference: 'default' }); }
   catch (error) { discardStartup(); throw error; }
+  startupMeasure('renderer constructor', rendererStarted);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
@@ -102,6 +109,7 @@ export async function createScene3D(options) {
     controls.dampingFactor = interacting ? 1 : 1 - Math.exp(-delta / .085);
     return nativeControlsUpdate(delta);
   };
+  const environmentStarted = performance.now();
   const environmentGenerator = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
   // The library's fromScene hardcodes a 256px cube. A 128px capture is sufficient
   // for rough vintage plastic and reduces the persistent environment allocation.
@@ -112,6 +120,7 @@ export async function createScene3D(options) {
   scene.environment = environmentTarget.texture;
   scene.environmentIntensity = .65;
   room.dispose(); environmentGenerator.dispose(); environmentCube.dispose();
+  startupMeasure('PMREM generation', environmentStarted);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xc5c2b3, 2));
   const keyLight = new THREE.DirectionalLight(0xffffff, 3.1);
   keyLight.position.set(-1.2, 2, 1.7); keyLight.castShadow = true;
@@ -483,6 +492,10 @@ export async function createScene3D(options) {
     camera.updateMatrixWorld(); positionScreens();
     const renderStarted = performance.now(); renderer.render(scene, camera);
     const renderMs = performance.now() - renderStarted;
+    if (!firstRenderMeasured) {
+      firstRenderMeasured = true;
+      startupMeasure('first render', renderStarted);
+    }
     // Reveal only a frame that has actually drawn the fitted initial composition.
     // If paused/hidden, this remains pending until a real frame can run again.
     if (initialFramePending && !initialReadyFired && !tween && (!televisionWanted() || tvReady || tvFailed)) {
