@@ -362,7 +362,14 @@ export async function createScene3D(options) {
   function syncVisibility() {
     const all = mode === 'desk' || mode === 'object';
     if (laptopModel) laptopModel.visible = all || mode === 'work';
-    if (tvModel) tvModel.visible = all || mode === 'tv';
+    if (tvModel) {
+      tvModel.visible = all || mode === 'tv';
+      // The HTML player replaces the display in TV view. Its rounded mask
+      // must not reveal the rectangular screen surfaces behind the corners.
+      tvModel.traverse(part => {
+        if (part.name === 'archive_tv_display' || part.name === 'archive_tv_glass') part.visible = mode !== 'tv';
+      });
+    }
     radioObject.group.visible = all || mode === 'radio';
     syncLaptopLCD();
     renderer.shadowMap.needsUpdate = true;

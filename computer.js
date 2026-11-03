@@ -214,7 +214,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (flat || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-50-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-61-final&revision=tv-corners2');
     if (flat) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,
