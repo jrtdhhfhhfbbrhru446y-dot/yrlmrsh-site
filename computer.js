@@ -1,6 +1,6 @@
 import { initOS } from './os-ui.js?v=studio-60-final';
 import { createEyeLoader } from './loading-eye.js?v=studio-22-loader';
-import { createTelevision } from './television.js?v=studio-60-final';
+import { createTelevision } from './television.js?v=studio-60-final&revision=fullscreen-exit2';
 import { createRadio } from './radio.js?v=studio-60-final';
 
 const $ = selector => document.querySelector(selector);

@@ -78,6 +78,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   const previewImages = new Map();
   let media = null, mediaProject = null, mediaListeners = [], muted = false, volume = .8;
   let lastAudibleVolume = volume, lastMutedState = null, fullscreenVideo = null, postersRequested = false;
+  let lastFullscreenExit = -Infinity;
   const hasFilm = project => Boolean(project?.video?.available && typeof project.video.src === 'string' && project.video.src.trim());
   const currentFilm = () => hasFilm(current) && media && mediaProject === current.id;
   const duration = () => {
@@ -192,20 +193,27 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   }
   function restoreInline(video = fullscreenVideo) {
     if (!video) return;
+    lastFullscreenExit = performance.now();
     video.controls = false; video.tabIndex = -1; video.setAttribute('aria-hidden', 'true');
     if (fullscreenVideo === video) fullscreenVideo = null;
     if (media === video && !disposed) {
       muted = video.muted; volume = video.volume; updateSound(); updateTime(); revealControls(); draw();
       root.querySelector('[data-tv-action="fullscreen"]')?.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        if (media === video && !disposed && !fullscreenVideo) root.querySelector('[data-tv-action="fullscreen"]')?.focus({ preventScroll: true });
+      });
     }
   }
   function leaveFullscreen() {
     const video = fullscreenVideo;
     if (!video) return;
-    if (document.fullscreenElement === video) document.exitFullscreen?.().catch(() => {});
-    else if (document.webkitFullscreenElement === video) document.webkitExitFullscreen?.();
-    else if (video.webkitDisplayingFullscreen) video.webkitExitFullscreen?.();
-    restoreInline(video);
+    if (document.fullscreenElement === video && document.exitFullscreen) {
+      document.exitFullscreen().then(() => restoreInline(video)).catch(() => restoreInline(video));
+    } else if (document.webkitFullscreenElement === video && document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (video.webkitDisplayingFullscreen && video.webkitExitFullscreen) {
+      video.webkitExitFullscreen();
+    } else restoreInline(video);
   }
   function fullscreenChange() {
     if (fullscreenVideo && document.fullscreenElement !== fullscreenVideo && document.webkitFullscreenElement !== fullscreenVideo && !fullscreenVideo.webkitDisplayingFullscreen) restoreInline();
@@ -589,7 +597,11 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   function keyboard(event) {
     pointerIntent = null;
     if (event.key === 'Escape') {
-      if (fullscreenVideo) { leaveFullscreen(); return; }
+      // Native fullscreen may exit before its Escape reaches the page. Consume
+      // that same key rather than also closing the player and losing position.
+      if (fullscreenVideo || performance.now() - lastFullscreenExit < 200) {
+        event.preventDefault(); if (fullscreenVideo) leaveFullscreen(); return;
+      }
       event.preventDefault(); if (view === 'player') library(); else onBack?.(); return;
     }
     if (view === 'library' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
