@@ -174,10 +174,11 @@ function setMode(next) {
   engine?.setMode(mode);
   if (mode !== 'tv') updateStatus();
   if (!flat && mode === 'tv' && !engine?.tvReady && !tvFailed) updateStatus('Подключаем телевизор…');
-  if (changed && flat) {
+  if (changed) {
     if (mode === 'work') focusComputer();
     else if (mode === 'tv') television.focus();
-    else radio.focus();
+    else if (mode === 'radio') radio.focus();
+    else if (mode === 'object') canvas.focus({ preventScroll: true });
   }
 }
 function setFlat(value, { persist = true } = {}) {
