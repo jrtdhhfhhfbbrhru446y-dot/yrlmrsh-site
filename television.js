@@ -1,4 +1,4 @@
-import { projects } from './portfolio-data.js?v=studio-43-final';
+import { projects } from './portfolio-data.js?v=studio-60-final';
 import { tvServiceLogo, drawTVServiceLogo } from './screen-brand.js?v=studio-11';
 import { bindRangeDrag } from './range-drag.js?v=studio-59-final';
 
@@ -70,13 +70,14 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   let preview = programs[0], seconds = 0, last = 0, raf = 0, disposed = false;
   let lastTimeLabel = '', lastPlayingState = null, pointerTimer = 0;
   let hoverTimer = 0, hoverGuardUntil = 0, swipe = null, pointerIntent = null, suppressClickUntil = 0, seeking = false;
-  let seekDrag = null;
+  let seekDrag = null, volumeDrag = null;
   let crtEnabled = !document.body.classList.contains('crt-off');
   let mobilePresentation = document.body.classList.contains('mobile-mode');
   const posters = new Map();
   const posterImages = new Map();
   const previewImages = new Map();
-  let media = null, mediaProject = null, mediaListeners = [], muted = false;
+  let media = null, mediaProject = null, mediaListeners = [], muted = false, volume = .8;
+  let lastAudibleVolume = volume, lastMutedState = null, fullscreenVideo = null, postersRequested = false;
   const hasFilm = project => Boolean(project?.video?.available && typeof project.video.src === 'string' && project.video.src.trim());
   const currentFilm = () => hasFilm(current) && media && mediaProject === current.id;
   const duration = () => {
@@ -91,6 +92,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   }
   function releaseMedia() {
     if (!media) return;
+    if (fullscreenVideo === media) leaveFullscreen();
     for (const [event, listener] of mediaListeners) media.removeEventListener(event, listener);
     mediaListeners = [];
     media.pause(); media.removeAttribute('src'); media.load(); media.remove();
@@ -104,7 +106,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     video.className = 'tv-media-source'; video.preload = 'metadata';
     video.playsInline = true; video.setAttribute('playsinline', '');
     video.setAttribute('aria-hidden', 'true'); video.tabIndex = -1;
-    video.muted = muted; video.volume = .8;
+    video.muted = muted; video.volume = volume;
     if (project.video.poster) video.poster = project.video.poster;
     const listen = (event, listener) => { video.addEventListener(event, listener); mediaListeners.push([event, listener]); };
     const sync = () => {
@@ -116,6 +118,14 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     listen('loadedmetadata', () => { message(); sync(); draw(); });
     listen('loadeddata', () => { message(); sync(); draw(); });
     listen('timeupdate', sync); listen('seeked', () => { sync(); draw(); });
+    listen('volumechange', () => {
+      if (media !== video) return;
+      muted = video.muted; volume = video.volume;
+      if (volume > 0) lastAudibleVolume = volume;
+      updateSound();
+    });
+    listen('webkitbeginfullscreen', () => { fullscreenVideo = video; });
+    listen('webkitendfullscreen', () => restoreInline(video));
     listen('play', () => {
       if (!active || document.hidden || view !== 'player') { video.pause(); return; }
       playing = true; message(); updateTime(); schedule();
@@ -149,6 +159,72 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       try { media.currentTime = seconds; } catch { /* Metadata may still be loading. */ }
     }
     draw(); updateTime(); revealControls();
+  }
+  function updateSound() {
+    const silent = currentFilm() ? media.muted || media.volume === 0 : muted || volume === 0;
+    const button = root.querySelector('[data-tv-action="mute"]');
+    if (button && lastMutedState !== silent) {
+      const label = silent ? 'Включить звук' : 'Выключить звук';
+      button.setAttribute('aria-label', label); button.title = label;
+      button.setAttribute('aria-pressed', String(silent));
+      button.innerHTML = silent ? mutedIcon : soundIcon;
+      lastMutedState = silent;
+    }
+    const range = root.querySelector('[data-tv-volume]');
+    if (range && !volumeDrag?.dragging) range.value = String(Math.round((currentFilm() ? media.volume : volume) * 100));
+    range?.setAttribute('aria-valuetext', `${Math.round((currentFilm() ? media.volume : volume) * 100)}%`);
+  }
+  function setVolume(value) {
+    if (!currentFilm()) return;
+    media.volume = Math.max(0, Math.min(1, Number(value) / 100 || 0));
+    volume = media.volume;
+    if (volume > 0) { lastAudibleVolume = volume; media.muted = false; }
+    muted = media.muted;
+    updateSound(); revealControls();
+  }
+  function toggleMute() {
+    if (!currentFilm()) return;
+    const silent = media.muted || media.volume === 0;
+    media.muted = !silent;
+    if (silent && media.volume === 0) media.volume = lastAudibleVolume || .8;
+    muted = media.muted; volume = media.volume;
+    updateSound(); revealControls();
+  }
+  function restoreInline(video = fullscreenVideo) {
+    if (!video) return;
+    video.controls = false; video.tabIndex = -1; video.setAttribute('aria-hidden', 'true');
+    if (fullscreenVideo === video) fullscreenVideo = null;
+    if (media === video && !disposed) {
+      muted = video.muted; volume = video.volume; updateSound(); updateTime(); revealControls(); draw();
+      root.querySelector('[data-tv-action="fullscreen"]')?.focus({ preventScroll: true });
+    }
+  }
+  function leaveFullscreen() {
+    const video = fullscreenVideo;
+    if (!video) return;
+    if (document.fullscreenElement === video) document.exitFullscreen?.().catch(() => {});
+    else if (document.webkitFullscreenElement === video) document.webkitExitFullscreen?.();
+    else if (video.webkitDisplayingFullscreen) video.webkitExitFullscreen?.();
+    restoreInline(video);
+  }
+  function fullscreenChange() {
+    if (fullscreenVideo && document.fullscreenElement !== fullscreenVideo && document.webkitFullscreenElement !== fullscreenVideo && !fullscreenVideo.webkitDisplayingFullscreen) restoreInline();
+  }
+  function showFullscreen() {
+    if (!currentFilm()) return;
+    const video = media;
+    video.controls = true; video.tabIndex = 0; video.removeAttribute('aria-hidden');
+    fullscreenVideo = video;
+    const failed = () => {
+      restoreInline(video);
+      if (media === video && !disposed) message('Полный экран недоступен в этом браузере. Можно продолжить просмотр здесь.');
+    };
+    try {
+      if (video.requestFullscreen) video.requestFullscreen().catch(failed);
+      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+      else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+      else failed();
+    } catch { failed(); }
   }
 
   function paintText(ctx, str, x, y, size = 32, { color = WHITE, family = 'Arial', weight = 400, italic = false } = {}) {
@@ -311,7 +387,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     if (!ctx || disposed) return;
     // The browser displays the native film on phones. Avoid decoding and
     // painting every video frame a second time into an invisible CRT texture.
-    if (mobilePresentation && view === 'player' && currentFilm()) return;
+    if ((mobilePresentation || fullscreenVideo === media) && view === 'player' && currentFilm()) return;
     ctx.fillStyle = BLACK; ctx.fillRect(0, 0, 960, 720);
     ctx.save();
     const t = reduced.matches || document.body.classList.contains('motion-off') ? 0 : seconds;
@@ -338,12 +414,7 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       lastPlayingState = playing;
     }
     root.querySelector('.tv-system')?.classList.toggle('is-playing', playing);
-    const mute = root.querySelector('[data-tv-action="mute"]');
-    if (mute) {
-      mute.setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
-      mute.setAttribute('aria-pressed', String(muted));
-      mute.innerHTML = muted ? mutedIcon : soundIcon;
-    }
+    updateSound();
   }
   function frame(now) {
     raf = 0;
@@ -405,14 +476,15 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   function render() {
     if (disposed) return;
     seekDrag?.dispose(); seekDrag = null;
-    lastTimeLabel = ''; lastPlayingState = null;
+    volumeDrag?.dispose(); volumeDrag = null;
+    lastTimeLabel = ''; lastPlayingState = null; lastMutedState = null;
     if (view === 'library') {
-      root.innerHTML = `<section class="tv-system tv-library-screen" aria-label="Видеотека"><div class="tv-picture tv-library-picture" data-tv-picture></div><h1 class="tv-library-heading">${tvServiceLogo()}</h1><div class="tv-carousel" role="group" aria-roledescription="карусель" aria-label="Видеотека">${programs.map(p => `<button class="tv-flow-card" data-tv-card="${p.id}" data-tv-aspect="${previewAspectRatio(p)}" type="button"><span class="tv-flow-media" data-tv-poster="${p.id}"></span><span class="tv-flow-play" aria-hidden="true">${playIcon}</span></button>`).join('')}</div><div class="tv-flow-caption"><button data-tv-action="previous" class="tv-icon-button" aria-label="Предыдущее видео">${previousIcon}</button><p data-tv-title aria-live="polite">${esc(preview.title)}</p><button data-tv-action="next" class="tv-icon-button" aria-label="Следующее видео">${nextIcon}</button></div><footer class="tv-bottom"><button data-tv-action="back" class="tv-back">← К компьютеру</button><button data-tv-action="expand" class="tv-icon-button" aria-label="Развернуть экран телевизора">${expandIcon}</button></footer></section>`;
+      root.innerHTML = `<section class="tv-system tv-library-screen" aria-label="Видеотека"><div class="tv-picture tv-library-picture" data-tv-picture></div><h1 class="tv-library-heading">${tvServiceLogo()}</h1><div class="tv-carousel" role="group" aria-roledescription="карусель" aria-label="Видеотека">${programs.map(p => `<button class="tv-flow-card" data-tv-card="${p.id}" data-tv-aspect="${previewAspectRatio(p)}" type="button"><span class="tv-flow-media" data-tv-poster="${p.id}"></span><span class="tv-flow-play" aria-hidden="true">${playIcon}</span></button>`).join('')}</div><div class="tv-flow-caption"><button data-tv-action="previous" class="tv-icon-button" aria-label="Предыдущее видео">${previousIcon}</button><p data-tv-title aria-live="polite">${esc(preview.title)}</p><button data-tv-action="next" class="tv-icon-button" aria-label="Следующее видео">${nextIcon}</button></div><footer class="tv-bottom"><button data-tv-action="back" class="tv-back">← К компьютеру</button><button data-tv-action="expand" class="tv-back tv-flat-button" aria-label="Смотреть телевизор без 3D">Без 3D</button></footer></section>`;
       for (const project of programs) root.querySelector(`[data-tv-poster="${project.id}"]`)?.append(posters.get(project.id));
       updateSelection();
     } else {
       const film = hasFilm(current);
-      root.innerHTML = `<section class="tv-system tv-player-screen is-controls-visible${playing ? ' is-playing' : ''}${film ? ' tv-film-screen' : ''}" aria-label="${esc(current.title)} — ${film ? 'видео' : 'экранный этюд'}" tabindex="-1"><div class="tv-picture" data-tv-picture></div><header class="tv-player-heading"><button data-tv-action="library" class="tv-back">← Видеотека</button><span>${esc(current.title)}</span><button data-tv-action="expand" class="tv-icon-button" aria-label="Развернуть экран телевизора">${expandIcon}</button></header><p class="tv-player-message" data-tv-message role="status"></p><div class="tv-player-controls"><button data-tv-action="toggle" class="tv-icon-button tv-toggle" aria-label="${playing ? 'Пауза' : 'Воспроизвести'}">${playing ? pauseIcon : playIcon}</button>${film ? `<button data-tv-action="restart" class="tv-icon-button tv-restart" aria-label="Сначала">${restartIcon}</button>` : ''}<input data-tv-seek type="range" min="0" max="${duration()}" step=".1" value="${seconds}" aria-label="${film ? 'Позиция видео' : 'Позиция заставки'}"><span data-tv-time>${clock(seconds)} / ${clock(duration())}</span>${film ? `<button data-tv-action="mute" class="tv-icon-button tv-mute" aria-label="${muted ? 'Включить звук' : 'Выключить звук'}" aria-pressed="${muted}">${muted ? mutedIcon : soundIcon}</button>` : ''}</div></section>`;
+      root.innerHTML = `<section class="tv-system tv-player-screen is-controls-visible${playing ? ' is-playing' : ''}${film ? ' tv-film-screen' : ''}" aria-label="${esc(current.title)} — ${film ? 'видео' : 'экранный этюд'}" tabindex="-1"><div class="tv-picture" data-tv-picture></div><header class="tv-player-heading"><button data-tv-action="library" class="tv-back">← Видеотека</button><span>${esc(current.title)}</span><button data-tv-action="expand" class="tv-back tv-flat-button" aria-label="Смотреть телевизор без 3D">Без 3D</button></header><p class="tv-player-message" data-tv-message role="status"></p><div class="tv-player-controls"><div class="tv-player-timeline"><input data-tv-seek type="range" min="0" max="${duration()}" step=".1" value="${seconds}" aria-label="${film ? 'Позиция видео' : 'Позиция заставки'}"><span data-tv-time>${clock(seconds)} / ${clock(duration())}</span></div><div class="tv-player-actions"><button data-tv-action="toggle" class="tv-icon-button tv-toggle" aria-label="${playing ? 'Пауза' : 'Воспроизвести'}" title="Воспроизведение / пауза">${playing ? pauseIcon : playIcon}</button>${film ? `<button data-tv-action="restart" class="tv-icon-button tv-restart" aria-label="Сначала" title="Сначала">${restartIcon}</button><div class="tv-player-audio"><button data-tv-action="mute" class="tv-icon-button tv-mute" aria-label="${muted ? 'Включить звук' : 'Выключить звук'}" aria-pressed="${muted}">${muted ? mutedIcon : soundIcon}</button><input class="tv-volume-range" data-tv-volume type="range" min="0" max="100" step="1" value="${Math.round(volume * 100)}" aria-label="Громкость видео"></div><button data-tv-action="fullscreen" class="tv-icon-button tv-fullscreen" aria-label="Видео на весь экран" title="Видео на весь экран">${expandIcon}</button>` : ''}</div></div></section>`;
     }
     const picture = root.querySelector('[data-tv-picture]');
     picture.append(canvas);
@@ -426,11 +498,16 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       onInput: seekTo,
       onEnd: () => { seeking = false; updateTime(); }
     });
+    const volumeRange = root.querySelector('[data-tv-volume]');
+    if (volumeRange) volumeDrag = bindRangeDrag(volumeRange, {
+      thumbSize: 12, onInput: setVolume, onEnd: updateSound
+    });
     draw();
     canvas.setAttribute('aria-label', view === 'player' && hasFilm(current) ? `Видео ${current.title}` : 'Экранный этюд выбранного проекта');
     syncNoise(); updateTime(); revealControls();
   }
   function open(id) {
+    requestPosters();
     stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false;
     current = id ? getProgram(id) : null;
     if (current) preview = current;
@@ -468,12 +545,14 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     if (action === 'library') library();
     if (action === 'toggle') togglePlaying();
     if (action === 'restart' && currentFilm()) { seekTo(0); playMedia(); }
-    if (action === 'mute' && currentFilm()) { muted = !muted; media.muted = muted; updateTime(); revealControls(); }
+    if (action === 'mute') toggleMute();
+    if (action === 'fullscreen') showFullscreen();
     if (action === 'previous') selectRelative(-1);
     if (action === 'next') selectRelative(1);
   }
   function input(event) {
     if (event.target.matches('[data-tv-seek]')) seekTo(event.target.value);
+    if (event.target.matches('[data-tv-volume]')) setVolume(event.target.value);
   }
   function previewProgram(event) {
     const button = event.target.closest('[data-tv-card]');
@@ -506,10 +585,11 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       selectRelative(x < 0 ? 1 : -1);
     }
   }
-  function pointerCancel() { swipe = null; pointerIntent = null; seekDrag?.cancel(); }
+  function pointerCancel() { swipe = null; pointerIntent = null; seekDrag?.cancel(); volumeDrag?.cancel(); }
   function keyboard(event) {
     pointerIntent = null;
     if (event.key === 'Escape') {
+      if (fullscreenVideo) { leaveFullscreen(); return; }
       event.preventDefault(); if (view === 'player') library(); else onBack?.(); return;
     }
     if (view === 'library' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
@@ -532,12 +612,14 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
       }, 2200);
     }
   }
-  function visibility() { syncNoise(); if (document.hidden) { seekDrag?.cancel(); media?.pause(); stop(); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; } else schedule(); }
+  function visibility() { syncNoise(); if (document.hidden) { seekDrag?.cancel(); volumeDrag?.cancel(); media?.pause(); stop(); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; } else schedule(); }
   const appearance = new MutationObserver(() => {
     const enabled = !document.body.classList.contains('crt-off');
     const nextMobile = document.body.classList.contains('mobile-mode');
     if ((enabled !== crtEnabled || nextMobile !== mobilePresentation) && !disposed) {
-      crtEnabled = enabled; mobilePresentation = nextMobile; draw();
+      crtEnabled = enabled; mobilePresentation = nextMobile;
+      if (!mobilePresentation) requestPosters();
+      draw();
     }
   });
   appearance.observe(document.body, { attributes: true, attributeFilter: ['class'] });
@@ -547,6 +629,8 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
   root.addEventListener('pointerup', pointerUp); root.addEventListener('pointercancel', pointerCancel);
   root.addEventListener('pointermove', revealControls); root.addEventListener('focusin', revealControls);
   document.addEventListener('visibilitychange', visibility);
+  document.addEventListener('fullscreenchange', fullscreenChange);
+  document.addEventListener('webkitfullscreenchange', fullscreenChange);
   for (const project of programs) {
     const previewPoster = TV_PROGRAMS.find(program => program.projectId === project.id)?.previewPoster;
     const poster = document.createElement('canvas'), ratio = previewAspectRatio(project);
@@ -554,31 +638,42 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     poster.setAttribute('aria-hidden', 'true');
     drawPoster(project, 3, poster.getContext('2d', { alpha: false }), poster.width, poster.height);
     posters.set(project.id, poster);
-    const redrawPoster = () => {
-      if (disposed) return;
-      drawPoster(project, 0, poster.getContext('2d', { alpha: false }), poster.width, poster.height);
-      draw();
-    };
-    if (hasFilm(project) && project.video.poster) {
-      const image = new Image(); image.decoding = 'async';
-      posterImages.set(project.id, image);
-      image.onload = redrawPoster;
-      image.src = project.video.poster;
-    }
-    if (previewPoster) {
-      const image = new Image(); image.decoding = 'async';
-      previewImages.set(project.id, image);
-      image.onload = image.onerror = redrawPoster;
-      image.src = previewPoster;
+  }
+  function requestPosters() {
+    if (postersRequested || disposed) return;
+    postersRequested = true;
+    for (const project of programs) {
+      const poster = posters.get(project.id);
+      const previewPoster = TV_PROGRAMS.find(program => program.projectId === project.id)?.previewPoster;
+      const redrawPoster = () => {
+        if (disposed) return;
+        drawPoster(project, 0, poster.getContext('2d', { alpha: false }), poster.width, poster.height);
+        draw();
+      };
+      if (hasFilm(project) && project.video.poster) {
+        const image = new Image(); image.decoding = 'async';
+        posterImages.set(project.id, image);
+        image.onload = image.onerror = redrawPoster;
+        image.src = project.video.poster;
+      }
+      if (previewPoster) {
+        const image = new Image(); image.decoding = 'async';
+        previewImages.set(project.id, image);
+        image.onload = image.onerror = redrawPoster;
+        image.src = previewPoster;
+      }
     }
   }
+  // The physical desktop television uses its covers before the panel opens.
+  // Phones start without a 3D scene, so covers wait for the first TV visit.
+  if (!mobilePresentation) requestPosters();
   render();
   return {
     canvas, open,
     setActive(value) {
       const changed = active !== value; active = value;
-      if (!active) { seekDrag?.cancel(); playing = false; media?.pause(); stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; updateTime(); }
-      else schedule();
+      if (!active) { seekDrag?.cancel(); volumeDrag?.cancel(); playing = false; media?.pause(); stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; updateTime(); }
+      else { requestPosters(); schedule(); }
       syncNoise(); if (changed) draw();
     },
     focus() {
@@ -587,12 +682,15 @@ export function createTelevision(root, { onBack, onExpand, onFrame = () => {} } 
     },
     dispose() {
       seekDrag?.dispose(); seekDrag = null;
+      volumeDrag?.dispose(); volumeDrag = null;
       disposed = true; stop(); releaseMedia(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); appearance.disconnect();
       for (const image of posterImages.values()) image.onload = image.onerror = null;
       posterImages.clear();
       for (const image of previewImages.values()) image.onload = image.onerror = null;
       previewImages.clear();
       document.removeEventListener('visibilitychange', visibility);
+      document.removeEventListener('fullscreenchange', fullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', fullscreenChange);
       root.removeEventListener('click', click); root.removeEventListener('input', input); root.removeEventListener('keydown', keyboard);
       root.removeEventListener('pointerover', previewProgram); root.removeEventListener('focusin', previewProgram);
       root.removeEventListener('pointerout', cancelHover); root.removeEventListener('pointerdown', pointerDown);

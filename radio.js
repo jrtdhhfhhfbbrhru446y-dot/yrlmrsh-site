@@ -57,7 +57,7 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
       <a class="radio-library" href="https://yrlmrshaudio.pages.dev/" target="_blank" rel="noopener noreferrer"><span>Полная библиотека шумов</span><span aria-hidden="true">↗</span></a>
     </div>
     <footer class="radio-footer"><button type="button" data-radio-action="back">← К компьютеру</button><span class="radio-footer-grille" aria-hidden="true"></span></footer>
-    <audio class="radio-recording" data-radio-recording preload="metadata" src="./assets/audio/radio-recording.mp3?v=studio-39-final" hidden></audio>
+    <audio class="radio-recording" data-radio-recording preload="none" hidden></audio>
   </section>`;
 
   const recording = root.querySelector('[data-radio-recording]');
@@ -310,6 +310,9 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
     const startedAt = ++recordingEpoch;
     state.recording = true; recordingStatus = 'starting'; recordingError = '';
     recording.volume = state.volume;
+    // Assign the source only when the recording is requested. Noise, opening
+    // the panel and switching sections must not download or recreate it.
+    if (!recording.getAttribute('src')) recording.setAttribute('src', './assets/audio/radio-recording.mp3?v=studio-39-final');
     if (recording.error) recording.load();
     if (Number.isFinite(recording.duration) && recording.currentTime >= recording.duration - .05) recording.currentTime = 0;
     notify();

@@ -1,7 +1,7 @@
-import { initOS } from './os-ui.js?v=studio-59-final';
+import { initOS } from './os-ui.js?v=studio-60-final';
 import { createEyeLoader } from './loading-eye.js?v=studio-22-loader';
-import { createTelevision } from './television.js?v=studio-59-final';
-import { createRadio } from './radio.js?v=studio-59-final';
+import { createTelevision } from './television.js?v=studio-60-final';
+import { createRadio } from './radio.js?v=studio-60-final';
 
 const $ = selector => document.querySelector(selector);
 const anchor = $('#screen-anchor'), root = $('#os-root');
@@ -28,6 +28,19 @@ document.body.classList.toggle('mobile-mode', mobile);
 let engine = null, scenePromise = null, sceneFailed = false, tvFailed = false;
 let bootDone = false, entered = false, motionDisabled = reduced.matches;
 let loadingEye = null, loadingTicket = 0;
+const introKey = 'yrlmrsh:intro-seen:1';
+let introSeen = false, introSkipped = false;
+try { introSeen = localStorage.getItem(introKey) === 'yes'; } catch { /* The intro also works without storage. */ }
+const loadingCover = $('#loading-cover'), skipIntroButton = $('#skip-intro');
+
+function rememberIntro() {
+  introSeen = true;
+  try { localStorage.setItem(introKey, 'yes'); } catch { /* Private browsing may disable storage. */ }
+}
+function markReveal() {
+  if (!loadingCover.dataset.revealMs) loadingCover.dataset.revealMs = performance.now().toFixed(1);
+  rememberIntro();
+}
 
 const os = initOS(root, {
   onRestart: () => { entered = false; engine?.setEntered(false); os.open('home', { focus: false }); setMode('work'); bootDone = false; root.hidden = true; loginScreen.hidden = false; showLoading(); void showReady(); },
@@ -73,13 +86,19 @@ enterButton.addEventListener('click', () => {
 });
 function showLoading() {
   ++loadingTicket; loadingEye?.dispose();
+  loadingEye = null; introSkipped = introSeen;
+  loadingCover.dataset.visit = introSeen ? 'repeat' : 'first';
+  delete loadingCover.dataset.revealMs; delete loadingCover.dataset.loadedMs;
+  skipIntroButton.disabled = false; skipIntroButton.textContent = 'Пропустить заставку';
   document.body.classList.remove('intro-revealing');
   $('#loading-cover').classList.remove('is-loaded'); document.body.classList.add('is-loading');
   const ticket = loadingTicket;
+  if (introSeen) return;
   loadingEye = createEyeLoader($('#loading-eye'), {
     reducedMotion: reduced.matches || motionDisabled,
     onReveal: () => {
       if (ticket !== loadingTicket) return;
+      markReveal();
       document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading');
       finishBoot();
     }
@@ -87,18 +106,27 @@ function showLoading() {
 }
 async function showReady({ immediate = false } = {}) {
   anchor.classList.add('is-ready');
+  loadingCover.dataset.readyMs = performance.now().toFixed(1);
   const eye = loadingEye, ticket = loadingTicket;
-  if (eye && !immediate) await eye.finish();
+  if (eye && !immediate && !introSkipped) await eye.finish();
   if (ticket !== loadingTicket || eye !== loadingEye) return;
   eye?.dispose(); loadingEye = null;
+  markReveal(); loadingCover.dataset.loadedMs = performance.now().toFixed(1);
   $('#loading-cover').classList.add('is-loaded'); document.body.classList.remove('is-loading');
   document.body.classList.remove('intro-revealing');
   if (!bootDone) finishBoot();
   else if (mode === 'work' || mode === 'desk') focusComputer();
 }
 function skipBoot() { finishBoot(); }
+function skipIntro() {
+  if (loadingCover.classList.contains('is-loaded')) return;
+  introSkipped = true;
+  if (flat || engine?.ready) void showReady({ immediate: true });
+  else { skipIntroButton.textContent = 'Открываем студию…'; skipIntroButton.disabled = true; }
+}
+skipIntroButton.addEventListener('click', skipIntro);
 addEventListener('keydown', event => {
-  if (loadingEye && engine?.ready && event.key === 'Enter' && !document.body.classList.contains('intro-revealing')) { event.preventDefault(); void showReady({ immediate: true }); }
+  if (!loadingCover.classList.contains('is-loaded') && (event.key === 'Enter' || event.key === 'Escape') && !document.body.classList.contains('intro-revealing')) { event.preventDefault(); skipIntro(); }
 });
 root.addEventListener('retro-settings', event => {
   motionDisabled = Boolean(event.detail.reducedMotion);
@@ -132,7 +160,7 @@ function syncModes() {
   modeButton.setAttribute('aria-pressed', String(flat));
   modeButton.setAttribute('aria-label', flat ? 'Включить 3D' : 'Пользоваться без 3D');
   modeButton.title = flat ? 'Вернуться к 3D-сцене' : 'Обычный сайт без 3D';
-  $('#display-mode-label').textContent = flat ? '3D' : 'Без 3D';
+  $('#display-mode-label').textContent = flat ? 'Включить 3D' : 'Без 3D';
   $('#orbit-hint').hidden = flat || mode !== 'object';
   $('#orbit-hint').textContent = innerWidth < 680 ? 'Потяни, чтобы повернуть. Двумя пальцами — масштаб.' : 'Потяни, чтобы повернуть. Колесо — масштаб. Нажми на устройство, чтобы открыть.';
   television.setActive(mode === 'tv'); radio.setActive(mode === 'radio');
@@ -252,8 +280,30 @@ function updateViewportMode() {
     if (!flat) engine?.resize();
   }
 }
+let viewportBaselineWidth = innerWidth, viewportBaselineHeight = innerHeight;
+function updateVisualViewport() {
+  if (!mobile) { document.body.style.removeProperty('--app-height'); document.body.classList.remove('keyboard-open'); return; }
+  const visual = window.visualViewport;
+  document.body.style.setProperty('--app-height', `${Math.round(visual?.height || innerHeight)}px`);
+  const editingElement = document.activeElement;
+  const editing = editingElement?.matches('input:not([type="range"]), textarea, [contenteditable="true"]');
+  // Some mobile browsers resize both viewports for the keyboard. Retain the
+  // unobstructed height instead of relying only on their current difference.
+  if (Math.abs(innerWidth - viewportBaselineWidth) > 120) {
+    viewportBaselineWidth = innerWidth; viewportBaselineHeight = innerHeight;
+  } else if (!editing) viewportBaselineHeight = Math.max(viewportBaselineHeight, innerHeight);
+  const keyboardOpen = Boolean(editing && visual && Math.max(innerHeight, viewportBaselineHeight) - visual.height > 120);
+  document.body.classList.toggle('keyboard-open', keyboardOpen);
+  if (keyboardOpen) requestAnimationFrame(() => {
+    if (document.activeElement === editingElement) editingElement.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+  });
+}
 mobileViewport.addEventListener('change', updateViewportMode);
-addEventListener('resize', updateViewportMode);
+addEventListener('resize', () => { updateViewportMode(); updateVisualViewport(); });
+window.visualViewport?.addEventListener('resize', updateVisualViewport);
+document.addEventListener('focusin', updateVisualViewport);
+document.addEventListener('focusout', updateVisualViewport);
+updateVisualViewport();
 syncModes();
 if (flat) { showLoading(); void showReady(); }
 else { showLoading(); void ensureScene(); }
