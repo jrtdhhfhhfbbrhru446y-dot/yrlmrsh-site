@@ -1,4 +1,4 @@
-import { projects } from './portfolio-data.js?v=studio-70-final';
+import { projects } from './portfolio-data.js?v=studio-71-final';
 import { tvServiceLogo, drawTVServiceLogo } from './screen-brand.js?v=studio-11';
 import { bindRangeDrag } from './range-drag.js?v=studio-59-final';
 
@@ -112,6 +112,57 @@ export function createPosterRequests({ createImage = () => new Image(), onlineTa
   };
 }
 
+// Real films follow decoded/presented video frames, not a 24 Hz wall-clock cap.
+// A one-shot native callback also stays idle while the decoder is buffering.
+export function createFilmFrameLoop(video, { canRun, onFrame, canFallback = () => true }) {
+  let running = false, disposed = false, generation = 0, handle = null, lastKey = null;
+  let native = typeof video.requestVideoFrameCallback === 'function' && typeof video.cancelVideoFrameCallback === 'function';
+  const runnable = () => !disposed && canRun() && !video.paused && !video.ended;
+  function frameKey(metadata) {
+    if (Number.isFinite(metadata?.presentedFrames)) return `presented:${metadata.presentedFrames}`;
+    if (Number.isFinite(metadata?.mediaTime)) return `media:${metadata.mediaTime}`;
+    try {
+      const frames = video.getVideoPlaybackQuality?.().totalVideoFrames;
+      if (Number.isFinite(frames)) return `decoded:${frames}`;
+    } catch { /* Older implementations may expose an unusable quality API. */ }
+    if (Number.isFinite(video.webkitDecodedFrameCount)) return `decoded:${video.webkitDecodedFrameCount}`;
+    return `time:${video.currentTime}`;
+  }
+  function enqueue() {
+    if (!running || !runnable()) { running = false; return; }
+    const ticket = generation;
+    const frame = (now, metadata) => {
+      if (ticket !== generation || !running || disposed) return;
+      handle = null;
+      if (!runnable()) { running = false; return; }
+      if (video.readyState >= 2 && !video.seeking) {
+        const key = frameKey(metadata);
+        if (key !== lastKey) { lastKey = key; onFrame(now, metadata); }
+      }
+      enqueue();
+    };
+    if (native) {
+      try { handle = video.requestVideoFrameCallback(frame); return; }
+      catch { native = false; }
+    }
+    if (!canFallback()) { running = false; return; }
+    handle = requestAnimationFrame(frame);
+  }
+  function stop() {
+    running = false; generation++; lastKey = null;
+    if (handle !== null) {
+      if (native) video.cancelVideoFrameCallback(handle);
+      else cancelAnimationFrame(handle);
+    }
+    handle = null;
+  }
+  return {
+    start() { if (running || !runnable()) return; running = true; enqueue(); },
+    stop,
+    dispose() { if (disposed) return; stop(); disposed = true; }
+  };
+}
+
 // Real project films and local screen studies share the same CRT canvas.
 // One canvas feeds the physical television texture and its HTML controls.
 export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
@@ -144,7 +195,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   const posterImages = new Map();
   const previewImages = new Map();
   const posterRequests = createPosterRequests({ canRetryOnOnline: () => !mobilePresentation || active });
-  let media = null, mediaProject = null, mediaListeners = [], muted = false, volume = .8;
+  let media = null, mediaProject = null, mediaListeners = [], filmFrames = null, muted = false, volume = .8;
   let lastAudibleVolume = volume, lastMutedState = null, postersRequested = false;
   let mediaLoading = false, mediaFailed = false, loadingReason = 'loading', lastBufferKey = '';
   const hasFilm = project => Boolean(project?.video?.available && typeof project.video.src === 'string' && project.video.src.trim());
@@ -192,6 +243,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     return currentFilm() && videoBufferedSegments(media.buffered, duration()).some(range => time >= range.start && time <= range.end);
   }
   function releaseMedia() {
+    filmFrames?.dispose(); filmFrames = null;
     if (!media) return;
     for (const [event, listener] of mediaListeners) media.removeEventListener(event, listener);
     mediaListeners = [];
@@ -205,6 +257,15 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     if (!hasFilm(project)) return;
     const video = document.createElement('video');
     media = video; mediaProject = project.id;
+    filmFrames = createFilmFrameLoop(video, {
+      canRun: () => active && playing && !document.hidden && !disposed && view === 'player' && media === video,
+      canFallback: () => !mobilePresentation,
+      onFrame: (now, metadata) => {
+        seconds = Number.isFinite(metadata?.mediaTime) ? metadata.mediaTime : Number.isFinite(video.currentTime) ? video.currentTime : 0;
+        if (!mobilePresentation) draw();
+        updateTime();
+      }
+    });
     // Selection is the first request for the film. Preload its first frame and
     // buffer here, while the unopened TV still makes no movie requests.
     video.className = 'tv-media-source'; video.preload = 'auto';
@@ -216,20 +277,20 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
       const guarded = (...args) => { if (!disposed && media === video) listener(...args); };
       video.addEventListener(event, guarded); mediaListeners.push([event, guarded]);
     };
-    const sync = () => {
+    const sync = ({ forceDraw = false } = {}) => {
       if (disposed || media !== video || mediaProject !== current?.id) return;
       if (mediaLoading && !video.seeking && video.readyState >= 3) setLoading(false);
       seconds = Number.isFinite(video.currentTime) ? video.currentTime : 0;
       updateTime(); updateBuffered();
-      if (!playing || seeking) draw();
+      if (forceDraw || !playing || seeking) draw();
     };
     listen('loadstart', () => { mediaFailed = false; message(); setLoading(video.readyState < 2); });
-    listen('loadedmetadata', () => { message(); sync(); draw(); });
-    listen('loadeddata', () => { if (!video.seeking) setLoading(video.readyState < (video.paused ? 2 : 3)); message(); sync(); draw(); });
-    listen('canplay', () => { if (!video.seeking) setLoading(false); sync(); });
-    listen('playing', () => { setLoading(false); message(); sync(); });
+    listen('loadedmetadata', () => { message(); sync({ forceDraw: true }); });
+    listen('loadeddata', () => { if (!video.seeking) setLoading(video.readyState < (video.paused ? 2 : 3)); message(); sync({ forceDraw: true }); schedule(); });
+    listen('canplay', () => { if (!video.seeking) setLoading(false); sync(); schedule(); });
+    listen('playing', () => { setLoading(false); message(); sync(); schedule(); });
     const waitingForData = () => {
-      if (video.readyState < 3 && (!video.paused || video.seeking || video.readyState < 2)) setLoading(true, 'buffer');
+      if (video.readyState < 3 && (!video.paused || video.seeking || video.readyState < 2)) { setLoading(true, 'buffer'); stop(); }
     };
     listen('waiting', waitingForData); listen('stalled', waitingForData);
     listen('suspend', () => {
@@ -240,10 +301,10 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
         if (video.readyState < 2) message('Нажмите воспроизведение, чтобы загрузить видео.');
       }
     });
-    listen('seeking', () => { if (video.readyState < 3) setLoading(true, 'seek'); });
+    listen('seeking', () => { stop(); if (video.readyState < 3) setLoading(true, 'seek'); });
     listen('progress', updateBuffered); listen('durationchange', sync);
     listen('timeupdate', sync);
-    listen('seeked', () => { setLoading(video.readyState < (video.paused ? 2 : 3), 'seek'); sync(); draw(); });
+    listen('seeked', () => { setLoading(video.readyState < (video.paused ? 2 : 3), 'seek'); sync({ forceDraw: true }); schedule(); });
     listen('volumechange', () => {
       if (media !== video) return;
       muted = video.muted; volume = video.volume;
@@ -510,19 +571,23 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   function frame(now) {
     raf = 0;
     if (!active || !playing || document.hidden || disposed || view !== 'player') return;
+    if (currentFilm()) { schedule(); return; }
     if (now - last < 1000 / 24) { raf = requestAnimationFrame(frame); return; }
-    if (currentFilm()) seconds = Number.isFinite(media.currentTime) ? media.currentTime : 0;
-    else if (last) seconds = Math.min(DURATION, seconds + Math.min((now - last) / 1000, .12));
+    if (last) seconds = Math.min(DURATION, seconds + Math.min((now - last) / 1000, .12));
     last = now; draw(); updateTime();
-    if (!currentFilm() && seconds >= DURATION) { playing = false; updateTime(); return; }
+    if (seconds >= DURATION) { playing = false; updateTime(); return; }
     raf = requestAnimationFrame(frame);
   }
   function schedule() {
+    if (currentFilm()) {
+      filmFrames?.start();
+      return;
+    }
     if (active && playing && view === 'player' && !raf && !document.hidden && !disposed) {
       last = 0; raf = requestAnimationFrame(frame);
     }
   }
-  function stop() { cancelAnimationFrame(raf); raf = 0; last = 0; }
+  function stop() { cancelAnimationFrame(raf); raf = 0; last = 0; filmFrames?.stop(); }
   const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>';
   const pauseIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M17 5v14" fill="none" stroke="currentColor" stroke-width="4"/></svg>';
   const previousIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
@@ -706,8 +771,9 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     if ((enabled !== crtEnabled || nextMobile !== mobilePresentation) && !disposed) {
       const enteringDesktop = mobilePresentation && !nextMobile;
       crtEnabled = enabled; mobilePresentation = nextMobile;
+      stop();
       if (!mobilePresentation) requestPosters({ retry: enteringDesktop });
-      draw();
+      draw(); schedule();
     }
   });
   appearance.observe(document.body, { attributes: true, attributeFilter: ['class'] });

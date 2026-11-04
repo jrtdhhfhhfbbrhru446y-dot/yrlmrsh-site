@@ -1,7 +1,7 @@
-import { initOS } from './os-ui.js?v=studio-70-final';
-import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-70-final';
-import { takeStartupLoader } from './startup-loader.js?v=studio-70-final';
-import { createTelevision } from './television.js?v=studio-70-final';
+import { initOS } from './os-ui.js?v=studio-71-final';
+import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
+import { takeStartupLoader } from './startup-loader.js?v=studio-71-final';
+import { createTelevision } from './television.js?v=studio-71-final';
 import { createRadio } from './radio.js?v=studio-61-final';
 
 const $ = selector => document.querySelector(selector);
@@ -54,7 +54,9 @@ const os = initOS(root, {
 const desktopIconMarkup = Object.fromEntries([...root.querySelectorAll('.os-desktop-item')].map(button => [button.dataset.go, button.querySelector('svg')?.outerHTML]));
 const television = createTelevision(tvRoot, {
   onBack: () => { setMode('work'); focusComputer(); },
-  onFrame: () => { if (!flat) engine?.requestFrame(); }
+  // The focused TV uses its projected HTML canvas; its 3D display is hidden.
+  // Camera movement has its own frames. Refresh the texture again on exit.
+  onFrame: () => { if (!flat && mode !== 'tv') engine?.requestFrame(); }
 });
 const radio = createRadio(radioRoot, {
   onBack: () => { setMode('work'); focusComputer(); },
@@ -234,7 +236,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (flat || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-70-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-71-final');
     if (flat) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,
