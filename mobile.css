@@ -166,9 +166,18 @@ body.mobile-mode {
 .mobile-mode .retro-os .os-case-layout { display: block; min-height: 100%; }
 .mobile-mode .retro-os .os-case-tabs { position: sticky; top: 0; z-index: 3; flex-direction: row; align-items: stretch; border-right: 0; border-bottom: 1.5px solid var(--os-line); gap: 5px; padding: 6px; }
 .mobile-mode .retro-os .os-case-tabs,
-.mobile-mode .pm-map .pm-topbar { transition: transform 160ms ease-out; }
+.mobile-mode .pm-map .pm-topbar {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition: transform 360ms cubic-bezier(.25, .1, .25, 1), opacity 280ms ease;
+  will-change: transform, opacity;
+}
 .mobile-mode .retro-os .os-case-tabs.is-scroll-hidden,
-.mobile-mode .pm-map[data-view="list"] .pm-topbar.is-scroll-hidden { transform: translateY(calc(-100% - 1px)); pointer-events: none; }
+.mobile-mode .pm-map[data-view="list"] .pm-topbar.is-scroll-hidden {
+  transform: translate3d(0, calc(-100% - 1px), 0);
+  opacity: 0;
+  pointer-events: none;
+}
 .mobile-mode .retro-os.os-reduce-motion .os-case-tabs,
 .mobile-mode .retro-os.os-reduce-motion .pm-topbar { transition: none; }
 .mobile-mode .retro-os .os-case-tabs button { flex: 1; justify-content: center; gap: 5px; min-height: 44px; padding: 5px; font-size: 11px; }

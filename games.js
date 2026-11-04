@@ -1,4 +1,4 @@
-import { mountBounce } from './bounce.js?v=studio-68-final';
+import { mountBounce } from './bounce.js?v=studio-69-final';
 
 const DIRECTIONS = {
   up: { x: 0, y: -1 }, right: { x: 1, y: 0 },
@@ -33,8 +33,11 @@ export function mountGames(container) {
 }
 
 function observeGameActivity(container, onChange) {
-  let hostActive = true;
-  const update = () => onChange(hostActive && !document.hidden);
+  let hostActive = true, pageHidden = false;
+  const update = () => {
+    const reason = document.hidden ? 'hidden' : pageHidden ? 'pagehide' : !hostActive ? 'host-inactive' : 'active';
+    onChange(reason === 'active', reason);
+  };
   function activity(event) {
     if (!event.target?.contains?.(container)) return;
     hostActive = event.detail?.active !== false;
@@ -42,10 +45,16 @@ function observeGameActivity(container, onChange) {
   }
   document.addEventListener('retro-activity', activity);
   document.addEventListener('visibilitychange', update);
+  const pagehide = () => { pageHidden = true; update(); };
+  const pageshow = () => { pageHidden = false; update(); };
+  window.addEventListener('pagehide', pagehide);
+  window.addEventListener('pageshow', pageshow);
   update();
   return () => {
     document.removeEventListener('retro-activity', activity);
     document.removeEventListener('visibilitychange', update);
+    window.removeEventListener('pagehide', pagehide);
+    window.removeEventListener('pageshow', pageshow);
   };
 }
 

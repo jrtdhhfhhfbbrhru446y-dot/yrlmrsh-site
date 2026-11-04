@@ -1,10 +1,10 @@
-import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-68-final';
+import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-69-final';
 
 // Keep the four desktop icons synchronous: the 3D screen compiles their SVGs
 // immediately after initOS. Larger sections are fetched only when opened.
 const sections = {
-  skills: { load: () => import('./skill-map.js?v=studio-68-final') },
-  games: { load: () => import('./games.js?v=studio-68-final') },
+  skills: { load: () => import('./skill-map.js?v=studio-69-final') },
+  games: { load: () => import('./games.js?v=studio-69-final') },
   profile: { load: () => import('./profile.js?v=studio-56-final') },
 };
 function loadSection(name) {
@@ -84,6 +84,7 @@ const defaults = () => ({ scale: 100, layout: 'icons', crt: true, contrast: fals
 export function bindMobileScrollToolbars(root, { isMobile = () => document.body.classList.contains('mobile-mode') } = {}) {
   let disposed = false;
   let positions = new WeakMap();
+  let mobileLayout = isMobile();
   const bars = new Set();
   const reveal = bar => bar?.classList.remove('is-scroll-hidden');
   function toolbarFor(scroller) {
@@ -99,8 +100,19 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
     const map = bar.closest('.pm-map'), height = bar.offsetHeight;
     if (height > 0) map?.style.setProperty('--pm-mobile-toolbar-height', `${height}px`);
   }
+  function rebase(scroller) {
+    const state = positions.get(scroller);
+    if (!state) return;
+    const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    state.top = Math.max(0, Math.min(maximum, scroller.scrollTop));
+    state.height = scroller.clientHeight; state.total = scroller.scrollHeight;
+    state.direction = 0; state.distance = 0;
+  }
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
-    if (!disposed) for (const entry of entries) measure(entry.target);
+    if (!disposed) for (const entry of entries) {
+      if (toolbarFor(entry.target)) rebase(entry.target);
+      else measure(entry.target);
+    }
   }) : null;
   function refresh() {
     if (disposed) return;
@@ -111,10 +123,21 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
     for (const scroller of root.querySelectorAll('.os-window-content, .pm-list, .pm-detail-body')) {
       const bar = toolbarFor(scroller);
       if (!bar) continue;
-      positions.set(scroller, { top: Math.max(0, scroller.scrollTop || 0), direction: 0, distance: 0 });
+      positions.set(scroller, { top: Math.max(0, scroller.scrollTop || 0), height: scroller.clientHeight, total: scroller.scrollHeight, direction: 0, distance: 0 });
       bars.add(bar);
+      observer?.observe(scroller);
     }
     for (const bar of bars) { measure(bar); observer?.observe(bar); }
+  }
+  function viewport() {
+    const nextMobile = isMobile();
+    if (nextMobile !== mobileLayout) {
+      mobileLayout = nextMobile; refresh();
+    } else {
+      // Mobile browser chrome resizes the viewport while a finger is still
+      // scrolling. Keep the current visibility instead of flashing bars open.
+      for (const bar of bars) measure(bar);
+    }
   }
   function scroll(event) {
     if (disposed || !isMobile()) return;
@@ -124,18 +147,25 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
     const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
     // Clamp Safari's elastic overscroll before inferring a direction.
     const top = Math.max(0, Math.min(maximum, scroller.scrollTop));
-    const state = positions.get(scroller) || { top: 0, direction: 0, distance: 0 };
+    const state = positions.get(scroller) || { top: 0, height: scroller.clientHeight, total: scroller.scrollHeight, direction: 0, distance: 0 };
+    const layoutChanged = state.height !== scroller.clientHeight || state.total !== scroller.scrollHeight;
     const delta = top - state.top;
-    state.top = top; positions.set(scroller, state);
+    state.top = top; state.height = scroller.clientHeight; state.total = scroller.scrollHeight;
+    positions.set(scroller, state);
     if (maximum <= 1 || top <= 8) {
       reveal(bar); state.distance = 0; state.direction = 0; return;
+    }
+    if (layoutChanged) {
+      // A changed reading area can clamp scrollTop backwards at the bottom.
+      // That is layout, rather than an upward reading gesture.
+      state.distance = 0; state.direction = 0; return;
     }
     if (Math.abs(delta) < .25) return;
     const direction = Math.sign(delta);
     state.distance = state.direction === direction ? state.distance + Math.abs(delta) : Math.abs(delta);
     state.direction = direction;
-    if (direction < 0 && state.distance >= 10) reveal(bar);
-    else if (direction > 0 && top > bar.offsetHeight && state.distance >= 24) {
+    if (direction < 0 && state.distance >= 24) reveal(bar);
+    else if (direction > 0 && top > bar.offsetHeight && state.distance >= 44) {
       const focused = document.activeElement;
       if (!bar.contains(focused) || !focused?.matches?.(':focus-visible')) bar.classList.add('is-scroll-hidden');
     }
@@ -150,10 +180,19 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
   function keyboard(event) {
     if (event.key === 'Tab') for (const bar of bars) reveal(bar);
   }
+  function activated(event) {
+    const map = event.target?.closest?.('.pm-map');
+    if (!map || !root.contains(map)) return;
+    // Expanding a skill group changes scrollHeight without resizing the list
+    // viewport. Rebase after its click handler, before the next reading swipe.
+    measure(map.querySelector('.pm-topbar'));
+    for (const scroller of map.querySelectorAll('.pm-list, .pm-detail-body')) rebase(scroller);
+  }
   root.addEventListener('scroll', scroll, { capture: true, passive: true });
   root.addEventListener('focusin', focus);
   root.addEventListener('keydown', keyboard);
-  root.addEventListener('retro-viewport', refresh);
+  root.addEventListener('click', activated);
+  root.addEventListener('retro-viewport', viewport);
   refresh();
   return {
     refresh,
@@ -162,7 +201,8 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
       disposed = true; observer?.disconnect();
       root.removeEventListener('scroll', scroll, true);
       root.removeEventListener('focusin', focus); root.removeEventListener('keydown', keyboard);
-      root.removeEventListener('retro-viewport', refresh);
+      root.removeEventListener('click', activated);
+      root.removeEventListener('retro-viewport', viewport);
       for (const bar of bars) reveal(bar);
       bars.clear(); positions = new WeakMap();
     }

@@ -103,6 +103,9 @@ export function mountBounce(stage, container, observeActivity) {
   let world = createBounceWorld(), phase = 'ready', raf = 0, lastTime = 0, accumulator = 0, allowed = true, disposed = false;
   let jumpQueued = false, lastRingCount = -1, lastCheckpoint = false;
   const held = new Set(), pointers = new Map(), keys = new Map();
+  const clickIntents = new Map();
+  game.dataset.pauseReason = ''; game.dataset.lastInputType = ''; game.dataset.lastInputEvent = 'mount';
+  function noteInput(type, event) { game.dataset.lastInputType = type; game.dataset.lastInputEvent = event; }
 
   function label() {
     game.querySelector('[data-bounce-name]').textContent = world.level.name;
@@ -116,11 +119,12 @@ export function mountBounce(stage, container, observeActivity) {
     message.hidden = false; message.querySelector('strong').textContent = title; message.querySelector('p').textContent = detail;
     continueButton.textContent = action;
   }
-  function clearInput() {
+  function clearInput({ intents = true } = {}) {
     const captured = [...pointers];
     held.clear(); pointers.clear(); keys.clear(); jumpQueued = false;
     for (const [id, { button }] of captured) { try { button.releasePointerCapture?.(id); } catch { /* Capture may already have ended. */ } }
     game.querySelectorAll('[data-bounce-hold]').forEach(button => button.classList.remove('is-held'));
+    if (intents) clickIntents.clear();
   }
   function stop() { cancelAnimationFrame(raf); raf = 0; lastTime = 0; accumulator = 0; clearInput(); }
   function draw() {
@@ -195,40 +199,57 @@ export function mountBounce(stage, container, observeActivity) {
     if (world.status !== 'playing') { finishPhase(); return; }
     raf = requestAnimationFrame(frame);
   }
-  function start() {
-    if (!allowed || disposed) return;
+  function start({ focus = true } = {}) {
+    if (!allowed || disposed || document.hidden) return;
     phase = 'playing'; message.hidden = true; lastTime = 0; accumulator = 0; label();
-    canvas.focus({ preventScroll: true });
+    game.dataset.pauseReason = '';
+    if (focus) canvas.focus({ preventScroll: true });
     if (!raf) raf = requestAnimationFrame(frame);
   }
-  function pause() {
+  function pause(reason) {
     if (phase !== 'playing') return;
+    game.dataset.pauseReason = reason;
     phase = 'paused'; stop(); label(); showOverlay('Пауза.', 'Продолжим, когда будешь готов.', 'Продолжить');
   }
   function reset(index = world.index) {
     stop(); world = createBounceWorld(index); phase = 'ready'; lastRingCount = -1; lastCheckpoint = false;
+    game.dataset.pauseReason = '';
     label(); updateCamera(true); draw(); showOverlay('Bounce', 'Кольца, прыжки и один красный шарик.', 'Поехали');
   }
-  function advance() {
+  function advance(options) {
     if (!allowed) return;
-    if (phase === 'won') { reset(world.index < 2 ? world.index + 1 : 0); start(); }
-    else if (phase === 'dead') { respawnBounce(world); updateCamera(true); start(); }
-    else start();
+    if (phase === 'won') { reset(world.index < 2 ? world.index + 1 : 0); start(options); }
+    else if (phase === 'dead') { respawnBounce(world); updateCamera(true); start(options); }
+    else start(options);
   }
-  function toggle() { if (phase === 'playing') pause(); else if (phase === 'paused' || phase === 'ready') start(); }
-  function activate(name) {
+  function toggle(reason = 'button', options) { if (phase === 'playing') pause(reason); else if (phase === 'paused' || phase === 'ready') start(options); }
+  function activate(name, options) {
     if (!allowed || disposed || document.hidden || phase === 'dead' || phase === 'won') return false;
-    if (phase === 'ready') start();
+    if (phase === 'ready') start(options);
     if (phase !== 'playing') return false;
     if (name === 'jump') { if (!held.has('jump')) jumpQueued = true; }
     return true;
   }
   function click(event) {
-    if (event.target.closest('[data-bounce-play]')) toggle();
+    const button = event.target.closest('button');
+    let inputType = 'keyboard';
+    if (event.detail > 0 || event.pointerType) {
+      const intent = event.pointerId === undefined
+        ? [...clickIntents.values()].find(item => item.released && !item.hold && item.button === button)
+        : clickIntents.get(event.pointerId);
+      // A hold gesture can hide the start overlay or move focus. Its later
+      // compatibility click must never turn into a Pause/Reset button action.
+      if (!intent || !intent.released || intent.button !== button || intent.hold) return;
+      clickIntents.delete(intent.id);
+      inputType = intent.type;
+    }
+    noteInput(inputType, 'click');
+    const options = { focus: inputType !== 'touch' && inputType !== 'pen' };
+    if (event.target.closest('[data-bounce-play]')) toggle('button', options);
     else if (event.target.closest('[data-bounce-reset]')) reset();
-    else if (event.target.closest('[data-bounce-continue]')) advance();
+    else if (event.target.closest('[data-bounce-continue]')) advance(options);
     // Assistive technologies activate buttons with click rather than pointerdown.
-    else if (event.detail === 0 && event.target.closest('[data-bounce-hold="jump"]')) activate('jump');
+    else if (event.detail === 0 && event.target.closest('[data-bounce-hold="jump"]')) activate('jump', options);
   }
   const keyName = key => ({ ArrowLeft: 'left', a: 'left', A: 'left', ф: 'left', Ф: 'left', ArrowRight: 'right', d: 'right', D: 'right', в: 'right', В: 'right', ArrowUp: 'jump', w: 'jump', W: 'jump', ц: 'jump', Ц: 'jump' })[key];
   const keyId = event => event.code || event.key.toLowerCase();
@@ -239,13 +260,14 @@ export function mountBounce(stage, container, observeActivity) {
   }
   function keydown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
+    noteInput('keyboard', 'keydown');
     const name = keyName(event.key);
     if (name) {
       event.preventDefault(); event.stopPropagation();
       const id = keyId(event);
       if (!event.repeat && !keys.has(id) && activate(name)) { keys.set(id, name); syncHeld(name); }
     }
-    else if (event.key.toLowerCase() === 'p' || event.key.toLowerCase() === 'з' || (event.key === ' ' && event.target.tagName !== 'BUTTON')) { event.preventDefault(); event.stopPropagation(); if (!event.repeat) toggle(); }
+    else if (event.key.toLowerCase() === 'p' || event.key.toLowerCase() === 'з' || (event.key === ' ' && event.target.tagName !== 'BUTTON')) { event.preventDefault(); event.stopPropagation(); if (!event.repeat) toggle('keyboard'); }
     else if (event.key === 'Enter' && event.target === canvas && (phase === 'dead' || phase === 'won')) { event.preventDefault(); event.stopPropagation(); advance(); }
   }
   function keyup(event) {
@@ -253,33 +275,59 @@ export function mountBounce(stage, container, observeActivity) {
     if (name) { keys.delete(id); syncHeld(name); }
   }
   function pointerdown(event) {
+    if (event.button > 0) return;
+    const type = event.pointerType || 'mouse', targetButton = event.target.closest('button');
+    noteInput(type, 'pointerdown');
+    const intent = { id: event.pointerId, type, button: targetButton, hold: Boolean(targetButton?.dataset.bounceHold), released: false };
+    clickIntents.set(event.pointerId, intent);
+    if (clickIntents.size > 16) clickIntents.delete(clickIntents.keys().next().value);
     const button = event.target.closest('[data-bounce-hold]');
-    if (!button || event.button > 0 || pointers.has(event.pointerId)) return;
+    if (!button || pointers.has(event.pointerId)) return;
     event.preventDefault(); const name = button.dataset.bounceHold;
-    if (!activate(name)) return;
+    if (!activate(name, { focus: type !== 'touch' && type !== 'pen' })) return;
     pointers.set(event.pointerId, { name, button }); syncHeld(name);
     try { button.setPointerCapture?.(event.pointerId); } catch { /* Window pointer-up still releases this input. */ }
   }
   function pointerup(event) {
+    game.dataset.lastInputEvent = event.type;
+    const intent = clickIntents.get(event.pointerId);
+    if (event.type === 'pointercancel') clickIntents.delete(event.pointerId);
+    else if (event.type === 'pointerup' && intent) {
+      // Touch can implicitly capture pointer-up. Hit-test the actual release
+      // when coordinates are available rather than accepting an outside lift.
+      const hit = Number.isFinite(event.clientX) && Number.isFinite(event.clientY) && typeof document.elementFromPoint === 'function'
+        ? document.elementFromPoint(event.clientX, event.clientY) : event.target;
+      if (!intent.hold && intent.button?.contains(hit)) intent.released = true;
+      else clickIntents.delete(event.pointerId);
+    }
     const pointer = pointers.get(event.pointerId); if (!pointer) return;
     pointers.delete(event.pointerId);
     syncHeld(pointer.name);
     try { pointer.button.releasePointerCapture?.(event.pointerId); } catch { /* Capture may already have ended. */ }
   }
-  // Touch release can blur a control with no new focused element. It does not
-  // mean the page or game was left; real backgrounding is handled separately.
-  function focusout(event) { if (event.relatedTarget && !game.contains(event.relatedTarget)) pause(); }
+  // DOM focus is independent of page visibility on touch browsers. Release
+  // potentially stuck keys/pointers, but never interpret a control blur as Pause.
+  function focusout(event) {
+    game.dataset.lastInputEvent = 'focusout';
+    if (!game.contains(event.relatedTarget)) {
+      const names = new Set(keys.values()); keys.clear(); names.forEach(syncHeld);
+    }
+  }
+  function blur() { game.dataset.lastInputEvent = 'window-blur'; clearInput({ intents: false }); }
   game.addEventListener('click', click); game.addEventListener('keydown', keydown); game.addEventListener('pointerdown', pointerdown);
   game.addEventListener('pointerup', pointerup); game.addEventListener('pointercancel', pointerup); game.addEventListener('lostpointercapture', pointerup);
-  game.addEventListener('focusout', focusout); window.addEventListener('keyup', keyup); window.addEventListener('blur', pause);
+  game.addEventListener('focusout', focusout); window.addEventListener('keyup', keyup); window.addEventListener('blur', blur);
   window.addEventListener('pointerup', pointerup); window.addEventListener('pointercancel', pointerup);
   reset();
-  const stopActivity = observeActivity(container, value => { allowed = value; if (!value) pause(); });
+  const stopActivity = observeActivity(container, (value, reason) => {
+    allowed = value;
+    if (!value) pause(reason || (document.hidden ? 'hidden' : 'host-inactive'));
+  });
   return () => {
     disposed = true; stop(); stopActivity();
     game.removeEventListener('click', click); game.removeEventListener('keydown', keydown); game.removeEventListener('pointerdown', pointerdown);
     game.removeEventListener('pointerup', pointerup); game.removeEventListener('pointercancel', pointerup); game.removeEventListener('lostpointercapture', pointerup);
-    game.removeEventListener('focusout', focusout); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', pause);
+    game.removeEventListener('focusout', focusout); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur);
     window.removeEventListener('pointerup', pointerup); window.removeEventListener('pointercancel', pointerup);
   };
 }
