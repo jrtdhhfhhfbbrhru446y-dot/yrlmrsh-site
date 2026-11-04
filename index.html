@@ -4,6 +4,15 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#f7f7f4">
 <meta name="description" content="Пространство проектов, идей и экспериментов. Открывайте папки, заглядывайте внутрь работ, включайте телевизор и слушайте радио.">
 <title>YRLMRSH</title>
+<script>
+  {
+    const pageUrl = new URL(location.href);
+    if (/^studio-\d+(?:-[a-z0-9.-]+)?$/i.test(pageUrl.searchParams.get('v') || '')) {
+      pageUrl.searchParams.delete('v');
+      history.replaceState(history.state, '', pageUrl);
+    }
+  }
+</script>
 <link rel="canonical" href="https://yrlmrsh.ru/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ru_RU">
@@ -27,11 +36,11 @@
   document.documentElement.dataset.typography = baselineType ? 'baseline' : 'experiment';
   if (baselineType) document.getElementById('typography-experiment').disabled = true;
 </script>
-<script type="module" src="./startup.js?v=studio-71-final"></script>
+<script type="module" src="./startup.js?v=studio-72-final"></script>
 <link rel="stylesheet" href="./mobile.css?v=studio-71-final">
 </head>
 <body>
-<header class="identity"><a href="./?v=studio-71-final" aria-label="YRLMRSH — начало">YRLMRSH</a></header>
+<header class="identity"><a href="./" aria-label="YRLMRSH — начало">YRLMRSH</a></header>
 <main id="experience" aria-label="Интерактивное портфолио на экране ноутбука">
 <canvas id="computer-canvas" tabindex="-1" aria-label="Радио, ноутбук и телевизор в 3D. Нажмите на устройство или выберите его внизу. В режиме осмотра стрелки вращают сцену, плюс и минус меняют масштаб. В режиме радио ручки можно поворачивать перетаскиванием."></canvas>
 <div id="screen-anchor" class="screen-anchor" aria-label="Экран компьютера"><div class="screen-inner"><section id="login-screen" class="login-screen" aria-label="Вход на рабочий стол"><div class="login-center"><h1>YRLMRSH</h1><button id="enter-desktop">Войти <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"><path d="M19 5v9H5m5-5-5 5 5 5"/></svg></span></button></div></section><div id="os-root" hidden></div></div></div>
