@@ -1,4 +1,4 @@
-import { mountBounce } from './bounce.js?v=studio-69-final';
+import { mountBounce } from './bounce.js?v=studio-70-final';
 
 const DIRECTIONS = {
   up: { x: 0, y: -1 }, right: { x: 1, y: 0 },

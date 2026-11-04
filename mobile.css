@@ -287,9 +287,34 @@ body.mobile-mode {
 .mobile-mode .pm-map .pm-list-node,
 .mobile-mode .pm-map .pm-list-heading { min-height: 46px; }
 .mobile-mode .retro-games :is(.rg-tabs, .rg-actions, .rg-dpad, .rg-bounce-pad) > button { min-width: 44px; min-height: 44px; }
-.mobile-mode .retro-games .rg-dpad { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); gap: 4px; }
-.mobile-mode .retro-games .rg-snake-controls { flex-wrap: wrap; gap: 12px; }
-.mobile-mode .retro-games .rg-dpad { margin-left: auto; }
+.mobile-mode .retro-games .rg-snake-controls {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+.mobile-mode .retro-games .rg-snake-controls > p { grid-column: 2; grid-row: 1; min-width: 0; }
+.mobile-mode .retro-games .rg-dpad {
+  grid-column: 1;
+  grid-row: 1;
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(2, 64px);
+  gap: 8px;
+  margin: 0;
+}
+.mobile-mode .retro-games .rg-dpad > button { min-width: 64px; min-height: 64px; font-size: 28px; }
+.mobile-mode .retro-games .rg-bounce-controls { flex-direction: column; align-items: stretch; gap: 14px; }
+.mobile-mode .retro-games .rg-bounce-pad {
+  display: grid;
+  grid-template-columns: 64px 64px minmax(12px, 1fr) 72px;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+}
+.mobile-mode .retro-games .rg-bounce-pad > button { width: 64px; height: 64px; min-width: 64px; min-height: 64px; font-size: 28px; }
+.mobile-mode .retro-games .rg-bounce-pad > [data-bounce-hold="left"] { grid-column: 1; }
+.mobile-mode .retro-games .rg-bounce-pad > [data-bounce-hold="right"] { grid-column: 2; }
+.mobile-mode .retro-games .rg-bounce-pad > [data-bounce-hold="jump"] { grid-column: 4; width: 72px; margin-left: 0; }
 .mobile-mode .retro-games .rg-mine-mode > button { min-height: 44px; }
 .mobile-mode .retro-games .rg-bounce-message > button { min-height: 44px; }
 /* Device controls share the same persistent bottom navigation. */
