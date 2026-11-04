@@ -102,7 +102,7 @@ export function mountBounce(stage, container, observeActivity) {
   const live = game.querySelector('[data-bounce-live]');
   let world = createBounceWorld(), phase = 'ready', raf = 0, lastTime = 0, accumulator = 0, allowed = true, disposed = false;
   let jumpQueued = false, lastRingCount = -1, lastCheckpoint = false;
-  const held = new Set(), pointers = new Map();
+  const held = new Set(), pointers = new Map(), keys = new Map();
 
   function label() {
     game.querySelector('[data-bounce-name]').textContent = world.level.name;
@@ -117,7 +117,9 @@ export function mountBounce(stage, container, observeActivity) {
     continueButton.textContent = action;
   }
   function clearInput() {
-    held.clear(); pointers.clear(); jumpQueued = false;
+    const captured = [...pointers];
+    held.clear(); pointers.clear(); keys.clear(); jumpQueued = false;
+    for (const [id, { button }] of captured) { try { button.releasePointerCapture?.(id); } catch { /* Capture may already have ended. */ } }
     game.querySelectorAll('[data-bounce-hold]').forEach(button => button.classList.remove('is-held'));
   }
   function stop() { cancelAnimationFrame(raf); raf = 0; lastTime = 0; accumulator = 0; clearInput(); }
@@ -215,42 +217,62 @@ export function mountBounce(stage, container, observeActivity) {
   }
   function toggle() { if (phase === 'playing') pause(); else if (phase === 'paused' || phase === 'ready') start(); }
   function activate(name) {
-    if (!allowed || phase === 'dead' || phase === 'won') return;
+    if (!allowed || disposed || document.hidden || phase === 'dead' || phase === 'won') return false;
     if (phase === 'ready') start();
-    if (phase !== 'playing') return;
+    if (phase !== 'playing') return false;
     if (name === 'jump') { if (!held.has('jump')) jumpQueued = true; }
-    held.add(name);
+    return true;
   }
   function click(event) {
     if (event.target.closest('[data-bounce-play]')) toggle();
     else if (event.target.closest('[data-bounce-reset]')) reset();
     else if (event.target.closest('[data-bounce-continue]')) advance();
     // Assistive technologies activate buttons with click rather than pointerdown.
-    else if (event.detail === 0 && event.target.closest('[data-bounce-hold="jump"]')) { activate('jump'); held.delete('jump'); }
+    else if (event.detail === 0 && event.target.closest('[data-bounce-hold="jump"]')) activate('jump');
   }
   const keyName = key => ({ ArrowLeft: 'left', a: 'left', A: 'left', ф: 'left', Ф: 'left', ArrowRight: 'right', d: 'right', D: 'right', в: 'right', В: 'right', ArrowUp: 'jump', w: 'jump', W: 'jump', ц: 'jump', Ц: 'jump' })[key];
+  const keyId = event => event.code || event.key.toLowerCase();
+  function syncHeld(name) {
+    const pointerHeld = [...pointers.values()].some(pointer => pointer.name === name);
+    if (pointerHeld || [...keys.values()].includes(name)) held.add(name); else held.delete(name);
+    game.querySelector(`[data-bounce-hold="${name}"]`)?.classList.toggle('is-held', pointerHeld);
+  }
   function keydown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const name = keyName(event.key);
-    if (name) { event.preventDefault(); event.stopPropagation(); activate(name); }
+    if (name) {
+      event.preventDefault(); event.stopPropagation();
+      const id = keyId(event);
+      if (!event.repeat && !keys.has(id) && activate(name)) { keys.set(id, name); syncHeld(name); }
+    }
     else if (event.key.toLowerCase() === 'p' || event.key.toLowerCase() === 'з' || (event.key === ' ' && event.target.tagName !== 'BUTTON')) { event.preventDefault(); event.stopPropagation(); if (!event.repeat) toggle(); }
     else if (event.key === 'Enter' && event.target === canvas && (phase === 'dead' || phase === 'won')) { event.preventDefault(); event.stopPropagation(); advance(); }
   }
-  function keyup(event) { const name = keyName(event.key); if (name) held.delete(name); }
+  function keyup(event) {
+    const id = keyId(event), name = keys.get(id);
+    if (name) { keys.delete(id); syncHeld(name); }
+  }
   function pointerdown(event) {
-    const button = event.target.closest('[data-bounce-hold]'); if (!button || event.button > 0) return;
+    const button = event.target.closest('[data-bounce-hold]');
+    if (!button || event.button > 0 || pointers.has(event.pointerId)) return;
     event.preventDefault(); const name = button.dataset.bounceHold;
-    button.setPointerCapture?.(event.pointerId); pointers.set(event.pointerId, name); button.classList.add('is-held'); activate(name);
+    if (!activate(name)) return;
+    pointers.set(event.pointerId, { name, button }); syncHeld(name);
+    try { button.setPointerCapture?.(event.pointerId); } catch { /* Window pointer-up still releases this input. */ }
   }
   function pointerup(event) {
-    const name = pointers.get(event.pointerId); if (!name) return;
+    const pointer = pointers.get(event.pointerId); if (!pointer) return;
     pointers.delete(event.pointerId);
-    if (![...pointers.values()].includes(name)) { held.delete(name); game.querySelector(`[data-bounce-hold="${name}"]`)?.classList.remove('is-held'); }
+    syncHeld(pointer.name);
+    try { pointer.button.releasePointerCapture?.(event.pointerId); } catch { /* Capture may already have ended. */ }
   }
-  function focusout(event) { if (!game.contains(event.relatedTarget)) pause(); }
+  // Touch release can blur a control with no new focused element. It does not
+  // mean the page or game was left; real backgrounding is handled separately.
+  function focusout(event) { if (event.relatedTarget && !game.contains(event.relatedTarget)) pause(); }
   game.addEventListener('click', click); game.addEventListener('keydown', keydown); game.addEventListener('pointerdown', pointerdown);
   game.addEventListener('pointerup', pointerup); game.addEventListener('pointercancel', pointerup); game.addEventListener('lostpointercapture', pointerup);
   game.addEventListener('focusout', focusout); window.addEventListener('keyup', keyup); window.addEventListener('blur', pause);
+  window.addEventListener('pointerup', pointerup); window.addEventListener('pointercancel', pointerup);
   reset();
   const stopActivity = observeActivity(container, value => { allowed = value; if (!value) pause(); });
   return () => {
@@ -258,5 +280,6 @@ export function mountBounce(stage, container, observeActivity) {
     game.removeEventListener('click', click); game.removeEventListener('keydown', keydown); game.removeEventListener('pointerdown', pointerdown);
     game.removeEventListener('pointerup', pointerup); game.removeEventListener('pointercancel', pointerup); game.removeEventListener('lostpointercapture', pointerup);
     game.removeEventListener('focusout', focusout); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', pause);
+    window.removeEventListener('pointerup', pointerup); window.removeEventListener('pointercancel', pointerup);
   };
 }

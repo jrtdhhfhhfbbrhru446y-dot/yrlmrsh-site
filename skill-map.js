@@ -1,5 +1,5 @@
 import { PM_STAGES, PM_LENSES, PM_LINKS } from './skill-map-data.js?v=studio-14-final';
-import { getProject } from './portfolio-data.js?v=studio-67-final';
+import { getProject } from './portfolio-data.js?v=studio-68-final';
 import { createSkillWebPhysics } from './skill-web-physics.js?v=studio-16-final';
 
 const esc = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));

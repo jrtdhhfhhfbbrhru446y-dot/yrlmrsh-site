@@ -1,10 +1,10 @@
-import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-67-final';
+import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-68-final';
 
 // Keep the four desktop icons synchronous: the 3D screen compiles their SVGs
 // immediately after initOS. Larger sections are fetched only when opened.
 const sections = {
-  skills: { load: () => import('./skill-map.js?v=studio-67-final') },
-  games: { load: () => import('./games.js?v=studio-16-final') },
+  skills: { load: () => import('./skill-map.js?v=studio-68-final') },
+  games: { load: () => import('./games.js?v=studio-68-final') },
   profile: { load: () => import('./profile.js?v=studio-56-final') },
 };
 function loadSection(name) {
@@ -79,6 +79,96 @@ const DESKTOP_ICON_IMAGES = {
 const STORAGE_KEY = 'archive26:view:1';
 const defaults = () => ({ scale: 100, layout: 'icons', crt: true, contrast: false, motion: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
 
+// Scroll events do not bubble. Capture only the actual reading surfaces, so a
+// diagram pan, a horizontal strip or a nested image never hides navigation.
+export function bindMobileScrollToolbars(root, { isMobile = () => document.body.classList.contains('mobile-mode') } = {}) {
+  let disposed = false;
+  let positions = new WeakMap();
+  const bars = new Set();
+  const reveal = bar => bar?.classList.remove('is-scroll-hidden');
+  function toolbarFor(scroller) {
+    if (scroller?.matches?.('.os-window-content') && scroller.parentElement?.classList.contains('os-case-window')) return scroller.querySelector('.os-case-tabs');
+    if (scroller?.matches?.('.pm-list, .pm-detail-body')) {
+      const map = scroller.closest('.pm-map');
+      return map?.dataset.view === 'list' ? map.querySelector('.pm-topbar') : null;
+    }
+    return null;
+  }
+  function measure(bar) {
+    if (!isMobile() || !bar.classList.contains('pm-topbar')) return;
+    const map = bar.closest('.pm-map'), height = bar.offsetHeight;
+    if (height > 0) map?.style.setProperty('--pm-mobile-toolbar-height', `${height}px`);
+  }
+  const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+    if (!disposed) for (const entry of entries) measure(entry.target);
+  }) : null;
+  function refresh() {
+    if (disposed) return;
+    observer?.disconnect();
+    for (const bar of bars) reveal(bar);
+    bars.clear(); positions = new WeakMap();
+    for (const bar of root.querySelectorAll('.pm-topbar')) { bars.add(bar); reveal(bar); }
+    for (const scroller of root.querySelectorAll('.os-window-content, .pm-list, .pm-detail-body')) {
+      const bar = toolbarFor(scroller);
+      if (!bar) continue;
+      positions.set(scroller, { top: Math.max(0, scroller.scrollTop || 0), direction: 0, distance: 0 });
+      bars.add(bar);
+    }
+    for (const bar of bars) { measure(bar); observer?.observe(bar); }
+  }
+  function scroll(event) {
+    if (disposed || !isMobile()) return;
+    const scroller = event.target, bar = toolbarFor(scroller);
+    if (!bar) return;
+    bars.add(bar);
+    const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    // Clamp Safari's elastic overscroll before inferring a direction.
+    const top = Math.max(0, Math.min(maximum, scroller.scrollTop));
+    const state = positions.get(scroller) || { top: 0, direction: 0, distance: 0 };
+    const delta = top - state.top;
+    state.top = top; positions.set(scroller, state);
+    if (maximum <= 1 || top <= 8) {
+      reveal(bar); state.distance = 0; state.direction = 0; return;
+    }
+    if (Math.abs(delta) < .25) return;
+    const direction = Math.sign(delta);
+    state.distance = state.direction === direction ? state.distance + Math.abs(delta) : Math.abs(delta);
+    state.direction = direction;
+    if (direction < 0 && state.distance >= 10) reveal(bar);
+    else if (direction > 0 && top > bar.offsetHeight && state.distance >= 24) {
+      const focused = document.activeElement;
+      if (!bar.contains(focused) || !focused?.matches?.(':focus-visible')) bar.classList.add('is-scroll-hidden');
+    }
+  }
+  function focus(event) {
+    const bar = event.target?.closest?.('.os-case-tabs, .pm-topbar');
+    if (bar) reveal(bar);
+    // New skill descriptions can be mounted after the outer page is ready.
+    const map = event.target?.closest?.('.pm-map');
+    if (map) reveal(map.querySelector('.pm-topbar'));
+  }
+  function keyboard(event) {
+    if (event.key === 'Tab') for (const bar of bars) reveal(bar);
+  }
+  root.addEventListener('scroll', scroll, { capture: true, passive: true });
+  root.addEventListener('focusin', focus);
+  root.addEventListener('keydown', keyboard);
+  root.addEventListener('retro-viewport', refresh);
+  refresh();
+  return {
+    refresh,
+    dispose() {
+      if (disposed) return;
+      disposed = true; observer?.disconnect();
+      root.removeEventListener('scroll', scroll, true);
+      root.removeEventListener('focusin', focus); root.removeEventListener('keydown', keyboard);
+      root.removeEventListener('retro-viewport', refresh);
+      for (const bar of bars) reveal(bar);
+      bars.clear(); positions = new WeakMap();
+    }
+  };
+}
+
 /** A small, self-contained desktop. All pages are local HTML, not WebGL scenes. */
 export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, onRadio = () => {}, onExpand = () => {}, onViewChange = () => {} } = {}) {
   if (!root) throw new Error('initOS requires a screen root');
@@ -104,6 +194,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   const main = root.querySelector('.os-workspace'), menuLayer = root.querySelector('.os-menu-layer');
   const brand = root.querySelector('.os-brand');
   const location = root.querySelector('.os-location'), notice = root.querySelector('.os-notice');
+  const scrollToolbars = bindMobileScrollToolbars(root);
   function applyPreferences(save = true) {
     root.style.setProperty('--os-scale', preferences.scale / 100);
     root.dataset.layout = preferences.layout;
@@ -118,7 +209,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   function notify(text) { clearTimeout(noticeTimer); notice.textContent = text; notice.hidden = false; noticeTimer = setTimeout(() => { notice.hidden = true; }, 3000); }
   const button = (text, attrs = '', dark = false) => `<button class="os-button${dark ? ' os-button-dark' : ''}" ${attrs}>${text}</button>`;
   function windowFrame(title, body, { type = '', toolbar = '', footer = '', iconName = 'folder' } = {}) {
-    return `<section class="os-window ${type}" aria-label="${esc(title)}"><header class="os-titlebar"><button class="os-mobile-back" data-back aria-label="Назад">←</button>${icon(iconName)}<h1>${esc(title)}</h1><div class="os-window-controls"><button data-minimize aria-label="Свернуть">−</button><button data-expand aria-label="Пользоваться без 3D" title="Пользоваться без 3D">${icon('monitor')}</button><button data-go="home" aria-label="На рабочий стол"><span class="os-desktop-close">×</span><span class="os-mobile-home">${icon('monitor')}</span></button></div></header>${toolbar}<div class="os-window-content" tabindex="0">${body}</div>${footer ? `<footer class="os-window-footer">${footer}</footer>` : ''}</section>`;
+    return `<section class="os-window ${type}" aria-label="${esc(title)}"><header class="os-titlebar"><button class="os-mobile-back os-small-button" data-back aria-label="Назад">←</button>${icon(iconName)}<h1>${esc(title)}</h1><div class="os-window-controls"><button data-minimize aria-label="Свернуть">−</button><button data-expand aria-label="Пользоваться без 3D" title="Пользоваться без 3D">${icon('monitor')}</button><button data-go="home" aria-label="На рабочий стол"><span class="os-desktop-close">×</span><span class="os-mobile-home">${icon('monitor')}</span></button></div></header>${toolbar}<div class="os-window-content" tabindex="0">${body}</div>${footer ? `<footer class="os-window-footer">${footer}</footer>` : ''}</section>`;
   }
   function breadcrumbs(items, extras = '') { return `<div class="os-pathbar"><button class="os-small-button" data-back aria-label="Назад">←</button><span>${items}</span>${extras}</div>`; }
   function cover(project, cls = '') { return `<img class="os-case-cover ${cls}" src="${esc(project.cover)}?v=studio-35-final2" alt="${esc(project.coverAlt || project.title)}" draggable="false" loading="lazy" decoding="async">`; }
@@ -303,6 +394,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     syncViewportLayout();
     location.textContent = next === 'home' ? '' : label;
     if (!remember && scrollPositions.has(view)) main.querySelector('.os-window-content')?.scrollTo({ top: scrollPositions.get(view) });
+    scrollToolbars.refresh();
     if (focus) { const target = next === 'home' ? main : main.querySelector('.os-window-content'); (target || main).focus({ preventScroll: true }); }
   }
   function goBack() { const previous = history.pop(); if (previous) { forward.push(view); show(previous, { remember: false }); } else show('home', { remember: false }); }
@@ -461,7 +553,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   applyPreferences(false); updateClock(); clockTimer = setInterval(updateClock, 30000); show('home', { focus: false });
   function focus() { if (selected >= 0 && selectable().length) select(selected); else (main.querySelector('.os-window-content') || main).focus({ preventScroll: true }); }
   function dispose() {
-    if (destroyed) return; destroyed = true; cleanupView(); clearInterval(clockTimer); clearTimeout(copyTimer); clearTimeout(noticeTimer); clearTimeout(menuCloseTimer);
+    if (destroyed) return; destroyed = true; scrollToolbars.dispose(); cleanupView(); clearInterval(clockTimer); clearTimeout(copyTimer); clearTimeout(noticeTimer); clearTimeout(menuCloseTimer);
     root.removeEventListener('click', click); root.removeEventListener('submit', submit); root.removeEventListener('keydown', keydown); document.removeEventListener('pointerdown', outsidePointer); root.removeEventListener('retro-activity', activity);
     root.removeEventListener('retro-viewport', syncViewportLayout);
     brand.removeEventListener('pointerenter', openHoverMenu); brand.removeEventListener('pointerleave', leaveHoverMenu);

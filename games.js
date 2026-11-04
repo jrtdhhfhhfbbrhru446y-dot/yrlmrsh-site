@@ -1,4 +1,4 @@
-import { mountBounce } from './bounce.js?v=studio-16-final';
+import { mountBounce } from './bounce.js?v=studio-68-final';
 
 const DIRECTIONS = {
   up: { x: 0, y: -1 }, right: { x: 1, y: 0 },
@@ -175,22 +175,29 @@ function mountSnake(stage, container) {
     if (event.target.closest('[data-rg-play]')) { toggle(); return; }
     if (event.target.closest('[data-rg-reset]')) { reset(false); return; }
     const button = event.target.closest('[data-rg-direction]');
-    if (button) steer(button.dataset.rgDirection);
+    // Pointer controls turn on press; retain native keyboard/assistive clicks.
+    if (button && event.detail === 0) steer(button.dataset.rgDirection);
+  }
+  function pointerdown(event) {
+    const button = event.target.closest('[data-rg-direction]');
+    if (!button || event.button > 0 || !activityAllowed || disposed || document.hidden) return;
+    event.preventDefault(); steer(button.dataset.rgDirection);
   }
   function keydown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const directionName = ARROW_DIRECTIONS[event.key];
     if (directionName) { event.preventDefault(); event.stopPropagation(); steer(directionName); return; }
     // Leave native button activation intact. Space on the field pauses the game.
-    if (event.key === ' ' && event.target.tagName !== 'BUTTON') { event.preventDefault(); event.stopPropagation(); toggle(); }
+    if (event.key === ' ' && event.target.tagName !== 'BUTTON') { event.preventDefault(); event.stopPropagation(); if (!event.repeat) toggle(); }
   }
   stage.addEventListener('click', click);
+  stage.addEventListener('pointerdown', pointerdown);
   stage.addEventListener('keydown', keydown);
   reset();
   const stopActivity = observeGameActivity(container, value => { activityAllowed = value; if (!value) pause(); });
   return () => {
     disposed = true; clearTimer();
-    stage.removeEventListener('click', click); stage.removeEventListener('keydown', keydown);
+    stage.removeEventListener('click', click); stage.removeEventListener('keydown', keydown); stage.removeEventListener('pointerdown', pointerdown);
     stopActivity();
   };
 }
@@ -347,12 +354,12 @@ function mountMines(stage, container) {
       const delta = DIRECTIONS[ARROW_DIRECTIONS[event.key]];
       focusCell(Math.max(0, Math.min(height - 1, y + delta.y)) * width + Math.max(0, Math.min(width - 1, x + delta.x)));
     } else if (event.key.toLowerCase() === 'f' || event.key.toLowerCase() === 'а') {
-      event.preventDefault(); event.stopPropagation(); flag(index);
+      event.preventDefault(); event.stopPropagation(); if (!event.repeat) flag(index);
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault(); event.stopPropagation(); focusCell(y * width + (event.key === 'Home' ? 0 : width - 1));
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault(); event.stopPropagation();
-      if (mode === 'flag') flag(index); else open(index);
+      if (!event.repeat) { if (mode === 'flag') flag(index); else open(index); }
     }
   }
   function focusin(event) {
