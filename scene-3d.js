@@ -5,12 +5,12 @@ let sceneModulesPromise = null;
 // preparing radio artwork or requesting either model.
 export function preloadScene3D() {
   if (!sceneModulesPromise) sceneModulesPromise = Promise.all([
-    import('./assets/vendor/three.module.js'),
-    import('./assets/vendor/GLTFLoader.js'),
-    import('./assets/vendor/OrbitControls.js'),
-    import('./assets/vendor/RoomEnvironment.js'),
+    import('/assets/vendor/three.module.js'),
+    import('/assets/vendor/GLTFLoader.js'),
+    import('/assets/vendor/OrbitControls.js'),
+    import('/assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-71-final')
+    import('./radio-preparation.js?v=studio-75-final')
   ]).catch(error => { sceneModulesPromise = null; throw error; });
   return sceneModulesPromise;
 }
@@ -24,8 +24,8 @@ export async function createScene3D(options) {
   // Store failures as values until their normal scene error handlers are ready.
   const modelLoader = new GLTFLoader();
   const requestModel = url => modelLoader.loadAsync(url).then(gltf => ({ gltf }), error => ({ error }));
-  const laptopRequest = requestModel('./assets/laptop/classic_laptop_2k.gltf');
-  const televisionRequest = requestModel('./assets/television/Television_01_2k.gltf');
+  const laptopRequest = requestModel('/assets/laptop/classic_laptop_2k.gltf');
+  const televisionRequest = requestModel('/assets/television/Television_01_2k.gltf');
   // Keep rejection handled while independent GPU setup runs on this thread.
   const radioRequest = prepareRadioModel(THREE).then(model => ({ model }), error => ({ error }));
   let renderer, scene, camera, controls, initialGpuGate, initialWarmup;

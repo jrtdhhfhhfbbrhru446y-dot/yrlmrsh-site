@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8r2LQcknfjFJiH2hGMQ4raXzYP7SoX7Y+/XTGLHmIWI=' 'sha256-r+YxcXI6wA+u5BX0zSnxtPb4UcTyrXNZ92Hoyhh+SrM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#f7f7f4">
+<meta name="description" content="Как собрать полезный звуковой веб-инструмент: готовые сцены, библиотека слоёв, независимое управление и осознанные приоритеты функционального прототипа.">
+<title>YRLMRSH AUDIO. Быстрый эксперимент с полезным результатом | YRLMRSH</title>
+<script>
+  {
+    const pageUrl = new URL(location.href);
+    if (/^studio-\d+(?:-[a-z0-9.-]+)?$/i.test(pageUrl.searchParams.get('v') || '')) {
+      pageUrl.searchParams.delete('v');
+      history.replaceState(history.state, '', pageUrl);
+    }
+  }
+</script>
+<link rel="canonical" href="https://yrlmrsh.ru/articles/audio/">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:site_name" content="YRLMRSH">
+<meta property="og:title" content="YRLMRSH AUDIO. Быстрый эксперимент с полезным результатом | YRLMRSH">
+<meta property="og:description" content="Как собрать полезный звуковой веб-инструмент: готовые сцены, библиотека слоёв, независимое управление и осознанные приоритеты функционального прототипа.">
+<meta property="og:url" content="https://yrlmrsh.ru/articles/audio/">
+<meta property="og:image" content="https://yrlmrsh.ru/assets/cases/noise/cover.webp">
+<meta property="og:image:width" content="1560">
+<meta property="og:image:height" content="800">
+<meta property="og:image:type" content="image/webp">
+<meta property="og:image:alt" content="YRLMRSH AUDIO — библиотека шумов и настройка звуковых слоёв">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="YRLMRSH AUDIO. Быстрый эксперимент с полезным результатом | YRLMRSH">
+<meta name="twitter:description" content="Как собрать полезный звуковой веб-инструмент: готовые сцены, библиотека слоёв, независимое управление и осознанные приоритеты функционального прототипа.">
+<meta name="twitter:image" content="https://yrlmrsh.ru/assets/cases/noise/cover.webp">
+<meta name="twitter:image:alt" content="YRLMRSH AUDIO — библиотека шумов и настройка звуковых слоёв">
+<link rel="icon" href="/assets/favicon-32.png?v=studio-44" sizes="32x32" type="image/png"><link rel="icon" href="/assets/favicon-16.png?v=studio-44" sizes="16x16" type="image/png"><link rel="icon" href="/assets/favicon.svg?v=studio-44" sizes="any" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=studio-44"><link rel="stylesheet" href="/computer.css?v=studio-71-final"><link rel="stylesheet" href="/os-ui.css?v=studio-75-final"><link rel="stylesheet" href="/games.css?v=studio-71-final"><link rel="stylesheet" href="/television.css?v=studio-61-final"><link rel="stylesheet" href="/radio.css?v=studio-61-final"><link rel="stylesheet" href="/controls.css?v=studio-75-final"><link rel="stylesheet" href="/desktop-refinement.css?v=studio-75-final"><link rel="stylesheet" href="/skill-map.css?v=studio-21-final"><link rel="stylesheet" href="/profile.css?v=studio-37-final"><link rel="stylesheet" href="/desktop-finish.css?v=studio-75-final"><link rel="stylesheet" href="/computer-cursor.css?v=studio-21-final"><link id="typography-experiment" rel="stylesheet" href="/typography-experiment.css?v=studio-75-final"><link rel="stylesheet" href="/case-content.css?v=studio-35-final2">
+<script>
+  const baselineType = new URLSearchParams(location.search).get('type') === 'baseline';
+  document.documentElement.dataset.typography = baselineType ? 'baseline' : 'experiment';
+  if (baselineType) document.getElementById('typography-experiment').disabled = true;
+</script>
+<script type="module" src="/startup.js?v=studio-75-final"></script>
+<link rel="stylesheet" href="/mobile.css?v=studio-75-final">
+<link rel="stylesheet" href="/page-fallback.css?v=studio-75-final">
+</head>
+<body data-page-route="article:noise" data-page-path="/articles/audio/">
+<!-- SEO_FALLBACK_START -->
+<section id="seo-fallback" class="seo-fallback" aria-labelledby="seo-title">
+<nav class="seo-breadcrumbs" aria-label="Навигация страницы"><a href="/">YRLMRSH</a> · <a href="/projects/audio/" data-page-view="case:noise">YRLMRSH AUDIO</a></nav>
+<article class="seo-document">
+<header><p class="seo-kind">Подробный разбор</p><h1 id="seo-title">YRLMRSH AUDIO. Быстрый эксперимент с полезным результатом</h1></header>
+<p>Мне хотелось включать подходящий фон без долгого выбора, но сохранять возможность изменить его под себя. Из этой личной задачи выросло браузерное приложение с готовыми сценами, библиотекой звуков и управлением каждым слоем. В проекте я сосредоточился на работе продукта и удобстве настройки.</p><section id="seo-article-noise-idea"><h2>Задача: быстрый старт и свобода настройки</h2><p>Во время работы мне бывают нужны разные сочетания: ровный шум, дождь, спокойная музыка. Один фиксированный фон не решал эту задачу. При этом каждый раз настраивать всё с нуля тоже неудобно.</p>
+<p>Я выделил два сценария: включить готовую сцену одним нажатием или собрать свой фон. Это определило устройство приложения. Главная цель эксперимента — получить инструмент для личного использования и проверить управление на практике, а не доказать влияние звука на продуктивность.</p></section>
+<section id="seo-article-noise-mixes"><h2>Готовые сцены снимают лишний выбор</h2><p>Для старта подготовил 30 миксов с уже подобранными звуками и уровнями. Их можно включить и сразу вернуться к своей задаче.</p>
+<p>Сцена остаётся отправной точкой: дождь можно сделать тише, отдельный звук убрать, а другое звучание усилить. Так быстрый запуск не ограничивает дальнейшую настройку.</p><figure><img src="/assets/cases/noise/mixing.webp" alt="Шесть фейдеров с отдельными звуковыми слоями, подпись «Свой баланс»" width="1672" height="941" loading="lazy" decoding="async"><figcaption>Баланс шума и мелодии настраивается под задачу. Иллюстрация для кейса.</figcaption></figure></section>
+<section id="seo-article-noise-layers"><h2>Звуком можно управлять по слоям</h2><p>В каталоге — 72 звуковых слоя: шумы, вода, ветер, огонь, бытовые и атмосферные звуки. Каждый имеет собственный уровень. Для шумового фона и музыки предусмотрены независимые паузы.</p>
+<p>Музыкальная часть включает 48 вариантов. В выбранном звучании можно менять баланс фона, солирующего инструмента и дополнительного слоя, а частотным фильтром — смягчать звук. Например, оставить только дождь для чтения, а позже добавить к нему музыку.</p>
+<p>Я продумал и собрал эти возможности как единый сценарий: начать с готового решения и при необходимости уточнить звучание, не теряя остальной фон.</p></section>
+<section id="seo-article-noise-priorities"><h2>Глубина работы соответствует цели эксперимента</h2><p>Я отвечал за идею, библиотеку, сцены, управление звуком и реализацию приложения. Приоритетом были функциональность, скорость и проверка в использовании.</p>
+<p>Детальную визуальную систему на этом этапе не разрабатывал: оформление осталось на уровне прототипа. Это выбор масштаба под конкретную цель. Сначала нужно было понять, устраивает ли меня сам инструмент и как работает настройка звуковой среды.</p></section>
+<section id="seo-article-noise-result"><h2>Результат: приложение, которым можно пользоваться</h2><p>YRLMRSH AUDIO опубликован и решает мою исходную задачу: я могу быстро включить готовый фон либо собрать его под текущую работу. Весь инструмент открывается в браузере.</p>
+<p>Подходящее звучание индивидуально. Данных об изменении концентрации в кейсе нет; подходящее звучание зависит от человека и задачи. В этом кейсе подтверждённый результат — работающее приложение с библиотекой, сценами и гибким управлением.</p>
+<p>Проект показывает формат, с которым ко мне можно обратиться: выделить ключевой сценарий, быстро собрать функциональный прототип и проверить идею до вложений в подробную визуальную систему.</p></section><p><a href="/projects/audio/" data-page-view="case:noise">Кратко о проекте, ходе работы и материалах</a></p><section class="seo-project-links"><h2>Ссылки проекта</h2><ul><li><a href="https://yrlmrshaudio.pages.dev/" target="_blank" rel="noopener noreferrer">Открыть YRLMRSH AUDIO</a><p>Готовые миксы и свой звуковой фон</p></li></ul></section>
+</article>
+<nav class="seo-related" aria-label="Кейсы и подробные разборы"><section><h2>Кейсы</h2><ul><li><a href="/projects/education/" data-page-view="case:education">РАНХиГС × OTUS</a></li><li><a href="/projects/mono-task/" data-page-view="case:tracker">MONO TASK</a></li><li><a href="/projects/bolo/" data-page-view="case:bolo">BOLO</a></li><li><a href="/projects/audio/" data-page-view="case:noise">YRLMRSH AUDIO</a></li></ul></section><section><h2>Подробные разборы</h2><ul><li><a href="/articles/education/" data-page-view="article:education">РАНХиГС × OTUS. Связать предложение, сайт и продвижение</a></li><li><a href="/articles/mono-task/" data-page-view="article:tracker">MONO TASK. От личной потребности к приложению на каждый день</a></li><li><a href="/articles/bolo/" data-page-view="article:bolo">BOLO. Превратить продукт и айдентику в рекламную историю</a></li><li><a href="/articles/audio/" data-page-view="article:noise" aria-current="page">YRLMRSH AUDIO. Быстрый эксперимент с полезным результатом</a></li></ul></section></nav>
+<p class="seo-contact"><a href="https://t.me/YRLMRSH" target="_blank" rel="noopener noreferrer">Обсудить задачу с Ярославом</a></p>
+</section>
+<!-- SEO_FALLBACK_END -->
+<header class="identity"><a href="/" aria-label="YRLMRSH — начало">YRLMRSH</a></header>
+<main id="experience" aria-label="Интерактивное портфолио на экране ноутбука">
+<canvas id="computer-canvas" tabindex="-1" aria-label="Радио, ноутбук и телевизор в 3D. Нажмите на устройство или выберите его внизу. В режиме осмотра стрелки вращают сцену, плюс и минус меняют масштаб. В режиме радио ручки можно поворачивать перетаскиванием."></canvas>
+<div id="screen-anchor" class="screen-anchor" aria-label="Экран компьютера"><div class="screen-inner"><section id="login-screen" class="login-screen" aria-label="Вход на рабочий стол"><div class="login-center"><h1>YRLMRSH</h1><button id="enter-desktop">Войти <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"><path d="M19 5v9H5m5-5-5 5 5 5"/></svg></span></button></div></section><div id="os-root" hidden></div></div></div>
+<div id="tv-anchor" class="tv-anchor" aria-label="Экран телевизора"><div id="tv-root" style="width:100%;height:100%" inert></div></div>
+</main>
+<div class="loading-cover" id="loading-cover" role="status"><pre id="loading-eye" role="img" aria-label="Шкала загрузки превращается в моргающий ASCII-глаз"></pre><span class="loading-a11y">Открываем портфолио…</span></div>
+<aside id="radio-panel" class="radio-anchor" hidden aria-label="Управление радио"><div id="radio-root" inert></div></aside>
+<div class="view-controls" aria-label="Режим просмотра"><div class="view-switch"><button id="radio-view" aria-pressed="false">Радио</button><button id="work-view" aria-pressed="false">Компьютер</button><button id="tv-view" aria-pressed="false">Телевизор</button><button id="object-view" aria-pressed="true">Вся сцена <span aria-hidden="true">↗</span></button></div><button id="expand-screen" class="expand-button" aria-label="Пользоваться без 3D" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 5h16v11H4zM9 20h6m-3-4v4"/></svg><span id="display-mode-label" aria-hidden="true">Без 3D</span></button></div>
+<p class="orbit-hint" id="orbit-hint" hidden>Потяни, чтобы повернуть. Колесо — масштаб.</p>
+<p class="device-status" id="device-status" role="status" hidden></p>
+<noscript><style>#loading-cover,#experience,.identity,.view-controls,#radio-panel,.orbit-hint,.device-status{display:none!important}html,body{height:auto;overflow:auto}.seo-fallback{position:static;display:block;visibility:visible;overflow:visible;min-height:100svh}</style></noscript>
+</body></html>

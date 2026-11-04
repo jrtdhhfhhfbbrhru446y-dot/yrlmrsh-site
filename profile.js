@@ -1,4 +1,4 @@
-const PORTRAIT = './assets/profile/yaroslav-portrait-studio56.webp';
+const PORTRAIT = '/assets/profile/yaroslav-portrait-studio56.webp';
 export const CONTACT_EMAIL = 'miroshnichenko.ys@mail.ru';
 export const CONTACT_PRESETS = [
   { id: 'project', title: 'Проект целиком', text: 'Привет, Ярослав! Хочу обсудить проект и пройти весь путь — от задачи и исследования до готового решения. Расскажу, что задумали, какие есть сроки и бюджет.' },

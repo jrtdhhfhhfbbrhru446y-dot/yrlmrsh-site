@@ -1,4 +1,4 @@
-import { projects } from './portfolio-data.js?v=studio-71-final';
+import { projects } from './portfolio-data.js?v=studio-75-final';
 import { tvServiceLogo, drawTVServiceLogo } from './screen-brand.js?v=studio-11';
 import { bindRangeDrag } from './range-drag.js?v=studio-59-final';
 
@@ -13,8 +13,8 @@ const programs = [
     title: 'В потоке',
     video: {
       available: true,
-      src: './assets/films/in-flow/in-flow-film-studio54.mp4',
-      poster: './assets/films/in-flow/tv-cover-studio54.webp',
+      src: '/assets/films/in-flow/in-flow-film-studio54.mp4',
+      poster: '/assets/films/in-flow/tv-cover-studio54.webp',
       aspectRatio: 16 / 9,
       duration: 28,
     },
@@ -23,9 +23,9 @@ const programs = [
 ];
 const getProgram = id => programs.find(program => program.id === id) || null;
 const TV_PROGRAMS = [
-  { projectId: 'in-flow', aspectRatio: 16 / 9, previewPoster: './assets/films/in-flow/tv-cover-studio54.webp', previewAspectRatio: 4 / 3 },
-  { projectId: 'tracker', aspectRatio: 16 / 9, previewPoster: './assets/cases/tracker/tv-cover-studio43.webp', previewAspectRatio: 4 / 3 },
-  { projectId: 'bolo', aspectRatio: 16 / 9, previewPoster: './assets/cases/bolo/tv-cover-studio42.webp', previewAspectRatio: 4 / 3 },
+  { projectId: 'in-flow', aspectRatio: 16 / 9, previewPoster: '/assets/films/in-flow/tv-cover-studio54.webp', previewAspectRatio: 4 / 3 },
+  { projectId: 'tracker', aspectRatio: 16 / 9, previewPoster: '/assets/cases/tracker/tv-cover-studio43.webp', previewAspectRatio: 4 / 3 },
+  { projectId: 'bolo', aspectRatio: 16 / 9, previewPoster: '/assets/cases/bolo/tv-cover-studio42.webp', previewAspectRatio: 4 / 3 },
 ];
 
 function aspectRatio(project) {

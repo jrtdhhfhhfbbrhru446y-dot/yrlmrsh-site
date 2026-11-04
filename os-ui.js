@@ -1,11 +1,37 @@
-import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-71-final';
+import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-75-final';
+import { HOME_PAGE, SITE_ORIGIN, getPageRoute, getPageRouteForView } from './page-routes.js?v=studio-75-final';
+
+// Only published pages become addresses. Other desktop windows keep their
+// state in browser history without inventing indexable URLs for the interface.
+export function getPageHref(view) {
+  const page = getPageRouteForView(view);
+  if (!page) return null;
+  const tab = view.split(':')[2];
+  return page.path + (tab === 'process' || tab === 'materials' ? `#${tab}` : '');
+}
+export function getBrowserPageView(browserLocation = globalThis.window?.location) {
+  const page = getPageRoute(browserLocation?.pathname);
+  if (!page) return null;
+  const tab = browserLocation.hash?.slice(1);
+  return page.route + (page.kind === 'project' && ['process', 'materials'].includes(tab) ? `:${tab}` : '');
+}
+export function shouldHandlePageLink(event, link, browserLocation = globalThis.window?.location) {
+  if (event.defaultPrevented || (event.button != null && event.button !== 0) || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+  if (link.hasAttribute('download') || (link.getAttribute('target') && link.getAttribute('target').toLowerCase() !== '_self')) return false;
+  if ((link.getAttribute('rel') || '').split(/\s+/).includes('external')) return false;
+  try {
+    const current = new URL(browserLocation?.href || SITE_ORIGIN);
+    const target = new URL(link.getAttribute('href'), current);
+    return target.origin === current.origin && Boolean(getPageRoute(target.pathname)) && target.pathname + target.hash === getPageHref(link.dataset.go) && !target.search;
+  } catch { return false; }
+}
 
 // Keep the four desktop icons synchronous: the 3D screen compiles their SVGs
 // immediately after initOS. Larger sections are fetched only when opened.
 const sections = {
-  skills: { load: () => import('./skill-map.js?v=studio-71-final') },
+  skills: { load: () => import('./skill-map.js?v=studio-75-final') },
   games: { load: () => import('./games.js?v=studio-71-final') },
-  profile: { load: () => import('./profile.js?v=studio-56-final') },
+  profile: { load: () => import('./profile.js?v=studio-75-final') },
 };
 function loadSection(name) {
   const section = sections[name];
@@ -71,10 +97,10 @@ const icon = (name, cls = '') => PIXEL_DRAWINGS[name]
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const HOME = [ ['experiments', 'Эксперименты', 'folder'], ['skills', 'Навыки', 'skills'], ['games', 'Игры', 'games'], ['contact', 'Контакт', 'contact'] ];
 const DESKTOP_ICON_IMAGES = {
-  folder: './assets/icons/desktop-folder-studio59.png',
-  skills: './assets/icons/desktop-skills-studio59.png',
-  games: './assets/icons/desktop-games-studio59.png',
-  contact: './assets/icons/desktop-contact-studio59.png',
+  folder: '/assets/icons/desktop-folder-studio59.png',
+  skills: '/assets/icons/desktop-skills-studio59.png',
+  games: '/assets/icons/desktop-games-studio59.png',
+  contact: '/assets/icons/desktop-contact-studio59.png',
 };
 const STORAGE_KEY = 'archive26:view:1';
 const defaults = () => ({ scale: 100, layout: 'icons', crt: true, contrast: false, motion: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
@@ -227,7 +253,53 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   let activeMenu = '', cleanupView = () => {}, clockTimer, copyTimer, noticeTimer, menuCloseTimer;
   let hoverMenu = false;
   let processIndex = 0, skillMap = null, viewTicket = 0, viewPending = false, viewActive = true;
+  let readiness = Promise.resolve({ view: 'home', ready: true }), finishReadiness = null;
   const scrollPositions = new Map();
+  const browser = globalThis.window;
+  const browserHistory = browser?.history?.pushState && browser.history.replaceState && browser.addEventListener ? browser.history : null;
+  const navigationSession = `${Date.now()}-${Math.random()}`;
+  let browserIndex = 0;
+  let browserViews = [getBrowserPageView() || 'home'];
+  function safeHistoryView(candidate) {
+    if (typeof candidate !== 'string') return null;
+    if (['home', 'experiments', 'skills', 'games', 'about', 'contact', 'settings', 'completed', 'upcoming'].includes(candidate)) return candidate;
+    if (getPageRouteForView(candidate)) return candidate;
+    const [kind, id, asset, extra] = candidate.split(':');
+    return ['image', 'demo'].includes(kind) && getProject(id) && !extra && (kind !== 'demo' || !asset) && (!asset || /^[a-z0-9-]+$/.test(asset)) ? candidate : null;
+  }
+  function browserState(next, index = browserIndex) {
+    return { ...(browserHistory.state || {}), yrlmrsh: { session: navigationSession, index, view: next } };
+  }
+  function syncBrowser(next, remember, previous) {
+    if (!browserHistory) return;
+    const href = getPageHref(next) || '/';
+    try {
+      if (remember && next !== previous) {
+        browserHistory.pushState(browserState(next, browserIndex + 1), '', href);
+        browserViews = browserViews.slice(0, ++browserIndex); browserViews.push(next);
+      } else {
+        browserHistory.replaceState(browserState(next), '', href);
+        browserViews[browserIndex] = next;
+      }
+    } catch { /* The desktop still works if the browser disallows history. */ }
+  }
+  function syncPageMetadata(next) {
+    const page = getPageRouteForView(next) || HOME_PAGE;
+    const url = SITE_ORIGIN + page.path, image = SITE_ORIGIN + page.image;
+    document.title = page.title;
+    const values = {
+      'meta[name="description"]': page.description,
+      'meta[property="og:title"]': page.title, 'meta[property="og:description"]': page.description,
+      'meta[property="og:url"]': url, 'meta[property="og:type"]': page.kind === 'article' ? 'article' : 'website',
+      'meta[property="og:image"]': image, 'meta[property="og:image:alt"]': page.imageAlt,
+      'meta[property="og:image:type"]': page.imageType,
+      'meta[property="og:image:width"]': page.imageWidth, 'meta[property="og:image:height"]': page.imageHeight,
+      'meta[name="twitter:title"]': page.title, 'meta[name="twitter:description"]': page.description,
+      'meta[name="twitter:image"]': image, 'meta[name="twitter:image:alt"]': page.imageAlt,
+    };
+    for (const [selector, value] of Object.entries(values)) document.querySelector?.(selector)?.setAttribute('content', value);
+    document.querySelector?.('link[rel="canonical"]')?.setAttribute('href', url);
+  }
   root.classList.add('retro-os');
   root.setAttribute('aria-label', 'Личный компьютер YRLMRSH');
   root.innerHTML = `<header class="os-menubar"><button class="os-brand" data-menu="system" aria-label="Системное меню" aria-haspopup="menu" aria-expanded="false">YRLMRSH</button><nav class="os-main-menu" aria-label="Меню компьютера"><button data-menu="file" aria-haspopup="menu" aria-expanded="false">Файл</button><button data-menu="view" aria-haspopup="menu" aria-expanded="false">Вид</button><button data-menu="go" aria-haspopup="menu" aria-expanded="false">Переход</button></nav><button class="os-mobile-about" data-go="about">Обо мне ↗</button><time class="os-clock"></time></header><div class="os-menu-layer" hidden></div><main class="os-workspace" tabindex="-1"></main><footer class="os-taskbar"><button class="os-radio-button" data-radio aria-label="Радио" title="Радио">${icon('radio')}<span>Радио</span></button><button class="os-desktop-button" data-go="home" aria-label="Рабочий стол" title="Рабочий стол">${icon('monitor')}<span>Рабочий стол</span></button><button class="os-tv-button" data-tv aria-label="Телевизор" title="Телевизор">${icon('television')}<span>Телевизор</span></button><span class="os-location"></span></footer><div class="os-notice" role="status" hidden></div>`;
@@ -247,7 +319,11 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   }
   function updateClock() { root.querySelector('.os-clock').textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
   function notify(text) { clearTimeout(noticeTimer); notice.textContent = text; notice.hidden = false; noticeTimer = setTimeout(() => { notice.hidden = true; }, 3000); }
-  const button = (text, attrs = '', dark = false) => `<button class="os-button${dark ? ' os-button-dark' : ''}" ${attrs}>${text}</button>`;
+  const button = (text, attrs = '', dark = false) => {
+    const href = getPageHref(attrs.match(/\bdata-go="([^"]+)"/)?.[1]);
+    const tag = href ? 'a' : 'button';
+    return `<${tag} class="os-button${dark ? ' os-button-dark' : ''}"${href ? ` href="${esc(href)}"` : ''} ${attrs}>${text}</${tag}>`;
+  };
   function windowFrame(title, body, { type = '', toolbar = '', footer = '', iconName = 'folder' } = {}) {
     return `<section class="os-window ${type}" aria-label="${esc(title)}"><header class="os-titlebar"><button class="os-mobile-back os-small-button" data-back aria-label="Назад">←</button>${icon(iconName)}<h1>${esc(title)}</h1><div class="os-window-controls"><button data-minimize aria-label="Свернуть">−</button><button data-expand aria-label="Пользоваться без 3D" title="Пользоваться без 3D">${icon('monitor')}</button><button data-go="home" aria-label="На рабочий стол"><span class="os-desktop-close">×</span><span class="os-mobile-home">${icon('monitor')}</span></button></div></header>${toolbar}<div class="os-window-content" tabindex="0">${body}</div>${footer ? `<footer class="os-window-footer">${footer}</footer>` : ''}</section>`;
   }
@@ -289,7 +365,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     return `<div class="os-desktop"><div class="os-desktop-icons">${HOME.map(([key, label, image]) => `<button class="os-desktop-item" data-select data-go="${key}"><img class="os-icon os-icon-pixel" src="${DESKTOP_ICON_IMAGES[image]}" width="64" height="64" alt="" aria-hidden="true" draggable="false">${icon(image).replace('<svg ', '<svg hidden ')}<span>${label}</span></button>`).join('')}</div></div>`;
   }
   function renderExperiments() {
-    const cards = projects.map(p => `<button class="os-project-card" data-select data-go="case:${p.id}" aria-label="${esc(p.title)} — ${esc(p.cardSummary || p.kind)}"><span class="os-cover-frame">${cover(p)}</span><span class="os-project-card-label">${icon('folder')}<span><strong>${esc(p.title)}</strong><small>${esc(p.kind)}</small>${p.cardSummary ? `<span class="os-project-summary">${esc(p.cardSummary)}</span>` : ''}</span></span></button>`).join('');
+    const cards = projects.map(p => `<a class="os-project-card" href="${getPageHref(`case:${p.id}`)}" data-select data-go="case:${p.id}" aria-label="${esc(p.title)} — ${esc(p.cardSummary || p.kind)}"><span class="os-cover-frame">${cover(p)}</span><span class="os-project-card-label">${icon('folder')}<span><strong>${esc(p.title)}</strong><small>${esc(p.kind)}</small>${p.cardSummary ? `<span class="os-project-summary">${esc(p.cardSummary)}</span>` : ''}</span></span></a>`).join('');
     return windowFrame('Эксперименты', `<div class="os-project-grid">${cards}</div>`, {
       toolbar: breadcrumbs('', `<div class="os-layout-switch" aria-label="Вид каталога"><button data-layout="icons" aria-label="Показывать карточками" aria-pressed="${preferences.layout === 'icons'}">▦</button><button data-layout="list" aria-label="Показывать списком" aria-pressed="${preferences.layout === 'list'}">☷</button></div>`),
       footer: `<button data-go="completed">${icon('folder')}<span>Завершённые кейсы</span><span>›</span></button><button data-go="upcoming">${icon('folder')}<span>Скоро</span><span>›</span></button>`,
@@ -297,7 +373,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     });
   }
   function caseNav(project, tab) {
-    return `<nav class="os-case-tabs" aria-label="Разделы кейса">${[['overview', 'Кратко', 'document'], ['process', 'Ход работы', 'skills'], ['materials', 'Материалы', 'folder']].map(([key, title, image]) => `<button data-select data-go="case:${project.id}:${key}" aria-current="${tab === key ? 'page' : 'false'}">${icon(image)}<span>${title}</span></button>`).join('')}</nav>`;
+    return `<nav class="os-case-tabs" aria-label="Разделы кейса">${[['overview', 'Кратко', 'document'], ['process', 'Ход работы', 'skills'], ['materials', 'Материалы', 'folder']].map(([key, title, image]) => `<a href="${getPageHref(`case:${project.id}:${key}`)}" data-select data-go="case:${project.id}:${key}" aria-current="${tab === key ? 'page' : 'false'}">${icon(image)}<span>${title}</span></a>`).join('')}</nav>`;
   }
   function projectActions(project) {
     if (project.id === 'noise') return `<div class="os-actions">${button('Подробный разбор', `data-go="article:${project.id}"`, true)}</div>`;
@@ -307,7 +383,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     let body;
     const articleEntry = tab === 'process' && project.processPresentation === 'article';
     if (articleEntry) {
-      body = `<div class="os-case-article-entry"><button class="os-button os-case-article-button" data-go="article:${esc(project.id)}">${icon(project.processIcon || 'burger', 'os-case-article-icon')}<span>Подробный разбор</span></button></div>`;
+      body = `<div class="os-case-article-entry"><a class="os-button os-case-article-button" href="${getPageHref(`article:${project.id}`)}" data-go="article:${esc(project.id)}">${icon(project.processIcon || 'burger', 'os-case-article-icon')}<span>Подробный разбор</span></a></div>`;
     } else if (tab === 'process') {
       const steps = project.process || [], chosen = steps[Math.min(processIndex, steps.length - 1)];
       const detailed = steps.length > 8 || steps.some(step => step.actions?.length || step.decisions?.length);
@@ -320,7 +396,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
       body = `<div class="os-case-heading"><h2>Ход работы</h2></div><div class="os-process${detailed ? ' os-process-long' : ''}" aria-label="Этапы работы">${nodes}</div>${chosen ? stepDetail(chosen, project) : ''}<div class="os-tools">${(project.tools || []).map(item => `<span>${esc(item)}</span>`).join('')}</div>${projectActions(project)}`;
     } else if (tab === 'materials') {
       const materials = (project.materials || []).filter(item => item && item.id && item.src);
-      body = `<div class="os-case-heading"><h2>Материалы</h2></div>${caseLinks(project)}<div class="os-material-grid">${project.processPresentation === 'article' ? '' : `<button class="os-material-cover" data-go="image:${project.id}">${cover(project)}<span>Рассмотреть обложку ↗</span></button>`}<button class="os-material-file" data-go="article:${project.id}">${icon('document')}<strong>Подробный разбор</strong><span>Задача, подход, решения и результат</span></button>${project.video?.available ? `<button class="os-material-file" data-tv="${project.id}">${icon('television')}<strong>Смотреть ролик</strong></button>` : ''}${project.id !== 'noise' && project.demoUrl ? `<button class="os-material-file" data-go="demo:${project.id}">${icon('monitor')}<strong>Демонстрация</strong><span>Открыть проект</span></button>` : ''}</div>${materials.length ? `<div class="os-case-media-gallery" aria-label="Иллюстрации проекта">${materials.map(item => `<button class="os-case-media-card" data-go="image:${project.id}:${esc(item.id)}"><img src="${esc(item.src)}" alt="${esc(item.alt || item.title || project.title)}"${imageDimensions(item)} loading="lazy" decoding="async"><span><strong>${esc(item.title || 'Материал проекта')}</strong>${item.caption ? `<small>${esc(item.caption)}</small>` : ''}</span></button>`).join('')}</div>` : project.processPresentation === 'article' ? '' : '<p class="os-footnote">Исходные материалы и ссылки будут дополняться по мере подготовки кейса.</p>'}`;
+      body = `<div class="os-case-heading"><h2>Материалы</h2></div>${caseLinks(project)}<div class="os-material-grid">${project.processPresentation === 'article' ? '' : `<button class="os-material-cover" data-go="image:${project.id}">${cover(project)}<span>Рассмотреть обложку ↗</span></button>`}<a class="os-material-file" href="${getPageHref(`article:${project.id}`)}" data-go="article:${project.id}">${icon('document')}<strong>Подробный разбор</strong><span>Задача, подход, решения и результат</span></a>${project.video?.available ? `<button class="os-material-file" data-tv="${project.id}">${icon('television')}<strong>Смотреть ролик</strong></button>` : ''}${project.id !== 'noise' && project.demoUrl ? `<button class="os-material-file" data-go="demo:${project.id}">${icon('monitor')}<strong>Демонстрация</strong><span>Открыть проект</span></button>` : ''}</div>${materials.length ? `<div class="os-case-media-gallery" aria-label="Иллюстрации проекта">${materials.map(item => `<button class="os-case-media-card" data-go="image:${project.id}:${esc(item.id)}"><img src="${esc(item.src)}" alt="${esc(item.alt || item.title || project.title)}"${imageDimensions(item)} loading="lazy" decoding="async"><span><strong>${esc(item.title || 'Материал проекта')}</strong>${item.caption ? `<small>${esc(item.caption)}</small>` : ''}</span></button>`).join('')}</div>` : project.processPresentation === 'article' ? '' : '<p class="os-footnote">Исходные материалы и ссылки будут дополняться по мере подготовки кейса.</p>'}`;
     } else {
       body = `${cover(project)}<div class="os-status">${esc(project.statusShort)}</div><h2>${esc(project.subtitle || project.title)}</h2>${project.intro ? `<p class="os-case-intro">${esc(project.intro)}</p>` : ''}<dl class="os-project-facts"><div><dt>Задача</dt><dd>${esc(project.task)}</dd></div>${project.contribution ? `<div><dt>Моя роль</dt><dd>${esc(project.contribution)}</dd></div>` : ''}<div><dt>Решения</dt><dd><ul class="os-done-list">${project.done.map(item => `<li>${esc(String(item).trim())}</li>`).join('')}</ul></dd></div><div><dt>${esc(project.resultLabel || 'Сейчас')}</dt><dd>${esc(project.current)}</dd></div></dl>${caseLinks(project)}${projectActions(project)}`;
     }
@@ -333,7 +409,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     const sections = article.sections || [], longArticle = sections.length >= 5 || (project.processPresentation === 'article' && sections.length >= 4);
     const lead = String(article.lead || project.intro || '').split(/\n\s*\n/).map(part => part.trim()).filter(Boolean).map(part => `<p class="os-journal-lead">${esc(part)}</p>`).join('');
     const contents = longArticle ? `<details class="os-article-toc"${root.clientWidth >= 780 ? ' open' : ''}><summary>В этой статье</summary><nav aria-label="Содержание статьи"><ol>${sections.map((section, i) => `<li><button class="os-button" data-article-jump="${i}">${esc(section.navTitle || section.heading)}</button></li>`).join('')}</ol></nav></details>` : `<div class="os-print-ad">${icon('radio')}<strong>Бюро тишины</strong><p>Дождь, шум и ветер для чтения.</p>${button('Слушать', 'data-radio')}</div>`;
-    return windowFrame('Журнал', `<div class="os-journal${longArticle ? ' os-journal-with-toc' : ''}"><article class="os-journal-reading"><header class="os-article-heading"><p class="os-article-meta">${esc(project.status)}</p><h2>${esc(article.title || project.subtitle || project.title)}</h2>${lead}${project.video?.available ? `<div class="os-actions">${button('Смотреть ролик', `data-tv="${project.id}"`, true)}</div>` : ''}</header><figure class="os-article-image">${cover(project)}</figure>${sections.map((section, i) => `<section id="os-article-section-${i}" tabindex="-1"><h3>${esc(section.heading)}</h3>${paragraphs(section.text)}${section.bullets?.length ? `<ul class="os-article-list">${section.bullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}${contentImages(section, '', project.id)}${articleSources(section)}</section>`).join('')}<footer class="os-journal-colophon"><span>YRLMRSH</span><button data-go="case:${project.id}:materials">Материалы проекта →</button></footer></article><aside class="os-journal-sidebar" aria-label="${longArticle ? 'Содержание и материалы' : 'Радио и материалы'}">${contents}<button class="os-folder-return" data-go="case:${project.id}">${icon('folder')}К проекту</button>${longArticle ? `<button class="os-folder-return" data-go="case:${project.id}:materials">${icon('folder')}Материалы</button>` : ''}${project.id === 'noise' ? (/^https:\/\//i.test(project.demoUrl || '') ? `<a class="os-folder-return" href="${esc(project.demoUrl)}" target="_blank" rel="noopener noreferrer">${icon('radio')}Открыть приложение ↗</a>` : '') : project.video?.available ? `<button class="os-folder-return" data-tv="${project.id}">${icon('television')}На телевизоре</button>` : ''}</aside></div>`, {
+    return windowFrame('Журнал', `<div class="os-journal${longArticle ? ' os-journal-with-toc' : ''}"><article class="os-journal-reading"><header class="os-article-heading"><p class="os-article-meta">${esc(project.status)}</p><h2>${esc(article.title || project.subtitle || project.title)}</h2>${lead}${project.video?.available ? `<div class="os-actions">${button('Смотреть ролик', `data-tv="${project.id}"`, true)}</div>` : ''}</header><figure class="os-article-image">${cover(project)}</figure>${sections.map((section, i) => `<section id="os-article-section-${i}" tabindex="-1"><h3>${esc(section.heading)}</h3>${paragraphs(section.text)}${section.bullets?.length ? `<ul class="os-article-list">${section.bullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}${contentImages(section, '', project.id)}${articleSources(section)}</section>`).join('')}<footer class="os-journal-colophon"><span>YRLMRSH</span><a href="${getPageHref(`case:${project.id}:materials`)}" data-go="case:${project.id}:materials">Материалы проекта →</a></footer></article><aside class="os-journal-sidebar" aria-label="${longArticle ? 'Содержание и материалы' : 'Радио и материалы'}">${contents}<a class="os-folder-return" href="${getPageHref(`case:${project.id}`)}" data-go="case:${project.id}">${icon('folder')}К проекту</a>${longArticle ? `<a class="os-folder-return" href="${getPageHref(`case:${project.id}:materials`)}" data-go="case:${project.id}:materials">${icon('folder')}Материалы</a>` : ''}${project.id === 'noise' ? (/^https:\/\//i.test(project.demoUrl || '') ? `<a class="os-folder-return" href="${esc(project.demoUrl)}" target="_blank" rel="noopener noreferrer">${icon('radio')}Открыть приложение ↗</a>` : '') : project.video?.available ? `<button class="os-folder-return" data-tv="${project.id}">${icon('television')}На телевизоре</button>` : ''}</aside></div>`, {
       type: 'os-browser-window', iconName: 'document', toolbar: `<div class="os-browser-toolbar"><button class="os-small-button" data-back aria-label="Назад">←</button><button class="os-small-button" data-forward aria-label="Вперёд" ${forward.length ? '' : 'disabled'}>→</button><button class="os-small-button" data-go="experiments" aria-label="К экспериментам">⌂</button><div class="os-address" aria-label="Открытый проект">${esc(project.title)}</div></div>`,
     });
   }
@@ -363,12 +439,20 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     items.forEach((item, i) => item.classList.toggle('is-selected', i === selected));
     if (focus) { items[selected].focus({ preventScroll: true }); items[selected].scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
   }
-  function normalized(route) { return route.startsWith('project:') ? route.replace('project:', 'case:') : route === 'game' ? 'games' : route; }
-  function show(next = 'home', { remember = true, focus = true } = {}) {
-    if (destroyed) return;
+  function normalized(route) {
+    if (typeof route !== 'string') return 'home';
+    const alias = route.startsWith('project:') ? route.replace('project:', 'case:') : route === 'game' ? 'games' : route;
+    if (alias === 'videos') return alias;
+    return safeHistoryView(alias) || (/^(case|article|demo|image):/.test(alias) ? 'experiments' : 'home');
+  }
+  function show(next = 'home', { remember = true, focus = true, historyMode = 'auto', metadata = true } = {}) {
+    if (destroyed) return Promise.resolve({ view, ready: false });
     next = normalized(next);
-    if (next === 'videos') { closeMenu(false); onTelevision(null); return; }
+    if (next === 'videos') { closeMenu(false); onTelevision(null); return readiness; }
+    finishReadiness?.({ view, ready: false });
+    readiness = new Promise(resolve => { finishReadiness = resolve; });
     const ticket = ++viewTicket;
+    const previous = view;
     const previousContent = main.querySelector('.os-window-content');
     if (previousContent && !viewPending) scrollPositions.set(view, previousContent.scrollTop);
     if (remember && next !== view) { history.push(view); forward = []; }
@@ -380,6 +464,8 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     const needsProject = ['case','article','demo','image'].includes(page) && Boolean(project);
     if (['case','article','demo','image'].includes(page) && !project) next = 'experiments';
     view = next; root.dataset.view = view;
+    if (historyMode !== 'none') syncBrowser(view, remember, previous);
+    if (metadata) syncPageMetadata(view);
     const sectionName = next === 'skills' || next === 'games' ? next : next === 'about' || next === 'contact' ? 'profile' : '';
     const pending = needsProject && !getLoadedProject(id) ? loadProject(id)
       : sectionName && !sections[sectionName].module ? loadSection(sectionName) : null;
@@ -396,15 +482,22 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
         // menu, another device, or a different page the visitor has opened.
         const restoreFocus = focus && main.contains(document.activeElement) && !root.inert && !root.hidden;
         completeView(next, needsProject ? loaded : project, { remember, focus: restoreFocus });
+        finishReadiness?.({ view, ready: true }); finishReadiness = null;
       }).catch(() => {
         if (destroyed || ticket !== viewTicket) return;
+        viewPending = false;
         const restoreFocus = focus && main.contains(document.activeElement) && !root.inert && !root.hidden;
         main.removeAttribute('aria-busy');
         main.innerHTML = windowFrame(label, `<div class="os-empty-collection"><p role="alert">Не удалось загрузить раздел. Проверь соединение и попробуй ещё раз.</p>${button('Попробовать снова', 'data-retry-view', true)}${button('На рабочий стол', 'data-go="home"')}</div>`);
         if (restoreFocus) main.querySelector('[data-retry-view]')?.focus({ preventScroll: true });
+        finishReadiness?.({ view, ready: false }); finishReadiness = null;
       });
-    } else completeView(next, needsProject ? getLoadedProject(id) : project, { remember, focus });
+    } else {
+      completeView(next, needsProject ? getLoadedProject(id) : project, { remember, focus });
+      finishReadiness?.({ view, ready: true }); finishReadiness = null;
+    }
     onViewChange(view);
+    return readiness;
   }
   function completeView(next, project, { remember, focus }) {
     viewPending = false;
@@ -437,8 +530,32 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     scrollToolbars.refresh();
     if (focus) { const target = next === 'home' ? main : main.querySelector('.os-window-content'); (target || main).focus({ preventScroll: true }); }
   }
-  function goBack() { const previous = history.pop(); if (previous) { forward.push(view); show(previous, { remember: false }); } else show('home', { remember: false }); }
-  function goForward() { const next = forward.pop(); if (next) { history.push(view); show(next, { remember: false }); } }
+  function goBack() {
+    if (browserHistory && browserIndex > 0) { browserHistory.back(); return; }
+    const previous = history.pop();
+    if (previous) { forward.push(view); show(previous, { remember: false }); }
+    else show('home', { remember: false });
+  }
+  function goForward() {
+    if (browserHistory && browserIndex < browserViews.length - 1) { browserHistory.forward(); return; }
+    const next = forward.pop(); if (next) { history.push(view); show(next, { remember: false }); }
+  }
+  function popstate(event) {
+    const saved = event.state?.yrlmrsh;
+    const candidate = safeHistoryView(saved?.view);
+    const addressed = getBrowserPageView();
+    const rootAddress = ['/', '/index.html'].includes(browser.location.pathname);
+    // Ignore arbitrary history data; a published URL always wins over state
+    // from another page or an older version of the site.
+    const candidateHref = getPageHref(candidate);
+    const next = candidate && ((candidateHref && candidateHref === getPageHref(addressed)) || (!candidateHref && rootAddress)) ? candidate : addressed || 'home';
+    if (saved?.session === navigationSession && Number.isInteger(saved.index) && saved.index >= 0 && browserViews[saved.index] === next) {
+      browserIndex = saved.index;
+      history = browserViews.slice(0, browserIndex).slice(-60);
+      forward = browserViews.slice(browserIndex + 1).reverse();
+    } else { browserIndex = 0; browserViews = [next]; history = []; forward = []; }
+    show(next, { remember: false, focus: false, historyMode: 'none' });
+  }
   function closeMenu(restoreFocus = false) {
     clearTimeout(menuCloseTimer); hoverMenu = false;
     if (!activeMenu) return;
@@ -510,6 +627,10 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   function click(event) {
     const target = event.target.closest('button, a');
     if (!target || !root.contains(target)) { closeMenu(); return; }
+    if (target.matches('a')) {
+      if (!target.hasAttribute('data-go') || !shouldHandlePageLink(event, target)) return;
+      event.preventDefault();
+    } else if (event.defaultPrevented) return;
     if (target.dataset.menu) {
       // A mouse click after pointer-enter pins the already open menu. Touch and
       // keyboard keep the same click/arrow access without relying on hover.
@@ -590,15 +711,25 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   root.addEventListener('retro-viewport', syncViewportLayout);
   brand.addEventListener('pointerenter', openHoverMenu); brand.addEventListener('pointerleave', leaveHoverMenu);
   menuLayer.addEventListener('pointerenter', keepHoverMenu); menuLayer.addEventListener('pointerleave', leaveHoverMenu);
-  applyPreferences(false); updateClock(); clockTimer = setInterval(updateClock, 30000); show('home', { focus: false });
+  applyPreferences(false); updateClock(); clockTimer = setInterval(updateClock, 30000);
+  show('home', { focus: false, historyMode: 'none', metadata: false });
+  if (browserHistory) {
+    // Seed the existing entry rather than pushing a synthetic home page in
+    // front of a directly opened article. The intro still runs on every load.
+    try { browserHistory.replaceState(browserState(browserViews[0]), ''); } catch { /* History can be unavailable in embedded previews. */ }
+    browser.addEventListener('popstate', popstate);
+  }
   function focus() { if (selected >= 0 && selectable().length) select(selected); else (main.querySelector('.os-window-content') || main).focus({ preventScroll: true }); }
   function dispose() {
-    if (destroyed) return; destroyed = true; scrollToolbars.dispose(); cleanupView(); clearInterval(clockTimer); clearTimeout(copyTimer); clearTimeout(noticeTimer); clearTimeout(menuCloseTimer);
+    if (destroyed) return; destroyed = true;
+    finishReadiness?.({ view, ready: false }); finishReadiness = null;
+    scrollToolbars.dispose(); cleanupView(); clearInterval(clockTimer); clearTimeout(copyTimer); clearTimeout(noticeTimer); clearTimeout(menuCloseTimer);
+    if (browserHistory) browser.removeEventListener('popstate', popstate);
     root.removeEventListener('click', click); root.removeEventListener('submit', submit); root.removeEventListener('keydown', keydown); document.removeEventListener('pointerdown', outsidePointer); root.removeEventListener('retro-activity', activity);
     root.removeEventListener('retro-viewport', syncViewportLayout);
     brand.removeEventListener('pointerenter', openHoverMenu); brand.removeEventListener('pointerleave', leaveHoverMenu);
     menuLayer.removeEventListener('pointerenter', keepHoverMenu); menuLayer.removeEventListener('pointerleave', leaveHoverMenu);
     root.classList.remove('retro-os','os-crt','os-high-contrast','os-reduce-motion'); root.innerHTML = '';
   }
-  return { open: show, show, focus, dispose, destroy: dispose, get view() { return view; }, get preferences() { return { ...preferences }; } };
+  return { open: show, show, whenReady: () => readiness, focus, dispose, destroy: dispose, get view() { return view; }, get preferences() { return { ...preferences }; } };
 }

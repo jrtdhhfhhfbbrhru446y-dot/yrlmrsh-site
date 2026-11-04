@@ -69,7 +69,7 @@
 
 /* A graphite outline and a low relief face, with no offset silhouette. */
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button) {
   --key-ink: var(--os-ink);
   --key-face: var(--os-surface);
@@ -81,12 +81,12 @@
   font-weight: 600;
 }
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button)::before {
   clip-path: none;
 }
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button)::after {
   inset: 1px;
   clip-path: none;
@@ -94,7 +94,7 @@
   box-shadow: inset 0 1px 0 var(--key-highlight), inset 0 -1px 0 var(--key-inset);
 }
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button):where(:hover:not(:disabled)) {
   --key-face: var(--os-soft);
   --key-edge: var(--os-ink);
@@ -234,8 +234,8 @@
 .retro-os .os-tools span { border: 0; padding: 0; font-size: .72em; color: var(--os-muted); }
 .retro-os .os-tools span + span::before { content: "·"; margin-right: 12px; }
 .retro-os .os-material-grid { gap: 14px; }
-.retro-os .os-material-grid > button { border: 1px solid var(--os-frame); min-height: 110px; background: linear-gradient(180deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -1px 0 var(--os-surface-low); }
-.retro-os .os-material-grid > button:hover { background: var(--os-soft); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -2px 0 #b9c5ad; }
+.retro-os .os-material-grid > :is(button, a) { border: 1px solid var(--os-frame); min-height: 110px; background: linear-gradient(180deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -1px 0 var(--os-surface-low); }
+.retro-os .os-material-grid > :is(button, a):hover { background: var(--os-soft); box-shadow: inset 0 1px 0 var(--os-highlight), inset 0 -2px 0 #b9c5ad; }
 .retro-os .os-material-cover { padding: 12px !important; gap: 16px; }
 .retro-os .os-material-file { padding: 14px !important; gap: 8px; }
 .retro-os .os-material-file strong { font-weight: 700; line-height: 1.4; }
@@ -284,7 +284,7 @@
 .retro-os .os-journal-reading > section p { font-size: 1em; font-weight: 400; line-height: 1.7; white-space: pre-line; }
 .retro-os .os-journal-reading > section p + p { margin-top: 1.1em; }
 .retro-os .os-journal-colophon { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; border-top: 1px solid var(--os-line); margin: 32px 0 8px; padding-top: 16px; color: var(--os-muted); font: .74em/1.6 "Courier New", Courier, monospace; }
-.retro-os .os-journal-colophon button { padding: 2px 0; color: var(--os-ink); font: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.retro-os .os-journal-colophon :is(button, a) { padding: 2px 0; color: var(--os-ink); font: inherit; text-decoration: underline; text-underline-offset: 4px; }
 .retro-os .os-journal-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 58ch; margin: 30px auto 0; border: 0; border-top: 1px solid var(--os-line); padding: 20px 0 0; font-family: Georgia, "Times New Roman", serif; }
 .retro-os .os-journal-sidebar .os-print-ad { grid-column: 1 / -1; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 16px; text-align: left; border: 1px solid var(--os-line); background: linear-gradient(180deg, var(--os-highlight), var(--os-surface)); box-shadow: inset 0 1px 0 var(--os-highlight); }
 .retro-os .os-journal-sidebar .os-print-ad > .os-icon { grid-column: 1; grid-row: 1 / 3; width: 30px; height: 30px; }

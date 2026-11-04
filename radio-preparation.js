@@ -80,7 +80,7 @@ export async function prepareRadioModel(THREE) {
     let worker, phase = 'worker';
     try {
       const result = await new Promise((resolve, reject) => {
-        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-71-final', import.meta.url), { type: 'module' });
+        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-75-final', import.meta.url), { type: 'module' });
         let settled = false;
         const settle = action => value => { if (settled) return; settled = true; clearTimeout(timer); action(value); };
         const fail = settle(reject);

@@ -20,7 +20,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -55,7 +55,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -75,7 +75,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -109,7 +109,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -149,7 +149,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -173,7 +173,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -197,7 +197,7 @@
   .retro-os .os-window-controls button,
   .retro-os .os-map-return,
   .retro-os .os-layout-switch button,
-  .retro-os .os-case-tabs button,
+  .retro-os .os-case-tabs :is(button, a),
   .retro-os .os-folder-return,
   .retro-os .os-window-footer button,
   .retro-games .rg-tabs > button,
@@ -218,7 +218,7 @@
 .retro-os .os-button-dark,
 .retro-os .os-button-dark:hover,
 .retro-os .os-layout-switch button[aria-pressed="true"],
-.retro-os .os-case-tabs button[aria-current="page"],
+.retro-os .os-case-tabs :is(button, a)[aria-current="page"],
 .retro-games :is(.rg-tabs, .rg-mine-mode) > button[aria-pressed="true"],
 .view-switch > button[aria-pressed="true"],
 .view-controls .expand-button[aria-pressed="true"],
@@ -303,12 +303,12 @@
 .retro-os .os-window-controls button::after,
 .retro-os .os-small-button::after { box-shadow: inset 0 1px 0 var(--key-highlight), inset 0 0 0 1px var(--key-face), inset 0 0 0 2px var(--key-inset); }
 .retro-os .os-layout-switch button { --key-cut: 2px; }
-.retro-os .os-case-tabs button { padding: .65em .5em; }
+.retro-os .os-case-tabs :is(button, a) { padding: .65em .5em; }
 .retro-os .os-folder-return { padding: .65em .7em !important; }
 .retro-os .os-window-footer button { padding: .55em .75em; }
 .retro-os .os-window-footer button > span:last-child { opacity: .65; }
-.retro-os .os-case-tabs button[aria-current="page"] { --os-icon-face: #303030; }
-.retro-os :is(.os-case-tabs button, .os-window-footer button, .os-folder-return) .os-icon { --os-icon-face: var(--key-face); }
+.retro-os .os-case-tabs :is(button, a)[aria-current="page"] { --os-icon-face: #303030; }
+.retro-os :is(.os-case-tabs :is(button, a), .os-window-footer button, .os-folder-return) .os-icon { --os-icon-face: var(--key-face); }
 
 .retro-games :is(.rg-tabs, .rg-actions, .rg-toolbar, .rg-mine-mode) > button { padding: 6px 11px; min-height: 31px; font-weight: 400; }
 .retro-games .rg-dpad > button { --key-cut: 2px; padding: 0; min-height: 28px; }
@@ -337,7 +337,7 @@
 .radio-system .radio-resume { padding: 7px 10px; min-height: 36px; }
 
 @container retro-screen (max-width: 400px) {
-  .retro-os .os-case-tabs button { padding: .5em .25em; }
+  .retro-os .os-case-tabs :is(button, a) { padding: .5em .25em; }
   .retro-os .os-window-footer button { padding: .45em .4em; }
   .retro-os .os-settings-actions .os-button { padding: .55em .65em !important; }
   .retro-os .os-print-ad .os-button { padding: .45em .65em !important; }

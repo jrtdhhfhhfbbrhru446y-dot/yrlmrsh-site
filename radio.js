@@ -360,7 +360,7 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
     recording.volume = state.volume;
     // Assign the source only when the recording is requested. Noise, opening
     // the panel and switching sections must not download or recreate it.
-    if (!recording.getAttribute('src')) recording.setAttribute('src', './assets/audio/radio-recording.mp3?v=studio-39-final');
+    if (!recording.getAttribute('src')) recording.setAttribute('src', '/assets/audio/radio-recording.mp3?v=studio-39-final');
     if (recording.error) recording.load();
     if (Number.isFinite(recording.duration) && recording.currentTime >= recording.duration - .05) recording.currentTime = 0;
     notify();
