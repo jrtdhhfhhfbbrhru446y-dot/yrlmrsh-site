@@ -68,7 +68,7 @@
   .os-project-card-label strong, .os-profile-identity h2,
   .os-contact-identity h2) { letter-spacing: -.025em; }
 .retro-os :is(.os-main-menu > button, .os-taskbar > button,
-  .os-case-tabs > button, .os-desktop-item > span) { font-weight: 500; }
+  .os-case-tabs > :is(button, a), .os-desktop-item > span) { font-weight: 500; }
 
 /* A window has an outside contour, a bevel and a second inside contour.
    The rings sit over its existing edge; they add no padding or layout shift. */
@@ -171,7 +171,7 @@
   font-weight: 600;
 }
 .retro-os .os-layout-switch > button[aria-pressed=true],
-.retro-os .os-case-tabs > button[aria-current=page] {
+.retro-os .os-case-tabs > :is(button, a)[aria-current=page] {
   --key-ink: #fcfbf6;
   --key-face: #363633;
   --key-edge: #292926;

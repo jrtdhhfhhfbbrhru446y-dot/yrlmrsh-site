@@ -166,7 +166,7 @@
 .retro-os .os-layout-switch { gap: 5px; }
 .retro-os .os-layout-switch > button { width: 29px; height: 29px; font-size: 20px; line-height: 1; }
 .retro-os .os-layout-switch > button[aria-pressed=true],
-.retro-os .os-case-tabs > button[aria-current=page] {
+.retro-os .os-case-tabs > :is(button, a)[aria-current=page] {
   --key-ink: var(--os-ink);
   --key-face: var(--os-soft);
   --key-edge: var(--os-frame);
@@ -207,7 +207,7 @@
 .retro-os[data-layout=list] .os-project-card-label { padding: 3px; }
 .retro-os .os-case-layout { grid-template-columns: clamp(118px, 19cqw, 155px) minmax(0, 1fr); }
 .retro-os .os-case-tabs { border-right: 1px solid var(--os-line); padding: 9px 6px; gap: 6px; background: var(--os-surface); box-shadow: inset 0 1px 0 var(--os-highlight); }
-.retro-os .os-case-tabs > button { padding: .7em .55em; font-weight: 600; font-size: .78em; line-height: 1.4; }
+.retro-os .os-case-tabs > :is(button, a) { padding: .7em .55em; font-weight: 600; font-size: .78em; line-height: 1.4; }
 .retro-os .os-case-body { padding: clamp(16px, 2.8cqw, 28px); }
 .retro-os .os-case-body > h2,
 .retro-os .os-demo-page > h2 { margin: .65em 0 .9em; font-size: clamp(22px, 1.5em, 29px); line-height: 1.3; font-weight: 700; letter-spacing: -.035em; }
@@ -327,7 +327,7 @@
   .retro-os .os-window-content { padding: 14px; }
   .retro-os .os-case-layout { grid-template-columns: minmax(0, 1fr); }
   .retro-os .os-case-tabs { border-right: 0; border-bottom: 1px solid var(--os-line); padding: 6px; gap: 5px; }
-  .retro-os .os-case-tabs > button { min-width: 0; font-size: clamp(12px, 3cqw, 15px); padding: .55em .35em; }
+  .retro-os .os-case-tabs > :is(button, a) { min-width: 0; font-size: clamp(12px, 3cqw, 15px); padding: .55em .35em; }
   .retro-os .os-case-body { padding: 18px 14px; }
   .retro-os .os-process { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .retro-os .os-process-step { grid-row: auto !important; grid-column: 1 !important; min-height: 52px; padding: 11px 13px; }
