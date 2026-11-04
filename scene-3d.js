@@ -1,14 +1,23 @@
 /** Optional, demand-rendered studio. This module is never imported in the 2D view. */
-export async function createScene3D(options) {
-  if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
-  const [THREE, { GLTFLoader }, { OrbitControls }, { RoomEnvironment }, { removeLaptopLabels }, { prepareRadioModel }] = await Promise.all([
+let sceneModulesPromise = null;
+
+// Desktop startup may open this module graph early without creating WebGL,
+// preparing radio artwork or requesting either model.
+export function preloadScene3D() {
+  if (!sceneModulesPromise) sceneModulesPromise = Promise.all([
     import('./assets/vendor/three.module.js'),
     import('./assets/vendor/GLTFLoader.js'),
     import('./assets/vendor/OrbitControls.js'),
     import('./assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-66-final')
-  ]);
+    import('./radio-preparation.js?v=studio-67-final')
+  ]).catch(error => { sceneModulesPromise = null; throw error; });
+  return sceneModulesPromise;
+}
+
+export async function createScene3D(options) {
+  if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
+  const [THREE, { GLTFLoader }, { OrbitControls }, { RoomEnvironment }, { removeLaptopLabels }, { prepareRadioModel }] = await preloadScene3D();
   if (options.isSuspended?.()) throw new DOMException('The 3D view is not active.', 'AbortError');
   const { canvas, anchor, tvAnchor, tvCanvas } = options;
   // Fetch both complete models while a worker prepares the unchanged radio.
@@ -17,19 +26,20 @@ export async function createScene3D(options) {
   const requestModel = url => modelLoader.loadAsync(url).then(gltf => ({ gltf }), error => ({ error }));
   const laptopRequest = requestModel('./assets/laptop/classic_laptop_2k.gltf');
   const televisionRequest = requestModel('./assets/television/Television_01_2k.gltf');
-  const preparedRadio = await prepareRadioModel(THREE);
+  // Keep rejection handled while independent GPU setup runs on this thread.
+  const radioRequest = prepareRadioModel(THREE).then(model => ({ model }), error => ({ error }));
+  let renderer, scene, camera, controls, initialGpuGate, initialWarmup;
+  let environmentGenerator, environmentCube, environmentTarget, room;
+  let startupDiscarded = false;
   const discardStartup = () => {
-    preparedRadio.dispose();
+    if (startupDiscarded) return;
+    startupDiscarded = true;
+    void radioRequest.then(({ model }) => model?.dispose());
     for (const request of [laptopRequest, televisionRequest]) void request.then(({ gltf }) => { if (gltf) disposeTree(gltf.scene); });
+    initialGpuGate?.stop(); initialWarmup?.stop(); controls?.dispose();
+    if (scene) disposeTree(scene);
+    room?.dispose(); environmentGenerator?.dispose(); environmentCube?.dispose(); environmentTarget?.dispose(); renderer?.dispose();
   };
-  if (options.isSuspended?.()) {
-    discardStartup();
-    throw new DOMException('The 3D view is not active.', 'AbortError');
-  }
-  canvas.dataset.radioPreparation = preparedRadio.preparationStats.mode;
-  canvas.dataset.radioFallbackReason = preparedRadio.preparationStats.fallbackReason || '';
-  canvas.dataset.radioMainMs = preparedRadio.preparationStats.mainThreadMs.toFixed(1);
-  canvas.dataset.radioWorkerMs = (preparedRadio.preparationStats.workerMs || 0).toFixed(1);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const screen = { left: -.22408510, right: .22431661, top: .51288581, bottom: .14632967, z: -.20660 };
   const laptopOffset = new THREE.Vector3(-.26, 0, 0);
@@ -64,85 +74,85 @@ export async function createScene3D(options) {
     catch { /* Optional local diagnostics cannot interrupt rendering. */ }
   };
   let firstRenderMeasured = false;
-  let renderer;
-  const rendererStarted = performance.now();
-  try { renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true, powerPreference: 'default' }); }
-  catch (error) { discardStartup(); throw error; }
-  startupMeasure('renderer constructor', rendererStarted);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.shadowMap.autoUpdate = false;
-  const initialGpuGate = createInitialGpuGate({
-    getContext: () => renderer.getContext(), canRun: () => canRender(),
-    onSettled: result => {
-      canvas.dataset.initialGpuStatus = result.status;
-      canvas.dataset.initialGpuWaitMs = result.elapsedMs.toFixed(1);
-      if (initialGpuAttempts <= 8) startupMeasure(`GPU wait ${initialGpuAttempts}`, result.started);
-      if (!canRender() || initialReadyFired) return;
-      if (result.status === 'timeout' || result.status === 'wait-failed') {
-        options.onError?.(new Error(`Initial GPU frame ${result.status}`)); return;
+  try {
+    const rendererStarted = performance.now();
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true, powerPreference: 'default' });
+    startupMeasure('renderer constructor', rendererStarted);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    initialGpuGate = createInitialGpuGate({
+      getContext: () => renderer.getContext(), canRun: () => canRender(),
+      onSettled: result => {
+        canvas.dataset.initialGpuStatus = result.status;
+        canvas.dataset.initialGpuWaitMs = result.elapsedMs.toFixed(1);
+        if (initialGpuAttempts <= 8) startupMeasure(`GPU wait ${initialGpuAttempts}`, result.started);
+        if (!canRender() || initialReadyFired) return;
+        if (result.status === 'timeout' || result.status === 'wait-failed') {
+          options.onError?.(new Error(`Initial GPU frame ${result.status}`)); return;
+        }
+        // Any change received while the previous frame was in flight must be
+        // drawn and fenced too, before the loader may reveal the composition.
+        if (result.dirty || tween || (televisionWanted() && !tvReady && !tvFailed)) {
+          requestFrame(); return;
+        }
+        if (initialFramePending) {
+          initialFramePending = false; initialReadyFired = true;
+          if (initialGpuStarted !== null) startupMeasure('GPU readiness total', initialGpuStarted);
+          options.onReady?.();
+        }
       }
-      // Any change received while the previous frame was in flight must be
-      // drawn and fenced too, before the loader may reveal the composition.
-      if (result.dirty || tween || (televisionWanted() && !tvReady && !tvFailed)) {
-        requestFrame(); return;
+    });
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf7f7f4);
+    scene.fog = new THREE.Fog(0xf7f7f4, 4, 10);
+    camera = new THREE.PerspectiveCamera(30, width / height, .01, 25);
+    initialWarmup = createSceneWarmup({
+      renderer, scene, camera, canRun: () => canRender(),
+      onReady: stats => {
+        initialWarmupDone = true;
+        canvas.dataset.warmupMs = stats.elapsedMs.toFixed(1);
+        canvas.dataset.warmupMainMs = stats.mainThreadMs.toFixed(1);
+        canvas.dataset.warmupMaxChunkMs = stats.maxChunkMs.toFixed(1);
+        canvas.dataset.warmupTextures = String(stats.textures);
+        canvas.dataset.warmupPrograms = String(stats.programs);
+        canvas.dataset.warmupStatus = stats.status;
+        requestFrame();
       }
-      if (initialFramePending) {
-        initialFramePending = false; initialReadyFired = true;
-        if (initialGpuStarted !== null) startupMeasure('GPU readiness total', initialGpuStarted);
-        options.onReady?.();
-      }
-    }
-  });
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf7f7f4);
-  scene.fog = new THREE.Fog(0xf7f7f4, 4, 10);
-  const camera = new THREE.PerspectiveCamera(30, width / height, .01, 25);
-  const initialWarmup = createSceneWarmup({
-    renderer, scene, camera, canRun: () => canRender(),
-    onReady: stats => {
-      initialWarmupDone = true;
-      canvas.dataset.warmupMs = stats.elapsedMs.toFixed(1);
-      canvas.dataset.warmupMainMs = stats.mainThreadMs.toFixed(1);
-      canvas.dataset.warmupMaxChunkMs = stats.maxChunkMs.toFixed(1);
-      canvas.dataset.warmupTextures = String(stats.textures);
-      canvas.dataset.warmupPrograms = String(stats.programs);
-      canvas.dataset.warmupStatus = stats.status;
-      requestFrame();
-    }
-  });
-  const controls = new OrbitControls(camera, canvas);
-  controls.enabled = false;
-  controls.enableDamping = !reduced.matches;
-  controls.dampingFactor = .18;
-  controls.enablePan = false;
-  controls.minDistance = .55; controls.maxDistance = 5.8;
-  controls.maxPolarAngle = Math.PI * .49; controls.minPolarAngle = .18;
-  // This OrbitControls release uses deltaTime only for autoRotate. Normalize its
-  // actual damping coefficient ourselves; pointer drags follow the hand directly.
-  const nativeControlsUpdate = controls.update.bind(controls);
-  controls.update = deltaSeconds => {
-    const now = performance.now();
-    const delta = deltaSeconds ?? Math.min(.05, Math.max(.001, (now - lastControlUpdate) / 1000));
-    lastControlUpdate = now;
-    controls.dampingFactor = interacting ? 1 : 1 - Math.exp(-delta / .085);
-    return nativeControlsUpdate(delta);
-  };
-  const environmentStarted = performance.now();
-  const environmentGenerator = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
-  // The library's fromScene hardcodes a 256px cube. A 128px capture is sufficient
-  // for rough vintage plastic and reduces the persistent environment allocation.
-  const environmentCube = new THREE.WebGLCubeRenderTarget(128, { type: THREE.HalfFloatType });
-  const environmentCamera = new THREE.CubeCamera(.1, 100, environmentCube);
-  environmentCamera.update(renderer, room);
-  const environmentTarget = environmentGenerator.fromCubemap(environmentCube.texture);
-  scene.environment = environmentTarget.texture;
-  scene.environmentIntensity = .65;
-  room.dispose(); environmentGenerator.dispose(); environmentCube.dispose();
-  startupMeasure('PMREM generation', environmentStarted);
+    });
+    controls = new OrbitControls(camera, canvas);
+    controls.enabled = false;
+    controls.enableDamping = !reduced.matches;
+    controls.dampingFactor = .18;
+    controls.enablePan = false;
+    controls.minDistance = .55; controls.maxDistance = 5.8;
+    controls.maxPolarAngle = Math.PI * .49; controls.minPolarAngle = .18;
+    // This OrbitControls release uses deltaTime only for autoRotate. Normalize its
+    // actual damping coefficient ourselves; pointer drags follow the hand directly.
+    const nativeControlsUpdate = controls.update.bind(controls);
+    controls.update = deltaSeconds => {
+      const now = performance.now();
+      const delta = deltaSeconds ?? Math.min(.05, Math.max(.001, (now - lastControlUpdate) / 1000));
+      lastControlUpdate = now;
+      controls.dampingFactor = interacting ? 1 : 1 - Math.exp(-delta / .085);
+      return nativeControlsUpdate(delta);
+    };
+    const environmentStarted = performance.now();
+    environmentGenerator = new THREE.PMREMGenerator(renderer); room = new RoomEnvironment();
+    // The library's fromScene hardcodes a 256px cube. A 128px capture is sufficient
+    // for rough vintage plastic and reduces the persistent environment allocation.
+    environmentCube = new THREE.WebGLCubeRenderTarget(128, { type: THREE.HalfFloatType });
+    const environmentCamera = new THREE.CubeCamera(.1, 100, environmentCube);
+    environmentCamera.update(renderer, room);
+    environmentTarget = environmentGenerator.fromCubemap(environmentCube.texture);
+    scene.environment = environmentTarget.texture;
+    scene.environmentIntensity = .65;
+    room.dispose(); room = null; environmentGenerator.dispose(); environmentGenerator = null; environmentCube.dispose(); environmentCube = null;
+    startupMeasure('PMREM generation', environmentStarted);
+  } catch (error) { discardStartup(); throw error; }
   scene.add(new THREE.HemisphereLight(0xffffff, 0xc5c2b3, 2));
   const keyLight = new THREE.DirectionalLight(0xffffff, 3.1);
   keyLight.position.set(-1.2, 2, 1.7); keyLight.castShadow = true;
@@ -156,6 +166,19 @@ export async function createScene3D(options) {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0xf7f7f4, roughness: 1 }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -.0012; floor.receiveShadow = true;
   scene.add(floor);
+  // The unchanged radio is needed only now; renderer/PMREM preparation above
+  // overlaps its worker instead of sitting behind it on the critical path.
+  const radioResult = await radioRequest;
+  if (radioResult.error) { discardStartup(); throw radioResult.error; }
+  const preparedRadio = radioResult.model;
+  if (options.isSuspended?.()) {
+    discardStartup();
+    throw new DOMException('The 3D view is not active.', 'AbortError');
+  }
+  canvas.dataset.radioPreparation = preparedRadio.preparationStats.mode;
+  canvas.dataset.radioFallbackReason = preparedRadio.preparationStats.fallbackReason || '';
+  canvas.dataset.radioMainMs = preparedRadio.preparationStats.mainThreadMs.toFixed(1);
+  canvas.dataset.radioWorkerMs = (preparedRadio.preparationStats.workerMs || 0).toFixed(1);
   radioObject = preparedRadio;
   radioObject.group.position.copy(radioPosition); radioObject.group.scale.setScalar(radioScale); radioObject.group.rotation.y = .07;
   radioObject.setState(options.getRadioState?.() || { powered: false, station: 'rain', volume: .25 });

@@ -101,6 +101,12 @@ export function renderEyeAscii({ closure = 0, gazeX = 0, gazeY = 0, pupil = .078
     const length = (.040 + .029 * Math.abs(x) + .009 * Math.sin(index * 2.4)) * (1 - closure * .25) * emergence;
     lashes.push([x, upper - .003, x + (x * .035 - .006) * emergence, upper - length]);
   }
+  // A lid depends on the column and current pose, never on the row. Reuse the
+  // identical contour values for all 43 rows without changing their arithmetic.
+  const columnLids = Array.from({ length: COLUMNS }, (_, column) => {
+    const x = (column / (COLUMNS - 1) - .5) * 2.30;
+    return Math.abs(x) < 1.035 ? lidCurves(clamp(x, -.999, .999), closure, emergence) : null;
+  });
   const rows = [];
   for (let row = 0; row < ROWS; row++) {
     const y = (row / (ROWS - 1) - .5) * 1.105;
@@ -110,7 +116,7 @@ export function renderEyeAscii({ closure = 0, gazeX = 0, gazeY = 0, pupil = .078
       let density = 0, contour = '';
       if (Math.abs(x) < 1.035) {
         const safeX = clamp(x, -.999, .999);
-        const { upper, lower, crease } = lidCurves(safeX, closure, emergence);
+        const { upper, lower, crease } = columnLids[column];
         const topDistance = y - upper, bottomDistance = lower - y;
         if (Math.abs(x) < 1 && topDistance >= 0 && bottomDistance >= 0) {
           density = .025 + Math.abs(x) ** 5 * .24;

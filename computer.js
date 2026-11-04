@@ -1,7 +1,7 @@
-import { initOS } from './os-ui.js?v=studio-66-final';
-import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-66-final';
-import { takeStartupLoader } from './startup-loader.js?v=studio-66-final';
-import { createTelevision } from './television.js?v=studio-66-final';
+import { initOS } from './os-ui.js?v=studio-67-final';
+import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-67-final';
+import { takeStartupLoader } from './startup-loader.js?v=studio-67-final';
+import { createTelevision } from './television.js?v=studio-67-final';
 import { createRadio } from './radio.js?v=studio-61-final';
 
 const $ = selector => document.querySelector(selector);
@@ -234,7 +234,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (flat || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-66-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-67-final');
     if (flat) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,

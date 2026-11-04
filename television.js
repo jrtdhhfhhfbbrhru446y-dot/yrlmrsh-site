@@ -1,4 +1,4 @@
-import { projects } from './portfolio-data.js?v=studio-66-final';
+import { projects } from './portfolio-data.js?v=studio-67-final';
 import { tvServiceLogo, drawTVServiceLogo } from './screen-brand.js?v=studio-11';
 import { bindRangeDrag } from './range-drag.js?v=studio-59-final';
 
@@ -66,6 +66,52 @@ export function videoBufferedSegments(buffered, total) {
   }, []);
 }
 
+// A failed image gets one new request per explicit retry/online event. Loaded
+// and pending images keep their identity; failures never schedule themselves.
+export function createPosterRequests({ createImage = () => new Image(), onlineTarget = globalThis.window, canRetryOnOnline = () => true } = {}) {
+  const entries = new Map();
+  let disposed = false, listening = false;
+  function start(entry) {
+    if (disposed || entry.status === 'pending' || entry.status === 'loaded') return entry.image;
+    const image = createImage();
+    entry.image = image; entry.status = 'pending'; image.decoding = 'async';
+    const settle = loaded => {
+      if (disposed || entry.image !== image || entry.status !== 'pending') return;
+      image.onload = image.onerror = null;
+      entry.status = loaded && image.naturalWidth > 0 ? 'loaded' : 'failed';
+      entry.onSettled();
+    };
+    image.onload = () => settle(true);
+    image.onerror = () => settle(false);
+    entry.onImage(image);
+    image.src = entry.src;
+    return image;
+  }
+  function retryFailed() {
+    if (disposed) return;
+    for (const entry of entries.values()) if (entry.status === 'failed') start(entry);
+  }
+  function online() { if (!disposed && canRetryOnOnline()) retryFailed(); }
+  return {
+    add(key, src, onImage, onSettled) {
+      if (disposed) return null;
+      if (entries.has(key)) return entries.get(key).image;
+      const entry = { src, onImage, onSettled, status: 'new', image: null };
+      entries.set(key, entry);
+      if (!listening) { onlineTarget?.addEventListener?.('online', online); listening = true; }
+      return start(entry);
+    },
+    retryFailed,
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      if (listening) onlineTarget?.removeEventListener?.('online', online);
+      for (const entry of entries.values()) if (entry.image) entry.image.onload = entry.image.onerror = null;
+      entries.clear();
+    }
+  };
+}
+
 // Real project films and local screen studies share the same CRT canvas.
 // One canvas feeds the physical television texture and its HTML controls.
 export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
@@ -97,6 +143,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   const posters = new Map();
   const posterImages = new Map();
   const previewImages = new Map();
+  const posterRequests = createPosterRequests({ canRetryOnOnline: () => !mobilePresentation || active });
   let media = null, mediaProject = null, mediaListeners = [], muted = false, volume = .8;
   let lastAudibleVolume = volume, lastMutedState = null, postersRequested = false;
   let mediaLoading = false, mediaFailed = false, loadingReason = 'loading', lastBufferKey = '';
@@ -657,8 +704,9 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     const enabled = !document.body.classList.contains('crt-off');
     const nextMobile = document.body.classList.contains('mobile-mode');
     if ((enabled !== crtEnabled || nextMobile !== mobilePresentation) && !disposed) {
+      const enteringDesktop = mobilePresentation && !nextMobile;
       crtEnabled = enabled; mobilePresentation = nextMobile;
-      if (!mobilePresentation) requestPosters();
+      if (!mobilePresentation) requestPosters({ retry: enteringDesktop });
       draw();
     }
   });
@@ -677,8 +725,9 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     drawPoster(project, 3, poster.getContext('2d', { alpha: false }), poster.width, poster.height);
     posters.set(project.id, poster);
   }
-  function requestPosters() {
-    if (postersRequested || disposed) return;
+  function requestPosters({ retry = true } = {}) {
+    if (disposed) return;
+    if (postersRequested) { if (retry) posterRequests.retryFailed(); return; }
     postersRequested = true;
     for (const project of programs) {
       const poster = posters.get(project.id);
@@ -689,16 +738,10 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
         draw();
       };
       if (hasFilm(project) && project.video.poster) {
-        const image = new Image(); image.decoding = 'async';
-        posterImages.set(project.id, image);
-        image.onload = image.onerror = redrawPoster;
-        image.src = project.video.poster;
+        posterRequests.add(`poster:${project.id}`, project.video.poster, image => posterImages.set(project.id, image), redrawPoster);
       }
       if (previewPoster) {
-        const image = new Image(); image.decoding = 'async';
-        previewImages.set(project.id, image);
-        image.onload = image.onerror = redrawPoster;
-        image.src = previewPoster;
+        posterRequests.add(`preview:${project.id}`, previewPoster, image => previewImages.set(project.id, image), redrawPoster);
       }
     }
   }
@@ -711,7 +754,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     setActive(value) {
       const changed = active !== value; active = value;
       if (!active) { seekDrag?.cancel(); volumeDrag?.cancel(); playing = false; media?.pause(); stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; updateTime(); }
-      else { requestPosters(); schedule(); }
+      else { requestPosters({ retry: changed }); schedule(); }
       syncNoise(); updateLoading(); if (changed) draw();
     },
     focus() {
@@ -722,9 +765,8 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
       seekDrag?.dispose(); seekDrag = null;
       volumeDrag?.dispose(); volumeDrag = null;
       disposed = true; stop(); releaseMedia(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); appearance.disconnect();
-      for (const image of posterImages.values()) image.onload = image.onerror = null;
+      posterRequests.dispose();
       posterImages.clear();
-      for (const image of previewImages.values()) image.onload = image.onerror = null;
       previewImages.clear();
       document.removeEventListener('visibilitychange', visibility);
       root.removeEventListener('click', click); root.removeEventListener('input', input); root.removeEventListener('keydown', keyboard);
