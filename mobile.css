@@ -180,8 +180,8 @@ body.mobile-mode {
 }
 .mobile-mode .retro-os.os-reduce-motion .os-case-tabs,
 .mobile-mode .retro-os.os-reduce-motion .pm-topbar { transition: none; }
-.mobile-mode .retro-os .os-case-tabs button { flex: 1; justify-content: center; gap: 5px; min-height: 44px; padding: 5px; font-size: 11px; }
-.mobile-mode .retro-os .os-case-tabs button .os-icon { display: none; }
+.mobile-mode .retro-os .os-case-tabs :is(button, a) { flex: 1; justify-content: center; gap: 5px; min-height: 44px; padding: 5px; font-size: 11px; }
+.mobile-mode .retro-os .os-case-tabs :is(button, a) .os-icon { display: none; }
 .mobile-mode .retro-os .os-case-body { padding: 16px 14px 24px; }
 .mobile-mode .retro-os .os-case-body > h2 { font-size: 24px; line-height: 1.3; margin-bottom: 16px; }
 .mobile-mode .retro-os .os-case-intro { font-size: 15px; line-height: 1.7; margin: 0 0 24px; }
@@ -210,7 +210,7 @@ body.mobile-mode {
 .mobile-mode .retro-os .os-article-toc .os-button { min-height: 44px; font-size: 12px; }
 .mobile-mode .retro-os .os-journal-with-toc > .os-journal-sidebar .os-folder-return { min-height: 44px; font-size: 12px; margin: 0; padding: 6px 0 !important; }
 .mobile-mode .retro-os .os-journal-colophon { display: flex; flex-wrap: wrap; gap: 16px; }
-.mobile-mode .retro-os .os-journal-colophon button { min-height: 44px; text-align: left; font-size: 12px; }
+.mobile-mode .retro-os .os-journal-colophon :is(button, a) { min-height: 44px; text-align: left; font-size: 12px; }
 .mobile-mode .retro-os .os-contact-options button,
 .mobile-mode .retro-os .os-contact-mail > button,
 .mobile-mode .retro-os .os-draft-back { min-height: 44px; }

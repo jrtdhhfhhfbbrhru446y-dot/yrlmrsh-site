@@ -1,8 +1,8 @@
-import { initOS } from './os-ui.js?v=studio-71-final';
+import { initOS, getBrowserPageView } from './os-ui.js?v=studio-75-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
-import { takeStartupLoader } from './startup-loader.js?v=studio-71-final';
-import { createTelevision } from './television.js?v=studio-71-final';
-import { createRadio } from './radio.js?v=studio-61-final';
+import { takeStartupLoader } from './startup-loader.js?v=studio-75-final';
+import { createTelevision } from './television.js?v=studio-75-final';
+import { createRadio } from './radio.js?v=studio-75-final';
 
 const $ = selector => document.querySelector(selector);
 const startupTimings = createStartupTimingRecorder();
@@ -31,6 +31,9 @@ document.body.classList.toggle('mobile-mode', mobile);
 let engine = null, scenePromise = null, sceneFailed = false, tvFailed = false;
 let bootDone = false, entered = false, motionDisabled = reduced.matches;
 let loadingEye = null, loadingTicket = 0;
+let initialPageReady = Promise.resolve({ ready: true });
+let initialPageSucceeded = false;
+const initialPageView = getBrowserPageView();
 let initialLoadingSession = takeStartupLoader();
 const loadingCover = $('#loading-cover');
 function setLoadingInteraction(loading) {
@@ -48,7 +51,7 @@ const os = initOS(root, {
   onRadio: () => openRadio(),
   onExpand: () => setFlat(true),
   onViewChange: view => {
-    if (view !== 'home' && mode === 'desk') setMode('work');
+    if ((view !== 'home' || bootDone) && mode !== 'work') setMode('work');
   }
 });
 const desktopIconMarkup = Object.fromEntries([...root.querySelectorAll('.os-desktop-item')].map(button => [button.dataset.go, button.querySelector('svg')?.outerHTML]));
@@ -95,6 +98,7 @@ function showLoading() {
   const ticket = loadingTicket;
   const onReveal = () => {
       if (ticket !== loadingTicket) return;
+      if (initialPageSucceeded) $('#seo-fallback')?.remove();
       markReveal();
       startupTimings.run('startup reveal classes', () => { document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading'); });
       startupTimings.run('startup reveal inert', () => setLoadingInteraction(false));
@@ -114,9 +118,19 @@ async function showReady({ immediate = false } = {}) {
   anchor.classList.add('is-ready');
   loadingCover.dataset.readyMs = performance.now().toFixed(1);
   const eye = loadingEye, ticket = loadingTicket;
+  const initialPage = await initialPageReady;
+  if (!initialPage.ready || (initialPageView && initialPage.view !== initialPageView)) {
+    document.body.classList.add('fallback-readable');
+    document.body.classList.remove('is-loading', 'intro-revealing');
+    eye?.dispose(); loadingEye = null;
+    loadingCover.classList.add('is-loaded');
+    return;
+  }
+  initialPageSucceeded = true;
   if (eye && !immediate) await eye.finish();
   if (ticket !== loadingTicket || eye !== loadingEye) return;
   eye?.dispose(); loadingEye = null;
+  $('#seo-fallback')?.remove();
   markReveal(); loadingCover.dataset.loadedMs = performance.now().toFixed(1);
   $('#loading-cover').classList.add('is-loaded'); document.body.classList.remove('is-loading');
   setLoadingInteraction(false);
@@ -236,7 +250,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (flat || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-71-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-75-final');
     if (flat) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,
@@ -312,6 +326,12 @@ window.visualViewport?.addEventListener('resize', updateVisualViewport);
 document.addEventListener('focusin', updateVisualViewport);
 document.addEventListener('focusout', updateVisualViewport);
 updateVisualViewport();
+if (initialPageView) {
+  entered = true; mode = 'work';
+  root.hidden = false; loginScreen.hidden = true;
+  os.open(initialPageView, { remember: false, focus: false });
+  initialPageReady = os.whenReady();
+}
 syncModes();
 if (flat) { showLoading(); void showReady(); }
 else { showLoading(); void ensureScene(); }

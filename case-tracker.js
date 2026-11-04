@@ -24,7 +24,7 @@ export const trackerCase = {
     "Браузерное приложение",
     "Проверка на телефоне"
   ],
-  "cover": "./assets/cases/tracker/cover.webp",
+  "cover": "/assets/cases/tracker/cover.webp",
   "coverAlt": "Крупная надпись MONO TASK слева; справа парящий телефон с приложением под выразительным углом на чистом светлом фоне.",
   "coverCaption": "MONO TASK. Иллюстративный продуктовый мокап на основе реального интерфейса приложения.",
   "demoUrl": "https://mono-task.pages.dev/",
@@ -53,7 +53,7 @@ export const trackerCase = {
         "images": [
           {
             "assetId": "day-scale",
-            "src": "./assets/cases/tracker/day-scale.webp",
+            "src": "/assets/cases/tracker/day-scale.webp",
             "alt": "Редактор шкалы с началом и длительностью 16 часов и две настоящие колонки из 16 точек: две и двенадцать точек заполнены.",
             "caption": "Один отсчёт от выбранного начала. Два состояния подготовлены через редактор в тестовой среде; это не история конкретного дня автора.",
             "width": 1800,
@@ -69,7 +69,7 @@ export const trackerCase = {
         "images": [
           {
             "assetId": "visual-language",
-            "src": "./assets/cases/tracker/visual-language.webp",
+            "src": "/assets/cases/tracker/visual-language.webp",
             "alt": "Крупные фрагменты одного списка в светлой и тёмной темах: IBM Plex Mono, дата, текстовые строки и контрастное зачёркивание.",
             "caption": "IBM Plex Mono, свободное пространство и контрастная линия выполнения вместо карточек. Две темы используют ту же структуру интерфейса.",
             "width": 1800,
@@ -85,7 +85,7 @@ export const trackerCase = {
         "images": [
           {
             "assetId": "tasks-and-sections",
-            "src": "./assets/cases/tracker/tasks-and-sections.webp",
+            "src": "/assets/cases/tracker/tasks-and-sections.webp",
             "alt": "Открытая боковая панель с разделами «Проекты» и «Личное» и список раздела «Личное» с задачей «Прогулка» и выполненным делом.",
             "caption": "Раздел меняет контекст списка. Выполненные записи остаются доступны, а шкала одна для всего приложения.",
             "width": 1800,
@@ -93,7 +93,7 @@ export const trackerCase = {
           },
           {
             "assetId": "daily-flow",
-            "src": "./assets/cases/tracker/daily-flow.webp",
+            "src": "/assets/cases/tracker/daily-flow.webp",
             "alt": "Новая строка «Записать идею» с датой и разделом в редакторе и эта же сохранённая задача в списке «Проекты».",
             "caption": "Записать строку, при необходимости уточнить дату и раздел, сохранить в список. Задаче не назначается таймслот на шкале.",
             "width": 1800,
@@ -109,7 +109,7 @@ export const trackerCase = {
         "images": [
           {
             "assetId": "data-backup",
-            "src": "./assets/cases/tracker/data-backup.webp",
+            "src": "/assets/cases/tracker/data-backup.webp",
             "alt": "Настоящий диалог «Резервная копия» с кнопками сохранения и восстановления и фрагмент экспортированного JSON формата mono-task-backup, schemaVersion 4.",
             "caption": "Сохранённая копия читается как JSON и восстанавливается в MONO TASK. Показан фрагмент реального экспорта демонстрационных записей, не сторонняя интеграция.",
             "width": 1800,
@@ -150,7 +150,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "cover",
-          "src": "./assets/cases/tracker/cover.webp",
+          "src": "/assets/cases/tracker/cover.webp",
           "alt": "Крупная надпись MONO TASK слева; справа парящий телефон с приложением под выразительным углом на чистом светлом фоне.",
           "caption": "MONO TASK. Иллюстративный продуктовый мокап на основе реального интерфейса приложения.",
           "width": 1560,
@@ -189,7 +189,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "day-scale",
-          "src": "./assets/cases/tracker/day-scale.webp",
+          "src": "/assets/cases/tracker/day-scale.webp",
           "alt": "Редактор шкалы с началом и длительностью 16 часов и две настоящие колонки из 16 точек: две и двенадцать точек заполнены.",
           "caption": "Один отсчёт от выбранного начала. Два состояния подготовлены через редактор в тестовой среде; это не история конкретного дня автора.",
           "width": 1800,
@@ -228,7 +228,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "visual-language",
-          "src": "./assets/cases/tracker/visual-language.webp",
+          "src": "/assets/cases/tracker/visual-language.webp",
           "alt": "Крупные фрагменты одного списка в светлой и тёмной темах: IBM Plex Mono, дата, текстовые строки и контрастное зачёркивание.",
           "caption": "IBM Plex Mono, свободное пространство и контрастная линия выполнения вместо карточек. Две темы используют ту же структуру интерфейса.",
           "width": 1800,
@@ -267,7 +267,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "tasks-and-sections",
-          "src": "./assets/cases/tracker/tasks-and-sections.webp",
+          "src": "/assets/cases/tracker/tasks-and-sections.webp",
           "alt": "Открытая боковая панель с разделами «Проекты» и «Личное» и список раздела «Личное» с задачей «Прогулка» и выполненным делом.",
           "caption": "Раздел меняет контекст списка. Выполненные записи остаются доступны, а шкала одна для всего приложения.",
           "width": 1800,
@@ -307,7 +307,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "daily-flow",
-          "src": "./assets/cases/tracker/daily-flow.webp",
+          "src": "/assets/cases/tracker/daily-flow.webp",
           "alt": "Новая строка «Записать идею» с датой и разделом в редакторе и эта же сохранённая задача в списке «Проекты».",
           "caption": "Записать строку, при необходимости уточнить дату и раздел, сохранить в список. Задаче не назначается таймслот на шкале.",
           "width": 1800,
@@ -346,7 +346,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "data-backup",
-          "src": "./assets/cases/tracker/data-backup.webp",
+          "src": "/assets/cases/tracker/data-backup.webp",
           "alt": "Настоящий диалог «Резервная копия» с кнопками сохранения и восстановления и фрагмент экспортированного JSON формата mono-task-backup, schemaVersion 4.",
           "caption": "Сохранённая копия читается как JSON и восстанавливается в MONO TASK. Показан фрагмент реального экспорта демонстрационных записей, не сторонняя интеграция.",
           "width": 1800,
@@ -408,7 +408,7 @@ export const trackerCase = {
       "images": [
         {
           "assetId": "cover",
-          "src": "./assets/cases/tracker/cover.webp",
+          "src": "/assets/cases/tracker/cover.webp",
           "alt": "Крупная надпись MONO TASK слева; справа парящий телефон с приложением под выразительным углом на чистом светлом фоне.",
           "caption": "MONO TASK. Иллюстративный продуктовый мокап на основе реального интерфейса приложения.",
           "width": 1560,
@@ -422,7 +422,7 @@ export const trackerCase = {
       "id": "day-scale",
       "title": "Шкала личного дня",
       "assetId": "day-scale",
-      "src": "./assets/cases/tracker/day-scale.webp",
+      "src": "/assets/cases/tracker/day-scale.webp",
       "alt": "Редактор шкалы с началом и длительностью 16 часов и две настоящие колонки из 16 точек: две и двенадцать точек заполнены.",
       "caption": "Один отсчёт от выбранного начала. Два состояния подготовлены через редактор в тестовой среде; это не история конкретного дня автора.",
       "width": 1800,
@@ -432,7 +432,7 @@ export const trackerCase = {
       "id": "tasks-and-sections",
       "title": "Задачи и разделы",
       "assetId": "tasks-and-sections",
-      "src": "./assets/cases/tracker/tasks-and-sections.webp",
+      "src": "/assets/cases/tracker/tasks-and-sections.webp",
       "alt": "Открытая боковая панель с разделами «Проекты» и «Личное» и список раздела «Личное» с задачей «Прогулка» и выполненным делом.",
       "caption": "Раздел меняет контекст списка. Выполненные записи остаются доступны, а шкала одна для всего приложения.",
       "width": 1800,
@@ -442,7 +442,7 @@ export const trackerCase = {
       "id": "daily-flow",
       "title": "От записи к списку",
       "assetId": "daily-flow",
-      "src": "./assets/cases/tracker/daily-flow.webp",
+      "src": "/assets/cases/tracker/daily-flow.webp",
       "alt": "Новая строка «Записать идею» с датой и разделом в редакторе и эта же сохранённая задача в списке «Проекты».",
       "caption": "Записать строку, при необходимости уточнить дату и раздел, сохранить в список. Задаче не назначается таймслот на шкале.",
       "width": 1800,
@@ -452,7 +452,7 @@ export const trackerCase = {
       "id": "visual-language",
       "title": "Визуальный язык",
       "assetId": "visual-language",
-      "src": "./assets/cases/tracker/visual-language.webp",
+      "src": "/assets/cases/tracker/visual-language.webp",
       "alt": "Крупные фрагменты одного списка в светлой и тёмной темах: IBM Plex Mono, дата, текстовые строки и контрастное зачёркивание.",
       "caption": "IBM Plex Mono, свободное пространство и контрастная линия выполнения вместо карточек. Две темы используют ту же структуру интерфейса.",
       "width": 1800,
@@ -462,7 +462,7 @@ export const trackerCase = {
       "id": "data-backup",
       "title": "Сохранение и резервная копия",
       "assetId": "data-backup",
-      "src": "./assets/cases/tracker/data-backup.webp",
+      "src": "/assets/cases/tracker/data-backup.webp",
       "alt": "Настоящий диалог «Резервная копия» с кнопками сохранения и восстановления и фрагмент экспортированного JSON формата mono-task-backup, schemaVersion 4.",
       "caption": "Сохранённая копия читается как JSON и восстанавливается в MONO TASK. Показан фрагмент реального экспорта демонстрационных записей, не сторонняя интеграция.",
       "width": 1800,
@@ -471,8 +471,8 @@ export const trackerCase = {
   ],
   "video": {
     "available": true,
-    "src": "./assets/cases/tracker/mono-task-film-studio43.mp4",
-    "poster": "./assets/cases/tracker/tv-cover-studio43.webp",
+    "src": "/assets/cases/tracker/mono-task-film-studio43.mp4",
+    "poster": "/assets/cases/tracker/tv-cover-studio43.webp",
     "duration": 82.10833333333333,
     "width": 1920,
     "height": 1080,

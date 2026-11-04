@@ -25,12 +25,20 @@ export function startStartupLoader() {
   return {
     fail() {
       session.eye.dispose(); initialSession = null;
-      const message = document.createElement('p');
-      message.textContent = 'Не удалось открыть портфолио.';
+      const fallback = document.querySelector('#seo-fallback');
+      document.body.classList.remove('is-loading', 'intro-revealing');
+      document.body.classList.add('fallback-readable');
+      cover.classList.add('is-loaded');
+      const message = document.createElement('div');
+      message.className = 'fallback-notice';
+      message.setAttribute('role', 'status');
+      message.textContent = 'Интерактивная версия не загрузилась. Содержание портфолио доступно ниже.';
       const retry = document.createElement('button');
       retry.type = 'button'; retry.textContent = 'Попробовать ещё раз';
       retry.addEventListener('click', () => location.reload());
-      cover.replaceChildren(message, retry);
+      message.append(document.createElement('br'), retry);
+      if (fallback) { fallback.inert = false; fallback.prepend(message); }
+      else cover.replaceChildren(message);
       retry.focus();
     }
   };

@@ -112,7 +112,7 @@
 
 /* Three internal lines form a short, solid bevel. No cast side shadow. */
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button),
 .retro-os .retro-games :is(.rg-tabs, .rg-actions, .rg-toolbar,
   .rg-dpad, .rg-mine-mode) > button {
@@ -128,7 +128,7 @@
   text-shadow: none;
 }
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button)::before,
 .retro-os .retro-games :is(.rg-tabs, .rg-actions, .rg-toolbar,
   .rg-dpad, .rg-mine-mode) > button::before {
@@ -137,7 +137,7 @@
     0 calc(100% - 2px), 0 2px);
 }
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-folder-return, .os-window-footer button)::after,
 .retro-os .retro-games :is(.rg-tabs, .rg-actions, .rg-toolbar,
   .rg-dpad, .rg-mine-mode) > button::after {
@@ -152,7 +152,7 @@
     inset 0 0 0 3px var(--key-inner);
 }
 .retro-os :is(.os-button, .os-small-button, .os-window-controls button,
-  .os-map-return, .os-layout-switch button, .os-case-tabs button,
+  .os-map-return, .os-layout-switch button, .os-case-tabs :is(button, a),
   .os-window-footer button):where(:hover:not(:disabled)) {
   --key-face: #f9f8f0;
   --key-edge: #242421;
@@ -206,7 +206,7 @@
 .retro-os .os-browser-toolbar .os-address { color: var(--os-ink); background: var(--os-paper); border-color: #646458; box-shadow: inset 1px 1px 0 #c1c0b3, inset -1px -1px 0 #fffffb; font-weight: 400; }
 
 .retro-os :is(.os-profile-card, .os-contact-mail, .os-settings fieldset,
-  .os-material-grid > button, .os-process-step, .os-journal-sidebar .os-print-ad) {
+  .os-material-grid > :is(button, a), .os-process-step, .os-journal-sidebar .os-print-ad) {
   background: var(--os-paper);
   background-image: none;
   border-color: #555;
@@ -227,7 +227,7 @@
 .retro-os .os-process-step strong { font-weight: 500; }
 .retro-os .os-process-step:hover,
 .retro-os .os-process-step.is-active { color: var(--os-ink); background: #e2e1db; border-color: #555; box-shadow: inset 1px 1px 0 #faf9f2, inset -1px -1px 0 #aaa9a0; --os-icon-face: #e2e1db; }
-.retro-os .os-material-grid > button:hover { background: #f0efe9; box-shadow: inset 1px 1px 0 #fffffb, inset -1px -1px 0 #aaa99f; }
+.retro-os .os-material-grid > :is(button, a):hover { background: #f0efe9; box-shadow: inset 1px 1px 0 #fffffb, inset -1px -1px 0 #aaa99f; }
 .retro-os .os-inset { border-color: #555; border-width: 1.5px; }
 .retro-os .os-inset h3 { background: var(--os-paper); background-image: none; }
 .retro-os .os-settings legend { color: var(--os-ink); }

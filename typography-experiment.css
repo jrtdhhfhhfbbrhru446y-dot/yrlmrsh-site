@@ -38,11 +38,11 @@
   .os-folder-return, .os-layout-switch button, .os-draft-back) *,
 .retro-os :is(.os-contact-presets button, .os-contact-options button,
   .os-contact-mail > button, .os-profile-links button,
-  .os-journal-colophon button, .os-settings legend,
+  .os-journal-colophon :is(button, a), .os-settings legend,
   .os-material-cover > span),
 .retro-os :is(.os-contact-presets button, .os-contact-options button,
   .os-contact-mail > button, .os-profile-links button,
-  .os-journal-colophon button) *,
+  .os-journal-colophon :is(button, a)) *,
 .retro-os .pm-map :is(.pm-topbar button, .pm-detail-heading > button,
   .pm-contact, .pm-related button, .pm-scale),
 .retro-os .pm-map :is(.pm-topbar button, .pm-detail-heading > button,
@@ -81,8 +81,8 @@
 .retro-os .os-journal-reading .os-journal-colophon > span {
   font-family: var(--reading-type) !important;
 }
-.retro-os .os-journal-reading .os-journal-colophon button,
-.retro-os .os-journal-reading .os-journal-colophon button * {
+.retro-os .os-journal-reading .os-journal-colophon :is(button, a),
+.retro-os .os-journal-reading .os-journal-colophon :is(button, a) * {
   font-family: var(--system-type) !important;
   font-weight: 400 !important;
   letter-spacing: 0;

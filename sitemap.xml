@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://yrlmrsh.ru/</loc>
-  </url>
+  <url><loc>https://yrlmrsh.ru/</loc></url>
+  <url><loc>https://yrlmrsh.ru/projects/education/</loc></url>
+  <url><loc>https://yrlmrsh.ru/projects/mono-task/</loc></url>
+  <url><loc>https://yrlmrsh.ru/projects/bolo/</loc></url>
+  <url><loc>https://yrlmrsh.ru/projects/audio/</loc></url>
+  <url><loc>https://yrlmrsh.ru/articles/education/</loc></url>
+  <url><loc>https://yrlmrsh.ru/articles/mono-task/</loc></url>
+  <url><loc>https://yrlmrsh.ru/articles/bolo/</loc></url>
+  <url><loc>https://yrlmrsh.ru/articles/audio/</loc></url>
 </urlset>

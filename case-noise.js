@@ -34,7 +34,7 @@ export const noiseCase = {
   "resultLabel": "Результат",
   "processPresentation": "article",
   "processIcon": "radio",
-  "cover": "./assets/cases/noise/cover.webp",
+  "cover": "/assets/cases/noise/cover.webp",
   "coverAlt": "Крупная светлая надпись «Библиотека Шумов» слева; справа металлический звуковой пульт на тёмно-синем ночном фоне со звёздами и тёплыми искрами костра",
   "coverCaption": "Библиотека шумов как настраиваемая звуковая среда. Концептуальная иллюстрация для кейса.",
   "coverWidth": 1560,
@@ -57,7 +57,7 @@ export const noiseCase = {
         "images": [
           {
             "assetId": "mixing",
-            "src": "./assets/cases/noise/mixing.webp",
+            "src": "/assets/cases/noise/mixing.webp",
             "alt": "Шесть фейдеров с отдельными звуковыми слоями, подпись «Свой баланс»",
             "caption": "Баланс шума и мелодии настраивается под задачу. Иллюстрация для кейса.",
             "width": 1672,

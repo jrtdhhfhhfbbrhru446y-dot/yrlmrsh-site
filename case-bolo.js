@@ -33,7 +33,7 @@ export const boloCase = {
   ],
   "processPresentation": "article",
   "resultLabel": "Результат",
-  "cover": "./assets/cases/bolo/cover.webp",
+  "cover": "/assets/cases/bolo/cover.webp",
   "coverAlt": "Крупная золотистая булочка с начинкой и белая надпись BOLO на синем фоне с оранжевой графикой",
   "coverCaption": "Иллюстрация для портфолио на основе материалов BOLO; создана отдельно от ролика.",
   "article": {
@@ -60,7 +60,7 @@ export const boloCase = {
         "images": [
           {
             "assetId": "brand-study",
-            "src": "./assets/cases/bolo/brand-study.webp",
+            "src": "/assets/cases/bolo/brand-study.webp",
             "alt": "Золотистая булочка на молочном фоне рядом с синим полем, белым логотипом BOLO и оранжевой графикой",
             "caption": "Иллюстрация для этого кейса: продукт, синий, оранжевый и белый. Создана отдельно от исходного ролика.",
             "width": 1589,
@@ -85,8 +85,8 @@ export const boloCase = {
   "process": [],
   "video": {
     "available": true,
-    "src": "./assets/cases/bolo/bolo.mp4",
-    "poster": "./assets/cases/bolo/video-poster.webp",
+    "src": "/assets/cases/bolo/bolo.mp4",
+    "poster": "/assets/cases/bolo/video-poster.webp",
     "duration": 15.083333333333334,
     "width": 1080,
     "height": 1920,
