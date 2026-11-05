@@ -1,8 +1,13 @@
-import { initOS, getBrowserPageView } from './os-ui.js?v=studio-75-final';
+import { initOS, getBrowserPageView } from './os-ui.js?v=studio-76-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
-import { takeStartupLoader } from './startup-loader.js?v=studio-75-final';
+import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
 import { createTelevision } from './television.js?v=studio-75-final';
 import { createRadio } from './radio.js?v=studio-75-final';
+
+import { createStartupDeadline } from './startup-deadline.js?v=studio-76-final';
+
+const startupGuard = globalThis.__yrlmrshStartupGuard;
+if (startupGuard?.failed) throw new DOMException('Startup already recovered.', 'AbortError');
 
 const $ = selector => document.querySelector(selector);
 const startupTimings = createStartupTimingRecorder();
@@ -17,10 +22,11 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 // Larger touch screens, including landscape phones, keep the app layout too.
 const mobileViewport = matchMedia('(max-width: 760px), (max-width: 1024px) and (any-pointer: coarse)');
 let mobile = mobileViewport.matches;
+const textVersion = new URLSearchParams(location.search).get('view') === 'text';
 // Every desktop visit starts with the scene. The toggle is kept for this visit,
 // while touch devices retain the full-screen mobile interface.
 let preferredFlat = false;
-let flat = mobile;
+let flat = mobile || textVersion;
 const startupUrl = new URL(location.href);
 if (startupUrl.searchParams.has('flat')) {
   startupUrl.searchParams.delete('flat');
@@ -30,12 +36,32 @@ let mode = flat ? 'work' : 'desk';
 document.body.classList.toggle('mobile-mode', mobile);
 let engine = null, scenePromise = null, sceneFailed = false, tvFailed = false;
 let bootDone = false, entered = false, motionDisabled = reduced.matches;
-let loadingEye = null, loadingTicket = 0;
+let loadingEye = null, loadingTicket = 0, startupDeadline = null;
+let backgroundSceneLoading = false;
 let initialPageReady = Promise.resolve({ ready: true });
 let initialPageSucceeded = false;
-const initialPageView = getBrowserPageView();
+const initialPageView = textVersion ? null : getBrowserPageView();
 let initialLoadingSession = takeStartupLoader();
 const loadingCover = $('#loading-cover');
+const readableContent = $('#seo-fallback');
+function prepareReadableContent() {
+  if (readableContent) readableContent.hidden = !textVersion;
+  document.body.classList.toggle('text-mode', textVersion);
+}
+if (textVersion && readableContent) {
+  const back = document.createElement('a');
+  back.href = document.body.dataset.pagePath || '/';
+  back.className = 'text-version-return';
+  back.textContent = '← Вернуться к интерактивной версии';
+  readableContent.prepend(back);
+}
+startupGuard?.onFailure(() => {
+  ++loadingTicket; startupDeadline?.dispose();
+  backgroundSceneLoading = false;
+  loadingEye?.dispose(); loadingEye = null;
+  engine?.dispose(); engine = null;
+});
+addEventListener('pagehide', () => startupDeadline?.dispose());
 function setLoadingInteraction(loading) {
   $('#experience').inert = loading;
   $('.view-controls').inert = loading;
@@ -50,6 +76,10 @@ const os = initOS(root, {
   onTelevision: id => openTelevision(id),
   onRadio: () => openRadio(),
   onExpand: () => setFlat(true),
+  onTextVersion: () => {
+    const url = new URL(document.querySelector('link[rel=canonical]').href);
+    location.assign(url.pathname + '?view=text');
+  },
   onViewChange: view => {
     if ((view !== 'home' || bootDone) && mode !== 'work') setMode('work');
   }
@@ -79,7 +109,7 @@ function setRadioFromScene(patch) {
   radio.setState({ ...rest, ...level });
 }
 
-function finishBoot({ focus = true } = {}) { return startupTimings.run('startup finishBoot max', () => {
+function finishBoot({ focus = !textVersion } = {}) { return startupTimings.run('startup finishBoot max', () => {
   bootDone = true; root.hidden = !entered; loginScreen.hidden = entered;
   if (focus && (mode === 'work' || mode === 'desk')) focusComputer();
 }); }
@@ -89,6 +119,8 @@ enterButton.addEventListener('click', () => {
   engine?.setEntered(true); setMode('work'); focusComputer();
 });
 function showLoading() {
+  if (startupGuard?.failed) return;
+  startupDeadline?.dispose();
   ++loadingTicket; loadingEye?.dispose();
   loadingEye = null;
   setLoadingInteraction(true);
@@ -97,8 +129,8 @@ function showLoading() {
   $('#loading-cover').classList.remove('is-loaded'); document.body.classList.add('is-loading');
   const ticket = loadingTicket;
   const onReveal = () => {
-      if (ticket !== loadingTicket) return;
-      if (initialPageSucceeded) $('#seo-fallback')?.remove();
+      if (ticket !== loadingTicket || startupGuard?.failed) return;
+      if (initialPageSucceeded) prepareReadableContent();
       markReveal();
       startupTimings.run('startup reveal classes', () => { document.body.classList.add('intro-revealing'); document.body.classList.remove('is-loading'); });
       startupTimings.run('startup reveal inert', () => setLoadingInteraction(false));
@@ -113,30 +145,39 @@ function showLoading() {
     reducedMotion: reduced.matches || motionDisabled,
     onReveal
   });
+  if (!flat && !engine?.ready) startupDeadline = createStartupDeadline({
+    onSlow: () => {
+      if (ticket !== loadingTicket || startupGuard?.failed || engine?.ready || mobile) return;
+      backgroundSceneLoading = true;
+      document.body.dataset.startupSurface = 'progressive';
+      setFlat(true, { persist: false, temporary: true });
+    }
+  });
 }
 async function showReady({ immediate = false } = {}) {
+  if (startupGuard?.failed || startupCompleteMarked && !loadingEye) return;
   anchor.classList.add('is-ready');
   loadingCover.dataset.readyMs = performance.now().toFixed(1);
   const eye = loadingEye, ticket = loadingTicket;
   const initialPage = await initialPageReady;
+  if (startupGuard?.failed || ticket !== loadingTicket) return;
   if (!initialPage.ready || (initialPageView && initialPage.view !== initialPageView)) {
-    document.body.classList.add('fallback-readable');
-    document.body.classList.remove('is-loading', 'intro-revealing');
-    eye?.dispose(); loadingEye = null;
-    loadingCover.classList.add('is-loaded');
+    startupGuard?.fail('page');
     return;
   }
   initialPageSucceeded = true;
+  startupDeadline?.finish();
   if (eye && !immediate) await eye.finish();
-  if (ticket !== loadingTicket || eye !== loadingEye) return;
+  if (ticket !== loadingTicket || eye !== loadingEye || startupGuard?.failed) return;
   eye?.dispose(); loadingEye = null;
-  $('#seo-fallback')?.remove();
+  prepareReadableContent();
   markReveal(); loadingCover.dataset.loadedMs = performance.now().toFixed(1);
   $('#loading-cover').classList.add('is-loaded'); document.body.classList.remove('is-loading');
   setLoadingInteraction(false);
   document.body.classList.remove('intro-revealing');
   if (!bootDone) finishBoot();
-  else if (mode === 'work' || mode === 'desk') focusComputer();
+  else if (!textVersion && (mode === 'work' || mode === 'desk')) focusComputer();
+  startupGuard?.ready();
   startupTimings.stop();
   if (!startupCompleteMarked) {
     startupCompleteMarked = true;
@@ -178,10 +219,12 @@ function syncModes() {
   for (const [id, selected] of [['work-view', mode === 'work'], ['tv-view', mode === 'tv'], ['radio-view', mode === 'radio'], ['object-view', mode === 'object' || mode === 'desk']]) {
     $(`#${id}`).setAttribute('aria-pressed', String(selected));
   }
+  modeButton.disabled = Boolean(flat && backgroundSceneLoading && !engine?.ready);
   modeButton.setAttribute('aria-pressed', String(flat));
   modeButton.setAttribute('aria-label', flat ? 'Включить 3D' : 'Пользоваться без 3D');
   modeButton.title = flat ? 'Вернуться к 3D-сцене' : 'Обычный сайт без 3D';
-  $('#display-mode-label').textContent = flat ? 'Включить 3D' : 'Без 3D';
+  $('#display-mode-label').textContent = modeButton.disabled ? '3D загружается…' : flat ? 'Включить 3D' : 'Без 3D';
+  if (modeButton.disabled) modeButton.setAttribute('aria-label', '3D-сцена загружается. Сайт уже доступен.');
   $('#orbit-hint').hidden = flat || mode !== 'object';
   $('#orbit-hint').textContent = innerWidth < 680 ? 'Потяни, чтобы повернуть. Двумя пальцами — масштаб.' : 'Потяни, чтобы повернуть. Колесо — масштаб. Нажми на устройство, чтобы открыть.';
   television.setActive(mode === 'tv'); radio.setActive(mode === 'radio');
@@ -202,16 +245,19 @@ function setMode(next) {
     else if (mode === 'object') canvas.focus({ preventScroll: true });
   }
 }
-function setFlat(value, { persist = true } = {}) {
+function setFlat(value, { persist = true, temporary = false } = {}) {
+  if (startupGuard?.failed) return;
+  if (mobile || textVersion) backgroundSceneLoading = false;
+  if (!value && backgroundSceneLoading && !engine?.ready) return;
   // Phone layout is automatic; it must not replace the desktop preference.
-  if (!mobile) preferredFlat = Boolean(value);
-  flat = mobile || Boolean(value);
+  if (!mobile && !textVersion && !temporary) preferredFlat = Boolean(value);
+  flat = mobile || textVersion || Boolean(value);
   if (persist && !mobile) {
     const url = new URL(location.href); url.searchParams.delete('flat'); history.replaceState(history.state, '', url);
   }
   if (flat && (mode === 'object' || mode === 'desk')) mode = 'work';
   if (!flat && mode === 'tv' && tvFailed) mode = 'work';
-  engine?.setSuspended(flat);
+  engine?.setSuspended(flat && !backgroundSceneLoading);
   if (flat) { skipBoot(); void showReady({ immediate: !loadingEye }); updateStatus(); }
   syncModes();
   engine?.setMode(mode, { animate: false });
@@ -243,23 +289,32 @@ function onDevice({ device, control, focused }) {
   } else if (focused && control?.startsWith('station:')) radio.toggleNoise(control.split(':')[1]);
 }
 function sceneError(error) {
+  if (startupGuard?.failed) return;
+  backgroundSceneLoading = false;
   console.warn('3D view unavailable; continuing without 3D.', error);
   sceneFailed = true; engine?.dispose(); engine = null;
   setFlat(true, { persist: false });
 }
 async function ensureScene() {
-  if (flat || engine || scenePromise) return scenePromise;
+  if (startupGuard?.failed || flat && !backgroundSceneLoading || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
     const { createScene3D } = await import('./scene-3d.js?v=studio-75-final');
-    if (flat) return;
+    if (startupGuard?.failed || flat && !backgroundSceneLoading) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,
-      isSuspended: () => flat,
+      isSuspended: () => Boolean(startupGuard?.failed || mobile || flat && !backgroundSceneLoading),
       getEntered: () => entered,
       desktopCaption: '',
       getDesktopIcon: key => desktopIconMarkup[key],
       getRadioState: () => radioModelState(radio.state),
-      onReady: showReady,
+      onReady: () => {
+        if (startupGuard?.failed) return;
+        startupDeadline?.finish();
+        backgroundSceneLoading = false;
+        engine?.setSuspended(flat);
+        syncModes();
+        if (!startupCompleteMarked) void showReady();
+      },
       onTVReady: () => { tvFailed = false; updateStatus(); syncModes(); },
       onTVError: error => { tvFailed = true; if (mode === 'tv' && !flat) setFlat(true, { persist: false }); console.warn('TV model unavailable.', error); },
       onError: sceneError,
@@ -275,15 +330,16 @@ async function ensureScene() {
         canvas.dataset.interaction = String(Boolean(stats.interaction));
       }
     });
+    if (startupGuard?.failed) { controller.dispose(); return; }
     engine = controller;
     engine.setEntered(entered);
-    engine.setSuspended(flat); engine.setMotionDisabled(motionDisabled);
+    engine.setSuspended(flat && !backgroundSceneLoading); engine.setMotionDisabled(motionDisabled);
     engine.setMode(mode, { animate: false });
     if (!flat) engine.resize();
     syncModes();
   })().catch(error => { if (error.name !== 'AbortError') sceneError(error); }).finally(() => {
     scenePromise = null;
-    if (!flat && !engine && !sceneFailed) void ensureScene();
+    if (!startupGuard?.failed && !flat && !engine && !sceneFailed) void ensureScene();
   });
   return scenePromise;
 }

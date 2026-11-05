@@ -58,13 +58,13 @@
 #screen-anchor .login-screen ::selection { color: #f6f5ef; background: #33332d; }
 .retro-os :is(button, a, input, textarea, select, canvas):focus-visible { outline: 1px solid var(--os-ink); outline-offset: 3px; }
 .retro-os .os-workspace { background: var(--os-paper); background-image: none !important; }
-.retro-os :is(.os-brand, .os-titlebar h1, .os-project-card-label strong,
+.retro-os :is(.os-brand, .os-titlebar :is(h1, p), .os-project-card-label strong,
   .os-case-heading h2, .os-case-body > h2, .os-demo-page > h2,
   .os-profile-identity h2, .os-profile h3, .os-contact-identity h2,
   .os-contact-write h2, .os-empty-collection h2, .os-settings legend,
   .os-step-detail h3, .os-process-step strong, .os-material-file strong,
   .os-project-facts dt) { font-weight: 600; }
-.retro-os :is(.os-brand, .os-titlebar h1, .os-desktop-item > span,
+.retro-os :is(.os-brand, .os-titlebar :is(h1, p), .os-desktop-item > span,
   .os-project-card-label strong, .os-profile-identity h2,
   .os-contact-identity h2) { letter-spacing: -.025em; }
 .retro-os :is(.os-main-menu > button, .os-taskbar > button,
@@ -103,7 +103,7 @@
   border-color: var(--os-frame);
   box-shadow: inset 1px 1px 0 var(--os-highlight), inset -1px -1px 0 #cbc9c0;
 }
-.retro-os .os-titlebar h1,
+.retro-os .os-titlebar :is(h1, p),
 .retro-os .os-titlebar > .os-icon { background: transparent; }
 .retro-os .os-dropdown { box-shadow: inset 1px 1px 0 var(--os-highlight), inset -1px -1px 0 #aaa99b, inset 0 0 0 3px var(--os-surface); }
 .retro-os .os-notice { box-shadow: none; font-weight: 500; }
@@ -236,7 +236,7 @@
 .retro-os .os-contact-presets button[aria-pressed=true] { background: #38382f; color: #fbfaf2; box-shadow: inset 1px 1px 0 #737367, inset -1px -1px 0 #22221a, inset 0 0 0 3px #4b4b3e; }
 .retro-os .os-contact-write textarea { color: var(--os-ink); background: #faf9f3; border-color: #68685a; box-shadow: inset 1px 1px 0 #c2c0b2, inset -1px -1px 0 #fffffc; font-weight: 400; }
 .retro-os .os-contact-mail > a { font-weight: 500; }
-.retro-os .os-journal :is(.os-article-heading h2, article > section h3) { font-weight: 600; }
+.retro-os .os-journal :is(.os-article-heading :is(h1, h2), article > section :is(h2, h3)) { font-weight: 600; }
 .retro-os .os-journal :is(.os-journal-lead, article > section p) { font-weight: 400; }
 .retro-os .os-journal-sidebar .os-print-ad :is(h3, strong) { font-weight: 500; }
 

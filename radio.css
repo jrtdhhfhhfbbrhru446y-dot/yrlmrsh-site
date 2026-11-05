@@ -14,7 +14,7 @@
 }
 .radio-player-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .radio-player-title { font-size: 12px; color: #4e544c; }
-.radio-time { display: flex; align-items: baseline; gap: 7px; white-space: nowrap; color: #6a7067; font-size: 11px; font-variant-numeric: tabular-nums; }
+.radio-time { display: flex; align-items: baseline; gap: 7px; white-space: nowrap; color: #595f56; font-size: 11px; font-variant-numeric: tabular-nums; }
 .radio-time output:first-child { color: #31372e; }
 .radio-system .radio-player input {
   display: block;
