@@ -4,3 +4,9 @@
 .is-loading .seo-fallback{visibility:hidden}
 .fallback-readable #experience,.fallback-readable .identity,.fallback-readable .view-controls,.fallback-readable #radio-panel,.fallback-readable .orbit-hint,.fallback-readable .device-status,.fallback-readable #loading-cover{display:none!important}
 .fallback-readable .seo-fallback{display:block;visibility:visible;z-index:41}
+
+/* The complete document remains available through the existing text-version menu. */
+.text-mode #experience,.text-mode .identity,.text-mode .view-controls,.text-mode #radio-panel,.text-mode .orbit-hint,.text-mode .device-status{display:none!important}
+.text-mode .seo-fallback{display:block;visibility:visible}
+.text-version-return{display:inline-block;margin-bottom:24px}
+.expand-button:disabled{cursor:wait;opacity:.65}

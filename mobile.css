@@ -90,7 +90,7 @@ body.mobile-mode {
 .mobile-mode .retro-os .os-window::before,
 .mobile-mode .retro-os .os-window::after { display: none; }
 .mobile-mode .retro-os .os-titlebar { height: 52px; min-height: 52px; padding: 0 max(6px, env(safe-area-inset-right)) 0 max(6px, env(safe-area-inset-left)); border-bottom-width: 1.5px; gap: 8px; }
-.mobile-mode .retro-os .os-titlebar h1 { font-size: 13px; min-width: 0; padding: 0; }
+.mobile-mode .retro-os .os-titlebar :is(h1, p) { font-size: 13px; min-width: 0; padding: 0; }
 .mobile-mode .retro-os .os-mobile-back { display: inline-flex; align-items: center; justify-content: center; }
 .mobile-mode .retro-os .os-mobile-home { display: inline-flex; width: 22px; height: 22px; }
 .mobile-mode .retro-os .os-mobile-home > .os-icon { width: 22px; height: 22px; }
@@ -196,11 +196,11 @@ body.mobile-mode {
 .mobile-mode .retro-os select { font-size: 16px !important; }
 .mobile-mode .retro-os .os-journal { display: flex; flex-direction: column; gap: 24px; }
 .mobile-mode .retro-os .os-journal > .os-journal-reading { font-size: 20px; line-height: 1.65; max-width: 42ch; margin-inline: auto; }
-.mobile-mode .retro-os .os-journal-reading .os-article-heading h2 { font-size: clamp(28px, 7vw, 36px); line-height: 1.2; margin: 14px 0 20px; overflow-wrap: break-word; }
+.mobile-mode .retro-os .os-journal-reading .os-article-heading :is(h1, h2) { font-size: clamp(28px, 7vw, 36px); line-height: 1.2; margin: 14px 0 20px; overflow-wrap: break-word; }
 .mobile-mode .retro-os .os-journal-reading .os-journal-lead,
 .mobile-mode .retro-os .os-journal-reading > section p { font-size: 1em; line-height: 1.65; }
 .mobile-mode .retro-os .os-journal-reading > section { margin-top: 32px; }
-.mobile-mode .retro-os .os-journal-reading > section h3 { font-size: 25px; line-height: 1.3; margin-bottom: 14px; }
+.mobile-mode .retro-os .os-journal-reading > section :is(h2, h3) { font-size: 25px; line-height: 1.3; margin-bottom: 14px; }
 .mobile-mode .retro-os .os-journal-reading .os-article-meta { font-size: 11px; line-height: 1.6; }
 .mobile-mode .retro-os .os-journal-reading .os-content-figure > figcaption { font-size: 15px; line-height: 1.5; }
 .mobile-mode .retro-os .os-journal > .os-journal-sidebar { position: static; width: 100%; max-width: none; max-height: none; padding: 16px 0 0; border: 0; border-top: 1px solid var(--os-line); overflow: visible; }

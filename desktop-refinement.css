@@ -137,7 +137,7 @@
   box-shadow: inset 0 1px 0 var(--os-highlight);
   font-size: clamp(12px, 2cqw, 15px);
 }
-.retro-os .os-titlebar h1 { min-width: 0; font-size: 1em; font-weight: 700; padding-inline: .45em; line-height: 1.4; background: transparent; }
+.retro-os .os-titlebar :is(h1, p) { min-width: 0; font-size: 1em; font-weight: 700; padding-inline: .45em; line-height: 1.4; background: transparent; }
 .retro-os .os-titlebar > .os-icon { width: 21px; height: 21px; padding: 1px; background: transparent; }
 .retro-os .os-window-controls { gap: 5px; }
 .retro-os .os-window-controls > button {
@@ -267,8 +267,8 @@
 .retro-os .os-journal { display: block; width: 100%; max-width: 1040px; margin: 0 auto; }
 .retro-os .os-journal > article { width: 100%; max-width: 58ch; min-width: 0; margin-inline: auto; font-family: Georgia, "Times New Roman", serif; font-size: 1em; line-height: 1.7; }
 .retro-os .os-article-eyebrow { margin-bottom: 16px; color: var(--os-muted); font: .74em/1.5 "Courier New", Courier, monospace; letter-spacing: 0; }
-.retro-os .os-journal article > h2,
-.retro-os .os-article-heading h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(24px, 1.65em, 32px); font-weight: 600; line-height: 1.25; letter-spacing: -.025em; margin: .5em 0 .7em; overflow-wrap: break-word; }
+.retro-os .os-journal article > :is(h1, h2),
+.retro-os .os-article-heading :is(h1, h2) { font-family: Georgia, "Times New Roman", serif; font-size: clamp(24px, 1.65em, 32px); font-weight: 600; line-height: 1.25; letter-spacing: -.025em; margin: .5em 0 .7em; overflow-wrap: break-word; }
 .retro-os .os-article-meta { display: flex; flex-wrap: wrap; gap: 7px 18px; padding: 0; margin: 0 0 14px; border: 0; color: var(--os-muted); font: .72em/1.6 "Courier New", Courier, monospace; }
 .retro-os .os-article-meta .os-status { font: inherit; margin: 0; }
 .retro-os .os-journal .os-case-cover { height: auto; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border: 1px solid var(--os-line); margin: 24px 0 28px; }
@@ -278,8 +278,8 @@
 .retro-os .os-journal-reading { width: 100%; max-width: 58ch; font: inherit; line-height: 1.7; }
 .retro-os .os-journal article > section,
 .retro-os .os-journal-reading > section { margin-top: 1.9em; }
-.retro-os .os-journal article > section h3,
-.retro-os .os-journal-reading h3 { font-family: Georgia, "Times New Roman", serif; font-size: 1.17em; font-weight: 600; line-height: 1.4; margin: 0 0 .7em; letter-spacing: -.015em; }
+.retro-os .os-journal article > section :is(h2, h3),
+.retro-os .os-journal-reading :is(h2, h3) { font-family: Georgia, "Times New Roman", serif; font-size: 1.17em; font-weight: 600; line-height: 1.4; margin: 0 0 .7em; letter-spacing: -.015em; }
 .retro-os .os-journal article > section p,
 .retro-os .os-journal-reading > section p { font-size: 1em; font-weight: 400; line-height: 1.7; white-space: pre-line; }
 .retro-os .os-journal-reading > section p + p { margin-top: 1.1em; }
@@ -342,8 +342,8 @@
   .retro-os .os-project-card-label strong { font-size: .89em; }
   .retro-os .os-browser-window .os-window-content { padding: 22px 16px; }
   .retro-os .os-browser-toolbar { padding-inline: 7px; }
-  .retro-os .os-journal article > h2,
-  .retro-os .os-article-heading h2 { font-size: clamp(22px, 1.35em, 28px); line-height: 1.3; }
+  .retro-os .os-journal article > :is(h1, h2),
+  .retro-os .os-article-heading :is(h1, h2) { font-size: clamp(22px, 1.35em, 28px); line-height: 1.3; }
   .retro-os .os-journal-sidebar { grid-template-columns: minmax(0, 1fr); }
   .retro-os .os-journal-sidebar .os-print-ad { grid-template-columns: 28px minmax(0, 1fr); gap: 5px 12px; }
   .retro-os .os-journal-sidebar .os-print-ad > .os-icon { width: 28px; height: 28px; }

@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8r2LQcknfjFJiH2hGMQ4raXzYP7SoX7Y+/XTGLHmIWI=' 'sha256-r+YxcXI6wA+u5BX0zSnxtPb4UcTyrXNZ92Hoyhh+SrM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8r2LQcknfjFJiH2hGMQ4raXzYP7SoX7Y+/XTGLHmIWI=' 'sha256-r+YxcXI6wA+u5BX0zSnxtPb4UcTyrXNZ92Hoyhh+SrM=' 'sha256-O0gBUE09Eym0Imp75DJxDe8TucGcW6DHsJL3Y3suzno='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#f7f7f4">
 <meta name="description" content="Как личная потребность превратилась в мобильный задачник: модель продукта, визуальный язык, сценарии, локальное сохранение и проверка на телефоне.">
@@ -33,15 +33,15 @@
 <meta name="twitter:description" content="Как личная потребность превратилась в мобильный задачник: модель продукта, визуальный язык, сценарии, локальное сохранение и проверка на телефоне.">
 <meta name="twitter:image" content="https://yrlmrsh.ru/assets/cases/tracker/cover.webp">
 <meta name="twitter:image:alt" content="MONO TASK — мобильный задачник на экране телефона">
-<link rel="icon" href="/assets/favicon-32.png?v=studio-44" sizes="32x32" type="image/png"><link rel="icon" href="/assets/favicon-16.png?v=studio-44" sizes="16x16" type="image/png"><link rel="icon" href="/assets/favicon.svg?v=studio-44" sizes="any" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=studio-44"><link rel="stylesheet" href="/computer.css?v=studio-71-final"><link rel="stylesheet" href="/os-ui.css?v=studio-75-final"><link rel="stylesheet" href="/games.css?v=studio-71-final"><link rel="stylesheet" href="/television.css?v=studio-61-final"><link rel="stylesheet" href="/radio.css?v=studio-61-final"><link rel="stylesheet" href="/controls.css?v=studio-75-final"><link rel="stylesheet" href="/desktop-refinement.css?v=studio-75-links"><link rel="stylesheet" href="/skill-map.css?v=studio-21-final"><link rel="stylesheet" href="/profile.css?v=studio-37-final"><link rel="stylesheet" href="/desktop-finish.css?v=studio-75-links"><link rel="stylesheet" href="/computer-cursor.css?v=studio-21-final"><link id="typography-experiment" rel="stylesheet" href="/typography-experiment.css?v=studio-75-final"><link rel="stylesheet" href="/case-content.css?v=studio-35-final2">
+<link rel="icon" href="/assets/favicon-32.png?v=studio-44" sizes="32x32" type="image/png"><link rel="icon" href="/assets/favicon-16.png?v=studio-44" sizes="16x16" type="image/png"><link rel="icon" href="/assets/favicon.svg?v=studio-44" sizes="any" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=studio-44"><link rel="stylesheet" href="/computer.css?v=studio-71-final"><link rel="stylesheet" href="/os-ui.css?v=studio-76-final"><link rel="stylesheet" href="/games.css?v=studio-71-final"><link rel="stylesheet" href="/television.css?v=studio-61-final"><link rel="stylesheet" href="/radio.css?v=studio-76-final"><link rel="stylesheet" href="/controls.css?v=studio-75-final"><link rel="stylesheet" href="/desktop-refinement.css?v=studio-76-final"><link rel="stylesheet" href="/skill-map.css?v=studio-21-final"><link rel="stylesheet" href="/profile.css?v=studio-37-final"><link rel="stylesheet" href="/desktop-finish.css?v=studio-76-final"><link rel="stylesheet" href="/computer-cursor.css?v=studio-21-final"><link id="typography-experiment" rel="stylesheet" href="/typography-experiment.css?v=studio-76-final"><link rel="stylesheet" href="/case-content.css?v=studio-35-final2">
 <script>
   const baselineType = new URLSearchParams(location.search).get('type') === 'baseline';
   document.documentElement.dataset.typography = baselineType ? 'baseline' : 'experiment';
   if (baselineType) document.getElementById('typography-experiment').disabled = true;
 </script>
-<script type="module" src="/startup.js?v=studio-75-final"></script>
-<link rel="stylesheet" href="/mobile.css?v=studio-75-final">
-<link rel="stylesheet" href="/page-fallback.css?v=studio-75-final">
+<script id="startup-entry" type="module" src="/startup.js?v=studio-76-final"></script>
+<link rel="stylesheet" href="/mobile.css?v=studio-76-final">
+<link rel="stylesheet" href="/page-fallback.css?v=studio-76-final">
 </head>
 <body data-page-route="article:tracker" data-page-path="/articles/mono-task/">
 <!-- SEO_FALLBACK_START -->
@@ -84,4 +84,88 @@
 <p class="orbit-hint" id="orbit-hint" hidden>Потяни, чтобы повернуть. Колесо — масштаб.</p>
 <p class="device-status" id="device-status" role="status" hidden></p>
 <noscript><style>#loading-cover,#experience,.identity,.view-controls,#radio-panel,.orbit-hint,.device-status{display:none!important}html,body{height:auto;overflow:auto}.seo-fallback{position:static;display:block;visibility:visible;overflow:visible;min-height:100svh}</style></noscript>
+<script id="startup-guard">  (() => {
+    const body = document.body;
+    const entry = document.getElementById('startup-entry');
+    const listeners = new Set();
+    let finished = false, failed = false, timer = 0, startedAt = 0;
+    let remaining = 20000;
+    const stop = () => {
+      clearTimeout(timer); timer = 0;
+      document.removeEventListener('error', resourceError, true);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+    const runFailureListener = listener => {
+      try { listener(); } catch { /* Recovery must survive cleanup errors. */ }
+    };
+    const fail = reason => {
+      if (finished || failed) return false;
+      failed = true; stop();
+      for (const listener of listeners) runFailureListener(listener);
+      listeners.clear();
+      body.classList.remove('is-loading', 'intro-revealing');
+      body.classList.add('fallback-readable');
+      body.dataset.startupState = 'failed';
+      for (const selector of ['#experience', '.view-controls', '.identity', '#radio-panel', '.orbit-hint', '.device-status']) {
+        const element = document.querySelector(selector);
+        if (element) { element.inert = true; element.hidden = true; }
+      }
+      const fallback = document.getElementById('seo-fallback');
+      const cover = document.getElementById('loading-cover');
+      if (cover) { cover.hidden = true; cover.style.display = 'none'; }
+      const target = fallback || cover;
+      if (!target) return true;
+      target.hidden = false; target.inert = false;
+      Object.assign(target.style, { display: 'block', visibility: 'visible', position: 'fixed', inset: '0', zIndex: '41', overflow: 'auto', background: '#f7f7f4', color: '#20211e', padding: '24px' });
+      const notice = document.createElement('div');
+      notice.id = 'startup-recovery-notice'; notice.className = 'fallback-notice';
+      notice.setAttribute('role', 'status');
+      notice.textContent = reason === 'timeout'
+        ? 'Загрузка занимает слишком много времени. Содержание портфолио доступно ниже.'
+        : fallback ? 'Интерактивная версия не загрузилась. Содержание портфолио доступно ниже.' : 'Не удалось открыть портфолио.';
+      const retry = document.createElement('button');
+      retry.type = 'button'; retry.textContent = 'Попробовать ещё раз';
+      retry.addEventListener('click', () => location.reload());
+      notice.append(document.createElement('br'), retry);
+      if (fallback) fallback.prepend(notice);
+      else target.replaceChildren(notice);
+      if (!document.hidden) retry.focus({ preventScroll: true });
+      return true;
+    };
+    const resourceError = event => {
+      if (entry && event.target === entry) fail('entry');
+    };
+    const arm = () => {
+      if (!finished && !failed && !document.hidden && !timer) {
+        startedAt = Date.now();
+        timer = setTimeout(() => { timer = 0; fail('timeout'); }, remaining);
+      }
+    };
+    const visibility = () => {
+      if (document.hidden && timer) {
+        remaining = Math.max(0, remaining - (Date.now() - startedAt));
+        clearTimeout(timer); timer = 0;
+      } else arm();
+    };
+    window.__yrlmrshStartupGuard = {
+      ready() {
+        if (failed) return false;
+        finished = true; stop(); listeners.clear();
+        body.dataset.startupState = 'ready';
+        return true;
+      },
+      fail,
+      onFailure(listener) {
+        if (failed) runFailureListener(listener);
+        else if (!finished) listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      get failed() { return failed; },
+      get complete() { return finished; }
+    };
+    document.addEventListener('error', resourceError, true);
+    document.addEventListener('visibilitychange', visibility);
+    arm();
+  })();
+</script>
 </body></html>
