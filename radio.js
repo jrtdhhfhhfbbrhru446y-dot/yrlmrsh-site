@@ -54,7 +54,7 @@ export function createRadio(root, { onBack = () => {}, onStateChange = () => {} 
         <div class="radio-volume radio-recording-volume"><label for="archive-radio-volume">Громкость записи <output data-radio-volume-label for="archive-radio-volume">25</output></label><input id="archive-radio-volume" data-radio-volume type="range" min="0" max="100" step="1" value="25" aria-valuetext="25 процентов"></div>
       </div>
       <div class="radio-reception"><p data-radio-status role="status" aria-live="polite">Радио выключено</p><button type="button" class="radio-resume" data-radio-action="resume" hidden>Продолжить →</button></div>
-      <a class="radio-library" href="https://yrlmrshaudio.pages.dev/" target="_blank" rel="noopener noreferrer"><span>Полная библиотека шумов</span><span aria-hidden="true">↗</span></a>
+      <a class="radio-library" href="https://audio.yrlmrsh.ru/" target="_blank" rel="noopener noreferrer"><span>Полная библиотека шумов</span><span aria-hidden="true">↗</span></a>
     </div>
     <footer class="radio-footer"><button type="button" data-radio-action="back">← К компьютеру</button><span class="radio-footer-grille" aria-hidden="true"></span></footer>
     <audio class="radio-recording" data-radio-recording preload="none" hidden></audio>

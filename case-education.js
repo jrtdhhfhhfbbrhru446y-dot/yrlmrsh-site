@@ -608,7 +608,7 @@ export const educationCase = {
     },
     {
       "label": "Редизайн",
-      "url": "https://landingotus.pages.dev/",
+      "url": "https://otus.yrlmrsh.ru/",
       "note": "Доработанная версия · публичное демо"
     }
   ],
