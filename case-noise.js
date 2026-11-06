@@ -23,11 +23,11 @@ export const noiseCase = {
     "Управление звуком",
     "Браузерное приложение"
   ],
-  "demoUrl": "https://yrlmrshaudio.pages.dev/",
+  "demoUrl": "https://audio.yrlmrsh.ru/",
   "links": [
     {
       "label": "Открыть YRLMRSH AUDIO",
-      "url": "https://yrlmrshaudio.pages.dev/",
+      "url": "https://audio.yrlmrsh.ru/",
       "note": "Готовые миксы и свой звуковой фон"
     }
   ],

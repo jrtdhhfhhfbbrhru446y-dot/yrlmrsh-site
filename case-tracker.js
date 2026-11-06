@@ -27,11 +27,11 @@ export const trackerCase = {
   "cover": "/assets/cases/tracker/cover.webp",
   "coverAlt": "Крупная надпись MONO TASK слева; справа парящий телефон с приложением под выразительным углом на чистом светлом фоне.",
   "coverCaption": "MONO TASK. Иллюстративный продуктовый мокап на основе реального интерфейса приложения.",
-  "demoUrl": "https://mono-task.pages.dev/",
+  "demoUrl": "https://mono.yrlmrsh.ru/",
   "links": [
     {
       "label": "Открыть MONO TASK",
-      "url": "https://mono-task.pages.dev/",
+      "url": "https://mono.yrlmrsh.ru/",
       "note": "Веб-приложение, которое можно установить на телефон. Записи сохраняются локально в браузере или установленном приложении."
     }
   ],

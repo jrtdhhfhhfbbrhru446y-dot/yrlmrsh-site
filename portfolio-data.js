@@ -65,10 +65,10 @@ export const projects = [
 ];
 
 const projectLoaders = {
-  education: () => import('./case-education.js?v=studio-75-final').then(module => module.educationCase),
-  tracker: () => import('./case-tracker.js?v=studio-75-final').then(module => module.trackerCase),
+  education: () => import('./case-education.js?v=studio-77-final').then(module => module.educationCase),
+  tracker: () => import('./case-tracker.js?v=studio-77-final').then(module => module.trackerCase),
   bolo: () => import('./case-bolo.js?v=studio-75-final').then(module => module.boloCase),
-  noise: () => import('./case-noise.js?v=studio-75-final').then(module => module.noiseCase),
+  noise: () => import('./case-noise.js?v=studio-77-final').then(module => module.noiseCase),
 };
 const loadedProjects = new Map(), pendingProjects = new Map();
 

@@ -1,4 +1,4 @@
-import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-75-final';
+import { projects, getProject, getLoadedProject, loadProject } from './portfolio-data.js?v=studio-77-final';
 import { HOME_PAGE, SITE_ORIGIN, getPageRoute, getPageRouteForView } from './page-routes.js?v=studio-75-final';
 
 // Only published pages become addresses. Other desktop windows keep their
