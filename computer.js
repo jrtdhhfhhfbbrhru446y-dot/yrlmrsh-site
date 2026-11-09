@@ -298,7 +298,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (startupGuard?.failed || flat && !backgroundSceneLoading || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-79-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-80-final');
     if (startupGuard?.failed || flat && !backgroundSceneLoading) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,
