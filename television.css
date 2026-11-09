@@ -23,7 +23,7 @@ body:not(.flat-mode) .tv-anchor{clip-path:inset(0 round 7% / 9%)}
 .tv-library-heading{position:absolute;z-index:2;top:7%;left:8%;font-size:clamp(14px,2.7cqw,25px);font-weight:400;letter-spacing:-.025em;color:#929292}
 .tv-carousel{position:absolute;inset:18% 0 29%;z-index:2;perspective:850px;perspective-origin:50% 47%;transform-style:preserve-3d;touch-action:pan-y}
 .tv-carousel:after{content:"";position:absolute;left:16%;right:16%;bottom:-13%;height:16%;background:radial-gradient(ellipse,#ffffff0d,transparent 70%);pointer-events:none;transform:rotateX(30deg)}
-.tv-system .tv-flow-card{position:absolute;left:50%;top:50%;width:43%;aspect-ratio:4/3;display:block;overflow:visible;transform-style:preserve-3d;transform:translate(-50%,-50%) translateX(var(--flow-x,0%)) translateZ(var(--flow-z,0px)) rotateY(var(--flow-turn,0deg)) scale(var(--flow-scale,1));opacity:var(--flow-opacity,1);transition:transform .48s cubic-bezier(.22,.75,.25,1),opacity .38s,filter .38s;background:#090909;border:1px solid #575757;box-shadow:0 6px 28px #000c,inset 0 0 1px #fff3;touch-action:pan-y;backface-visibility:hidden;-webkit-box-reflect:below 8px linear-gradient(transparent 45%,#00000022)}
+.tv-system .tv-flow-card{position:absolute;left:50%;top:50%;width:43%;aspect-ratio:4/3;display:block;overflow:visible;transform-style:preserve-3d;transform:translate(-50%,-50%) translateX(var(--flow-x,0%)) translateZ(var(--flow-z,0px)) rotateY(var(--flow-turn,0deg)) scale(var(--flow-scale,1));opacity:var(--flow-opacity,1);transition:none;background:#090909;border:1px solid #575757;box-shadow:0 6px 28px #000c,inset 0 0 1px #fff3;touch-action:pan-y;backface-visibility:hidden;-webkit-box-reflect:below 8px linear-gradient(transparent 45%,#00000022)}
 .tv-system .tv-flow-card.is-current{border-color:#a0a0a0;box-shadow:0 0 1px #fff5,0 12px 35px #000,0 0 36px #ffffff05}
 .tv-flow-media{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#040404}
 .tv-flow-media canvas{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
@@ -68,6 +68,21 @@ body:not(.flat-mode) .tv-anchor{clip-path:inset(0 round 7% / 9%)}
 @media(max-width:680px){.is-expanded.is-tv .tv-anchor,.fallback-mode.is-tv .tv-anchor{width:calc(100vw - 36px)!important;height:calc(100svh - 175px)!important;box-shadow:0 0 0 7px #171717,0 0 0 12px #bfbfbb,0 20px 70px #0002}.device-status{right:18px;bottom:92px;font-size:11px}.view-switch button{padding-left:9px;padding-right:9px}}
 @media(hover:none){.tv-player-screen.is-playing .tv-player-heading,.tv-player-screen.is-playing .tv-player-controls{opacity:1!important}}
 @media(prefers-reduced-motion:reduce){.tv-system *{transition:none!important}.tv-system::before{animation:none!important}}
+
+/* The carousel controller interpolates the position of each cover. */
+.tv-library-screen:focus{outline:none}
+.tv-carousel{cursor:grab;user-select:none;-webkit-user-select:none}
+.tv-carousel .tv-flow-card{cursor:grab}
+.tv-carousel.is-dragging,.tv-carousel.is-dragging .tv-flow-card{cursor:grabbing}
+.tv-carousel:is(.is-dragging,.is-spinning) .tv-flow-play{opacity:0}
+.tv-flow-media canvas{transition:transform .22s cubic-bezier(.22,.75,.25,1)}
+@media (hover:hover) and (pointer:fine){
+  .tv-carousel:not(.is-dragging,.is-spinning) .tv-flow-card:hover .tv-flow-media canvas{transform:scale(1.045)}
+}
+@media (prefers-reduced-motion:reduce){
+  .tv-carousel .tv-flow-card:hover .tv-flow-media canvas{transform:none!important}
+}
+.motion-off .tv-carousel .tv-flow-card:hover .tv-flow-media canvas{transform:none!important}
 
 /* The only coloured OSD accent is the fictional streaming service wordmark. */
 .tv-library-heading{line-height:0;color:#e50914;text-shadow:none}

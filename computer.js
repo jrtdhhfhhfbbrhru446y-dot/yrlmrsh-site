@@ -1,7 +1,7 @@
 import { initOS, getBrowserPageView } from './os-ui.js?v=studio-77-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
 import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
-import { createTelevision } from './television.js?v=studio-75-final';
+import { createTelevision } from './television.js?v=studio-78-final';
 import { createRadio } from './radio.js?v=studio-77-final';
 
 import { createStartupDeadline } from './startup-deadline.js?v=studio-76-final';

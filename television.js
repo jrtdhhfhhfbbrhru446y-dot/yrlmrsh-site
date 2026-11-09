@@ -187,7 +187,11 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   let active = false, playing = false, current = null, view = 'library';
   let preview = programs[0], seconds = 0, last = 0, raf = 0, disposed = false;
   let lastTimeLabel = '', lastPlayingState = null, pointerTimer = 0;
-  let hoverTimer = 0, hoverGuardUntil = 0, swipe = null, pointerIntent = null, suppressClickUntil = 0, seeking = false;
+  let pointerIntent = null, suppressClickUntil = 0, seeking = false;
+  let flowCards = [], carousel = null, drag = null;
+  let flowPosition = 0, flowTarget = 0, flowFrame = 0;
+  let advanceTimer = 0;
+  const canHover = matchMedia('(any-hover: hover)');
   let seekDrag = null, volumeDrag = null;
   let crtEnabled = !document.body.classList.contains('crt-off');
   let mobilePresentation = document.body.classList.contains('mobile-mode');
@@ -506,12 +510,12 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     }
     drawProgram(project, t, destination, width, height);
   }
-  function offsetFor(index) {
-    const selected = programs.findIndex(project => project.id === preview.id);
-    let offset = (index - selected + programs.length) % programs.length;
-    if (offset > programs.length / 2) offset -= programs.length;
-    return offset;
+  const programIndex = id => programs.findIndex(project => project.id === id);
+  function flowOffset(index, position) {
+    const count = programs.length, half = count / 2;
+    return ((index - position + half) % count + count) % count - half;
   }
+  function offsetFor(index) { return flowOffset(index, programIndex(preview.id)); }
   function drawShelf() {
     drawTVServiceLogo(ctx, 79, 71, 142);
     programs.map((project, index) => ({ project, offset: offsetFor(index) }))
@@ -598,44 +602,113 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   function syncNoise() {
     root.querySelector('.tv-system')?.classList.toggle('is-tv-active', active && !document.hidden);
   }
-  function updateSelection({ focus = false } = {}) {
-    const cards = root.querySelectorAll('[data-tv-card]');
-    cards.forEach((card, index) => {
-      const offset = offsetFor(index), distance = Math.abs(offset), selected = distance === 0;
-      card.style.setProperty('--flow-x', `${offset * 73}%`);
-      card.style.setProperty('--flow-turn', `${selected ? 0 : Math.sign(offset) * -61}deg`);
-      card.style.setProperty('--flow-z', `${selected ? 26 : -distance * 30}px`);
-      card.style.setProperty('--flow-scale', String(selected ? 1 : distance === 1 ? .92 : .78));
-      card.style.setProperty('--flow-opacity', String(selected ? 1 : distance === 1 ? .64 : .24));
-      card.style.zIndex = String(10 - distance);
+  const motionAllowed = () => !reduced.matches && !document.body.classList.contains('motion-off');
+  const smooth = t => t * t * (3 - 2 * t);
+  function paintFlow(position) {
+    flowPosition = position;
+    flowCards.forEach((card, index) => {
+      const offset = flowOffset(index, position);
+      const distance = Math.abs(offset), side = Math.min(distance, 1);
+      const edge = Math.max(0, (distance - 1) * 2);
+      const near = smooth(side), far = smooth(edge);
+      const turn = -Math.sign(offset) * (61 * side * (1.24 - .24 * side) + 23 * edge);
+      const depth = 26 - 56 * near - 70 * far;
+      const scale = 1 - .08 * near - .08 * far;
+      // Separate the facing edges on the way past center, then restore the resting stack.
+      const clearance = 5.5 * smooth(Math.min(1, 4 * side, 4 * (1 - side)));
+      const x = offset * 73 + Math.sign(offset) * clearance;
+      card.style.transform = `translate(-50%,-50%) translateX(${x}%) translateZ(${depth}px) rotateY(${turn}deg) scale(${scale})`;
+      // The third cover wraps behind the others, invisible at the crossover.
+      card.style.opacity = String((1 - .36 * near) * (1 - far));
+      card.style.zIndex = String(Math.round(100 - distance * 40));
+    });
+  }
+  function stopFlowFrame() {
+    cancelAnimationFrame(flowFrame); flowFrame = 0;
+  }
+  function commitFlow(target, options = {}) {
+    const count = programs.length;
+    const index = ((target % count) + count) % count;
+    flowTarget = index;
+    paintFlow(index);
+    carousel?.classList.remove('is-spinning');
+    if (programs[index].id !== preview.id || options.focus) {
+      preview = programs[index];
+      updateSelection(options);
+    }
+    scheduleAdvance();
+  }
+  function settleFlow(target, { coastSpeed = 0, ...options } = {}) {
+    stopFlowFrame();
+    flowTarget = target;
+    const start = flowPosition;
+    const distance = target - start, travel = Math.abs(distance);
+    if (!motionAllowed() || travel < .001) { commitFlow(target, options); return; }
+    carousel?.classList.add('is-spinning');
+    const duration = coastSpeed
+      ? Math.max(620, Math.min(1450, 3.2 * travel / coastSpeed))
+      : Math.min(680, 210 + 160 * Math.sqrt(travel));
+    // Match the initial speed, then decelerate continuously to the final cover.
+    const decay = coastSpeed * duration / travel;
+    const started = performance.now();
+    function frame(now) {
+      const progress = Math.max(0, (now - started) / duration);
+      if (progress >= 1) { flowFrame = 0; commitFlow(target, options); return; }
+      const eased = coastSpeed ? 1 - (1 - progress) ** decay : smooth(progress);
+      paintFlow(start + distance * eased);
+      flowFrame = requestAnimationFrame(frame);
+    }
+    flowFrame = requestAnimationFrame(frame);
+  }
+  function canAdvance() {
+    return active && view === 'library' && !disposed && !drag && !flowFrame && !document.hidden && motionAllowed()
+      && !document.body.classList.contains('is-loading') && !document.body.classList.contains('device-pending')
+      && !(canHover.matches && carousel?.matches(':hover'))
+      && !(root.contains(document.activeElement) && document.activeElement.matches('button:focus-visible'));
+  }
+  function scheduleAdvance() {
+    clearTimeout(advanceTimer); advanceTimer = 0;
+    if (canAdvance()) advanceTimer = setTimeout(() => {
+      if (canAdvance()) selectRelative(1, { announce: false });
+      scheduleAdvance();
+    }, 6500);
+  }
+  function updateSelection({ focus = false, announce = true } = {}) {
+    flowCards.forEach((card, index) => {
+      const selected = programs[index].id === preview.id;
       card.classList.toggle('is-current', selected);
       card.setAttribute('aria-pressed', String(selected));
       card.setAttribute('aria-label', `${selected ? 'Смотреть' : 'Выбрать'} ${programs[index].title}`);
       card.tabIndex = selected ? 0 : -1;
     });
-    const title = root.querySelector('[data-tv-title]'); if (title) title.textContent = preview.title;
+    const title = root.querySelector('[data-tv-title]');
+    if (title) { title.setAttribute('aria-live', announce ? 'polite' : 'off'); title.textContent = preview.title; }
     if (focus) root.querySelector(`[data-tv-card="${preview.id}"]`)?.focus({ preventScroll: true });
     draw();
   }
   function selectProject(id, options) {
-    if (view !== 'library' || preview.id === id) return;
-    preview = getProgram(id) || preview;
-    clearTimeout(hoverTimer); hoverTimer = 0;
-    hoverGuardUntil = performance.now() + 420;
-    updateSelection(options);
+    if (view !== 'library') return;
+    const index = programIndex(id);
+    if (index >= 0) settleFlow(Math.round(flowPosition + flowOffset(index, flowPosition)), options);
   }
   function selectRelative(direction, options) {
-    const index = programs.findIndex(project => project.id === preview.id);
-    selectProject(programs[(index + direction + programs.length) % programs.length].id, options);
+    if (view === 'library') settleFlow(flowTarget + direction, options);
   }
   function render() {
     if (disposed) return;
+    flowCards = []; carousel = null;
     seekDrag?.dispose(); seekDrag = null;
     volumeDrag?.dispose(); volumeDrag = null;
     lastTimeLabel = ''; lastPlayingState = null; lastMutedState = null; lastBufferKey = '';
     if (view === 'library') {
-      root.innerHTML = `<section class="tv-system tv-library-screen" aria-label="Видеотека"><div class="tv-picture tv-library-picture" data-tv-picture></div><h1 class="tv-library-heading">${tvServiceLogo()}</h1><div class="tv-carousel" role="group" aria-roledescription="карусель" aria-label="Видеотека">${programs.map(p => `<button class="tv-flow-card" data-tv-card="${p.id}" data-tv-aspect="${previewAspectRatio(p)}" type="button"><span class="tv-flow-media" data-tv-poster="${p.id}"></span><span class="tv-flow-play" aria-hidden="true">${playIcon}</span></button>`).join('')}</div><div class="tv-flow-caption"><button data-tv-action="previous" class="tv-icon-button" aria-label="Предыдущее видео">${previousIcon}</button><p data-tv-title aria-live="polite">${esc(preview.title)}</p><button data-tv-action="next" class="tv-icon-button" aria-label="Следующее видео">${nextIcon}</button></div><footer class="tv-bottom"><button data-tv-action="back" class="tv-back">← К компьютеру</button></footer></section>`;
+      root.innerHTML = `<section class="tv-system tv-library-screen" aria-label="Видеотека" tabindex="-1"><div class="tv-picture tv-library-picture" data-tv-picture></div><h1 class="tv-library-heading">${tvServiceLogo()}</h1><div class="tv-carousel" role="group" aria-roledescription="карусель" aria-label="Видеотека">${programs.map(p => `<button class="tv-flow-card" data-tv-card="${p.id}" data-tv-aspect="${previewAspectRatio(p)}" type="button"><span class="tv-flow-media" data-tv-poster="${p.id}"></span><span class="tv-flow-play" aria-hidden="true">${playIcon}</span></button>`).join('')}</div><div class="tv-flow-caption"><button data-tv-action="previous" class="tv-icon-button" aria-label="Предыдущее видео">${previousIcon}</button><p data-tv-title aria-live="polite">${esc(preview.title)}</p><button data-tv-action="next" class="tv-icon-button" aria-label="Следующее видео">${nextIcon}</button></div><footer class="tv-bottom"><button data-tv-action="back" class="tv-back">← К компьютеру</button></footer></section>`;
       for (const project of programs) root.querySelector(`[data-tv-poster="${project.id}"]`)?.append(posters.get(project.id));
+      carousel = root.querySelector('.tv-carousel');
+      flowCards = root.querySelectorAll('[data-tv-card]');
+      carousel?.addEventListener('pointerenter', scheduleAdvance);
+      carousel?.addEventListener('pointerleave', leaveCarousel);
+      flowTarget = programIndex(preview.id);
+      paintFlow(flowTarget);
       updateSelection();
     } else {
       const film = hasFilm(current);
@@ -659,11 +732,11 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     });
     draw();
     canvas.setAttribute('aria-label', view === 'player' && hasFilm(current) ? `Видео ${current.title}` : 'Экранный этюд выбранного проекта');
-    syncNoise(); updateTime(); updateBuffered(); updateLoading(); revealControls();
+    syncNoise(); updateTime(); updateBuffered(); updateLoading(); revealControls(); scheduleAdvance();
   }
   function open(id) {
     requestPosters();
-    stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false;
+    stop(); clearTimeout(pointerTimer); resetFlow(); seeking = false;
     current = id ? getProgram(id) : null;
     if (current) preview = current;
     prepareMedia(current);
@@ -672,7 +745,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   }
   function library() {
     playing = false; stop(); releaseMedia(); view = 'library'; render();
-    root.querySelector(`[data-tv-card="${preview.id}"]`)?.focus({ preventScroll: true });
+    focusLibrary();
   }
   function togglePlaying() {
     if (currentFilm()) {
@@ -685,7 +758,8 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     if (playing) schedule(); else stop();
   }
   function click(event) {
-    if (performance.now() < suppressClickUntil) { event.preventDefault(); return; }
+    if (event.detail && performance.now() < suppressClickUntil) { event.preventDefault(); return; }
+    scheduleAdvance();
     const project = event.target.closest('[data-tv-card]');
     if (project) {
       const firstPointerSelection = pointerIntent?.id === project.dataset.tvCard && !pointerIntent.selected && performance.now() - pointerIntent.time < 1800;
@@ -707,40 +781,135 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     if (event.target.matches('[data-tv-seek]')) seekTo(event.target.value);
     if (event.target.matches('[data-tv-volume]')) setVolume(event.target.value);
   }
-  function previewProgram(event) {
+  function focusProgram(event) {
+    scheduleAdvance();
     const button = event.target.closest('[data-tv-card]');
     if (!button || button.dataset.tvCard === preview.id || view !== 'library') return;
-    if (event.type === 'focusin') {
-      // A pointer gives a button focus before its click. Keep that first tap a selection.
-      if (pointerIntent?.id === button.dataset.tvCard && performance.now() - pointerIntent.time < 1800) return;
-      selectProject(button.dataset.tvCard); return;
-    }
-    if (event.pointerType !== 'mouse' || performance.now() < hoverGuardUntil) return;
-    clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => selectProject(button.dataset.tvCard), 130);
+    // Keep the first click on a side cover as selection, even if it focuses first.
+    if (pointerIntent?.id === button.dataset.tvCard && performance.now() - pointerIntent.time < 1800) return;
+    selectProject(button.dataset.tvCard);
   }
-  function cancelHover(event) {
-    if (event.target.closest('[data-tv-card]')) { clearTimeout(hoverTimer); hoverTimer = 0; }
+  function focusLibrary() {
+    root.querySelector('.tv-library-screen')?.focus({ preventScroll: true });
+  }
+  function releaseDrag() {
+    const previous = drag; drag = null;
+    carousel?.classList.remove('is-dragging');
+    if (previous && carousel?.hasPointerCapture(previous.id)) carousel.releasePointerCapture(previous.id);
+    return previous;
+  }
+  function resetFlow() {
+    releaseDrag(); pointerIntent = null;
+    stopFlowFrame();
+    if (carousel) commitFlow(Math.round(flowPosition), { announce: false });
+  }
+  function leaveCarousel() {
+    if (drag && !drag.moved && drag.mouse) {
+      releaseDrag(); pointerIntent = null;
+      settleFlow(Math.round(flowPosition));
+    }
+    scheduleAdvance();
   }
   function pointerDown(event) {
+    if (event.isPrimary === false || event.pointerType === 'mouse' && event.button !== 0 || drag) return;
+    suppressClickUntil = 0;
     const card = view === 'library' ? event.target.closest('[data-tv-card]') : null;
-    pointerIntent = card ? { id: card.dataset.tvCard, selected: card.dataset.tvCard === preview.id, time: performance.now() } : null;
-    if (card) { clearTimeout(hoverTimer); hoverTimer = 0; }
-    if (view !== 'library' || event.pointerType === 'mouse' || !event.target.closest('.tv-carousel')) return;
-    swipe = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    pointerIntent = card ? {
+      id: card.dataset.tvCard, selected: card.dataset.tvCard === preview.id && !flowFrame, time: performance.now()
+    } : null;
+    if (view === 'library' && carousel && carousel.contains(event.target)) {
+      const step = .73 * flowCards[0].offsetWidth * carousel.getBoundingClientRect().width / carousel.offsetWidth;
+      if (step > 0) {
+        stopFlowFrame();
+        flowTarget = Math.round(flowPosition);
+        drag = { id: event.pointerId, x: event.clientX, y: event.clientY, step, mouse: event.pointerType === 'mouse',
+          start: flowPosition, position: flowPosition, moved: false, samples: [{ x: event.clientX, time: event.timeStamp }] };
+      }
+    }
+    scheduleAdvance();
   }
-  function pointerUp(event) {
-    if (!swipe || event.pointerId !== swipe.id) return;
-    const x = event.clientX - swipe.x, y = event.clientY - swipe.y; swipe = null;
-    if (Math.abs(x) > 28 && Math.abs(x) > Math.abs(y) * 1.2) {
-      pointerIntent = null;
-      suppressClickUntil = performance.now() + 450;
-      selectRelative(x < 0 ? 1 : -1);
+  function trackDrag(gesture, event) {
+    gesture.position = gesture.start - (event.clientX - gesture.originX) / gesture.step;
+    const samples = gesture.samples, last = samples.at(-1);
+    if (event.clientX !== last.x && event.timeStamp > last.time) {
+      samples.push({ x: event.clientX, time: event.timeStamp });
+      while (samples.length > 2 && samples[0].time < event.timeStamp - 85) samples.shift();
     }
   }
-  function pointerCancel() { swipe = null; pointerIntent = null; seekDrag?.cancel(); volumeDrag?.cancel(); }
+  function dragVelocity(gesture, time) {
+    const [first] = gesture.samples, last = gesture.samples.at(-1);
+    const still = time - last.time, elapsed = last.time - first.time;
+    if (still >= 100 || elapsed > 150) return 0;
+    const freshness = 1 - Math.max(0, still - 28) / 72;
+    return freshness * (first.x - last.x) / gesture.step / Math.max(18, elapsed);
+  }
+  function followDrag(now) {
+    flowFrame = 0;
+    if (!drag?.horizontal) return;
+    const target = drag.position;
+    if (!drag.mouse) { paintFlow(target); return; }
+
+    // A short damper softens changes of direction while the mouse is held.
+    const elapsed = Math.max(0, now - drag.followedAt);
+    const next = target + (flowPosition - target) * Math.exp(-elapsed / 36);
+    if (Math.abs(target - next) <= .002) { paintFlow(target); return; }
+    paintFlow(next);
+    drag.followedAt = now;
+    flowFrame = requestAnimationFrame(followDrag);
+  }
+  function moveCarousel(event) {
+    if (view === 'player') { revealControls(); return; }
+    if (!drag || event.pointerId !== drag.id) return;
+    const x = event.clientX - drag.x, y = event.clientY - drag.y;
+    if (!drag.moved) {
+      const slop = drag.mouse ? 4 : 8;
+      const vertical = Math.abs(y) > 9 && Math.abs(y) > Math.abs(x);
+      const horizontal = Math.abs(x) >= slop && Math.abs(x) > Math.abs(y) * 1.15;
+      if (!vertical && !horizontal) return;
+      if (vertical && !drag.mouse) { releaseDrag(); settleFlow(Math.round(flowPosition)); return; }
+      drag.moved = true;
+      drag.horizontal = horizontal;
+      drag.originX = drag.x + Math.sign(x) * slop;
+      carousel.classList.toggle('is-dragging', horizontal);
+      carousel.setPointerCapture(event.pointerId);
+    }
+    if (!drag.horizontal) return;
+    trackDrag(drag, event);
+    if (motionAllowed() && !flowFrame) {
+      drag.followedAt = performance.now();
+      flowFrame = requestAnimationFrame(followDrag);
+    }
+  }
+  function pointerUp(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    const gesture = releaseDrag();
+    if (gesture.moved) {
+      pointerIntent = null;
+      suppressClickUntil = performance.now() + 450;
+    }
+    if (!gesture.horizontal) { settleFlow(Math.round(flowPosition)); return; }
+    trackDrag(gesture, event);
+    const animate = motionAllowed();
+    if (animate && !gesture.mouse) paintFlow(gesture.position);
+    const velocity = animate ? dragVelocity(gesture, event.timeStamp) : 0;
+    const speed = Math.min(.012, Math.abs(velocity)), direction = Math.sign(velocity);
+    const target = Math.round(gesture.position + direction * speed * 440);
+    const travel = direction * (target - flowPosition);
+    if (speed >= .0015 && travel > .22) settleFlow(target, { coastSpeed: speed, focus: true });
+    else settleFlow(Math.round(gesture.position), { focus: true });
+  }
+  function cancelCarousel(event) {
+    // Touch initially captures the card before the carousel claims the gesture.
+    if (event.type === 'lostpointercapture' && event.target !== carousel) return;
+    if (drag && (event.type === 'blur' || event.pointerId === drag.id)) {
+      if (drag.moved) suppressClickUntil = performance.now() + 450;
+      releaseDrag(); pointerIntent = null; settleFlow(Math.round(flowPosition));
+    }
+    scheduleAdvance();
+  }
+  function pointerCancel(event) { cancelCarousel(event); seekDrag?.cancel(); volumeDrag?.cancel(); }
   function keyboard(event) {
-    pointerIntent = null;
+    pointerIntent = null; scheduleAdvance();
     if (event.key === 'Escape') {
       event.preventDefault(); if (view === 'player') library(); else onBack?.(); return;
     }
@@ -764,8 +933,17 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
       }, 2200);
     }
   }
-  function visibility() { syncNoise(); if (document.hidden) { seekDrag?.cancel(); volumeDrag?.cancel(); media?.pause(); stop(); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; } else schedule(); }
+  function visibility() { syncNoise(); if (document.hidden) { seekDrag?.cancel(); volumeDrag?.cancel(); media?.pause(); stop(); resetFlow(); seeking = false; } else schedule(); scheduleAdvance(); }
+  let advanceBlocked = null;
+  function refreshAdvance() {
+    const blocked = !motionAllowed() || document.body.classList.contains('device-pending') || document.body.classList.contains('is-loading');
+    if (blocked === advanceBlocked) return;
+    advanceBlocked = blocked;
+    if (!motionAllowed()) resetFlow();
+    scheduleAdvance();
+  }
   const appearance = new MutationObserver(() => {
+    refreshAdvance();
     const enabled = !document.body.classList.contains('crt-off');
     const nextMobile = document.body.classList.contains('mobile-mode');
     if ((enabled !== crtEnabled || nextMobile !== mobilePresentation) && !disposed) {
@@ -778,10 +956,12 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   });
   appearance.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   root.addEventListener('click', click); root.addEventListener('input', input); root.addEventListener('keydown', keyboard);
-  root.addEventListener('pointerover', previewProgram); root.addEventListener('focusin', previewProgram);
-  root.addEventListener('pointerout', cancelHover); root.addEventListener('pointerdown', pointerDown);
+  root.addEventListener('focusin', focusProgram); root.addEventListener('focusout', scheduleAdvance);
+  root.addEventListener('pointerdown', pointerDown); root.addEventListener('pointermove', moveCarousel);
   root.addEventListener('pointerup', pointerUp); root.addEventListener('pointercancel', pointerCancel);
-  root.addEventListener('pointermove', revealControls); root.addEventListener('focusin', revealControls);
+  root.addEventListener('lostpointercapture', cancelCarousel); window.addEventListener('blur', cancelCarousel);
+  root.addEventListener('focusin', revealControls);
+  reduced.addEventListener?.('change', refreshAdvance);
   document.addEventListener('visibilitychange', visibility);
   for (const project of programs) {
     const previewPoster = TV_PROGRAMS.find(program => program.projectId === project.id)?.previewPoster;
@@ -819,27 +999,30 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     canvas, open,
     setActive(value) {
       const changed = active !== value; active = value;
-      if (!active) { seekDrag?.cancel(); volumeDrag?.cancel(); playing = false; media?.pause(); stop(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); swipe = null; pointerIntent = null; seeking = false; updateTime(); }
+      if (!active) { seekDrag?.cancel(); volumeDrag?.cancel(); playing = false; media?.pause(); stop(); clearTimeout(pointerTimer); resetFlow(); seeking = false; updateTime(); }
       else { requestPosters({ retry: changed }); schedule(); }
       syncNoise(); updateLoading(); if (changed) draw();
+      if (changed) scheduleAdvance();
     },
     focus() {
-      if (view === 'library') root.querySelector(`[data-tv-card="${preview.id}"]`)?.focus({ preventScroll: true });
+      if (view === 'library') focusLibrary();
       else root.querySelector('.tv-player-screen')?.focus({ preventScroll: true });
     },
     dispose() {
       seekDrag?.dispose(); seekDrag = null;
       volumeDrag?.dispose(); volumeDrag = null;
-      disposed = true; stop(); releaseMedia(); clearTimeout(pointerTimer); clearTimeout(hoverTimer); appearance.disconnect();
+      disposed = true; stop(); releaseMedia(); clearTimeout(pointerTimer); resetFlow(); clearTimeout(advanceTimer); appearance.disconnect();
       posterRequests.dispose();
       posterImages.clear();
       previewImages.clear();
       document.removeEventListener('visibilitychange', visibility);
       root.removeEventListener('click', click); root.removeEventListener('input', input); root.removeEventListener('keydown', keyboard);
-      root.removeEventListener('pointerover', previewProgram); root.removeEventListener('focusin', previewProgram);
-      root.removeEventListener('pointerout', cancelHover); root.removeEventListener('pointerdown', pointerDown);
+      root.removeEventListener('focusin', focusProgram); root.removeEventListener('focusout', scheduleAdvance);
+      root.removeEventListener('pointerdown', pointerDown); root.removeEventListener('pointermove', moveCarousel);
       root.removeEventListener('pointerup', pointerUp); root.removeEventListener('pointercancel', pointerCancel);
-      root.removeEventListener('pointermove', revealControls); root.removeEventListener('focusin', revealControls);
+      root.removeEventListener('lostpointercapture', cancelCarousel); window.removeEventListener('blur', cancelCarousel);
+      root.removeEventListener('focusin', revealControls);
+      reduced.removeEventListener?.('change', refreshAdvance);
       root.replaceChildren();
     }
   };
