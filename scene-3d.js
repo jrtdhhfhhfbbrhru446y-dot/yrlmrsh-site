@@ -10,7 +10,7 @@ export function preloadScene3D() {
     import('/assets/vendor/OrbitControls.js'),
     import('/assets/vendor/RoomEnvironment.js'),
     import('./laptop-material.js?v=1'),
-    import('./radio-preparation.js?v=studio-79-final')
+    import('./radio-preparation.js?v=studio-80-final')
   ]).catch(error => { sceneModulesPromise = null; throw error; });
   return sceneModulesPromise;
 }

@@ -276,33 +276,33 @@ export function createRadioModel(THREE, options = {}) {
   instanced(ribGeometry, ribMat, Array.from({ length: 17 }, (_, i) => ({ p: [-.075, .049 + i * .0093, .057] })));
 
   mesh(rounded(.138, .041, .004, .004, .0007), dark, [.118, .193, .053]);
-  const dial = surfaces.surface(768, 220, { color: [20, 31, 22], grain: 2, mottle: 6, roughness: .26, relief: .4 }), d = dial.ctx;
+  const dial = surfaces.surface(768, 220, { color: [185, 186, 183], grain: 2, mottle: 6, roughness: .26, relief: .4 }), d = dial.ctx;
   const dialGradient = d.createLinearGradient(0, 0, 0, 220);
-  dialGradient.addColorStop(0, 'rgba(8,14,10,.38)');
-  dialGradient.addColorStop(.4, 'rgba(104,123,86,.09)');
-  dialGradient.addColorStop(1, 'rgba(8,14,10,.31)');
+  dialGradient.addColorStop(0, 'rgba(48,50,48,.15)');
+  dialGradient.addColorStop(.4, 'rgba(255,255,255,.09)');
+  dialGradient.addColorStop(1, 'rgba(48,50,48,.13)');
   d.fillStyle = dialGradient; d.fillRect(0, 0, 768, 220);
-  d.fillStyle = '#c9cfb2'; d.font = '600 23px "Courier New", monospace'; d.textAlign = 'left';
+  d.fillStyle = '#252b26'; d.font = '700 25px "Courier New", monospace'; d.textAlign = 'left';
   d.fillText('FM', 25, 40); d.fillText('AM', 25, 170);
-  d.strokeStyle = '#8c9b80'; d.lineWidth = 2;
+  d.strokeStyle = '#565d54'; d.lineWidth = 3;
   d.beginPath(); d.moveTo(92, 92); d.lineTo(739, 92); d.moveTo(92, 132); d.lineTo(739, 132); d.stroke();
   for (let i = 0; i <= 64; i++) {
     const x = 96 + i * 10, major = i % 8 === 0;
-    d.strokeStyle = major ? '#c4ccb0' : '#9fae91';
-    d.lineWidth = major ? 3 : 2;
+    d.strokeStyle = major ? '#333a33' : '#545c52';
+    d.lineWidth = major ? 5 : 3;
     d.beginPath(); d.moveTo(x, 85); d.lineTo(x, major ? 54 : i % 4 === 0 ? 64 : 73); d.stroke();
   }
-  d.font = '500 23px "Courier New", monospace'; d.textAlign = 'center';
+  d.textAlign = 'center';
   ['88', '92', '96', '100', '104', '108'].forEach((s, i) => d.fillText(s, 105 + i * 122, 39));
   ['RAIN', 'NOISE', 'WIND'].forEach((s, i) => d.fillText(s, 165 + i * 245, 174));
   surfaces.edgeWear(dial, .45); surfaces.scuffs(dial, 90, 28, .1);
   surfaces.stain(dial, 130, 30, 190, 37, .12, '54,57,43');
   // Thin reflections and fine scratches belong to the acrylic, not extra planes.
   const glassReflection = d.createLinearGradient(0, 0, 190, 220);
-  glassReflection.addColorStop(0, 'rgba(255,255,238,.045)'); glassReflection.addColorStop(.6, 'rgba(255,255,238,0)');
+  glassReflection.addColorStop(0, 'rgba(255,255,255,.045)'); glassReflection.addColorStop(.6, 'rgba(255,255,255,0)');
   d.fillStyle = glassReflection; d.fillRect(0, 0, 768, 220);
   const dialMaps = surfaces.maps(dial, .65), dialTexture = dialMaps.map;
-  const dialMat = material(new THREE.MeshPhysicalMaterial({ ...dialMaps, color: 0xffffff, roughness: 1, metalness: .05, clearcoat: .65, clearcoatRoughness: .23, emissive: 0x82936b, emissiveMap: dialTexture, emissiveIntensity: 0 }));
+  const dialMat = material(new THREE.MeshPhysicalMaterial({ ...dialMaps, color: 0xffffff, roughness: 1, metalness: .05, clearcoat: .65, clearcoatRoughness: .23, emissive: 0x959595, emissiveMap: dialTexture, emissiveIntensity: 0 }));
   const display = mesh(geometry(new THREE.PlaneGeometry(.131, .034)), dialMat, [.118, .193, .0554], group, 'tuning');
   display.castShadow = false;
   const pointer = mesh(geometry(new THREE.BoxGeometry(.0008, .027, .0006)), standard({ color: 0xb9602e, roughness: .4, metalness: .15 }), [.118, .193, .0561], group, 'tuning');

@@ -6,11 +6,11 @@ if (!globalThis.__yrlmrshStartupGuard?.failed) {
   const textVersion = new URLSearchParams(location.search).get('view') === 'text';
   // Discover desktop dependencies while the unchanged eye is already running.
   if (!textVersion && !matchMedia('(max-width: 760px), (max-width: 1024px) and (any-pointer: coarse)').matches) {
-    void import('./scene-3d.js?v=studio-79-final')
+    void import('./scene-3d.js?v=studio-80-final')
       .then(({ preloadScene3D }) => preloadScene3D())
       .catch(() => { /* The normal scene path handles a failed dependency. */ });
   }
-  if (!loading.cancelled) void import('./computer.js?v=studio-79-final').catch(error => {
+  if (!loading.cancelled) void import('./computer.js?v=studio-80-final').catch(error => {
     if (!globalThis.__yrlmrshStartupGuard?.failed) console.warn('Portfolio startup failed.', error);
     loading.fail();
   });

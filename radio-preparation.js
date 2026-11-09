@@ -1,4 +1,4 @@
-import { createRadioModel, createRadioController, configureRadioRibMaterial } from './radio-model.js?v=studio-79-final';
+import { createRadioModel, createRadioController, configureRadioRibMaterial } from './radio-model.js?v=studio-80-final';
 
 // Geometry arrays and bitmaps transfer ownership; no large JSON pixel arrays or
 // geometry regeneration are needed on the UI thread.
@@ -80,7 +80,7 @@ export async function prepareRadioModel(THREE) {
     let worker, phase = 'worker';
     try {
       const result = await new Promise((resolve, reject) => {
-        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-79-final', import.meta.url), { type: 'module' });
+        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-80-final', import.meta.url), { type: 'module' });
         let settled = false;
         const settle = action => value => { if (settled) return; settled = true; clearTimeout(timer); action(value); };
         const fail = settle(reject);
