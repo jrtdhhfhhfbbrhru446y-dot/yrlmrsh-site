@@ -2,7 +2,7 @@ import { initOS, getBrowserPageView } from './os-ui.js?v=studio-77-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
 import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
 import { createTelevision } from './television.js?v=studio-78-final';
-import { createRadio } from './radio.js?v=studio-77-final';
+import { createRadio } from './radio.js?v=studio-79-final';
 
 import { createStartupDeadline } from './startup-deadline.js?v=studio-76-final';
 
@@ -298,7 +298,7 @@ function sceneError(error) {
 async function ensureScene() {
   if (startupGuard?.failed || flat && !backgroundSceneLoading || engine || scenePromise) return scenePromise;
   scenePromise = (async () => {
-    const { createScene3D } = await import('./scene-3d.js?v=studio-75-final');
+    const { createScene3D } = await import('./scene-3d.js?v=studio-79-final');
     if (startupGuard?.failed || flat && !backgroundSceneLoading) return;
     const controller = await createScene3D({
       canvas, anchor, tvAnchor, tvCanvas: television.canvas,

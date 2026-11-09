@@ -1,4 +1,4 @@
-import { createRadioModel, createRadioController, configureRadioRibMaterial } from './radio-model.js?v=studio-71-final';
+import { createRadioModel, createRadioController, configureRadioRibMaterial } from './radio-model.js?v=studio-79-final';
 
 // Geometry arrays and bitmaps transfer ownership; no large JSON pixel arrays or
 // geometry regeneration are needed on the UI thread.
@@ -64,7 +64,7 @@ export function restoreRadioModel(THREE, packet) {
   const objects = {}; group.traverse(object => { objects[object.uuid] = object; });
   const refs = packet.references;
   return createRadioController(THREE, {
-    group, knobs: { volume: objects[refs.volume], tuning: objects[refs.tuning] }, pointer: objects[refs.pointer], lamp: objects[refs.lamp],
+    group, knobs: { volume: objects[refs.volume], tuning: objects[refs.tuning] }, pointer: objects[refs.pointer],
     dialMat: materials[refs.dialMaterial], powerKey: objects[refs.powerKey],
     stationButtons: new Map(refs.stations.map(([id, uuid]) => [id, objects[uuid]])),
     geometries: new Set(Object.values(geometries)), materials: new Set(Object.values(materials)), textures: new Set(Object.values(textures)),
@@ -80,7 +80,7 @@ export async function prepareRadioModel(THREE) {
     let worker, phase = 'worker';
     try {
       const result = await new Promise((resolve, reject) => {
-        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-75-final', import.meta.url), { type: 'module' });
+        worker = new Worker(new URL('./radio-preparation-worker.js?v=studio-79-final', import.meta.url), { type: 'module' });
         let settled = false;
         const settle = action => value => { if (settled) return; settled = true; clearTimeout(timer); action(value); };
         const fail = settle(reject);

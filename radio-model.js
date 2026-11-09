@@ -33,7 +33,7 @@ export function createRadioModel(THREE, options = {}) {
     return seed / 4294967296;
   };
   const surfaces = createRadioSurfaceTools(THREE, canvas, texture, random);
-  const shell = surfaces.surface(512, 512, { color: [181, 180, 168], grain: 3, mottle: 12, roughness: .76, relief: 5 });
+  const shell = surfaces.surface(512, 512, { color: [182, 175, 155], grain: 3, mottle: 12, roughness: .76, relief: 5 });
   surfaces.edgeWear(shell, .75); surfaces.scuffs(shell, 110, 35, .14);
   for (let i = 0; i < 18; i++) surfaces.stain(shell, random() * 512, random() * 512, 15 + random() * 70, 10 + random() * 45, .04 + random() * .06);
   const shellMaps = surfaces.maps(shell, 1.4);
@@ -174,7 +174,7 @@ export function createRadioModel(THREE, options = {}) {
   mesh(assembly(aerialParts), chrome, [0, 0, 0]);
   mesh(assembly(aerialRubber), rubber, [0, 0, 0]);
 
-  const face = surfaces.surface(1536, 900, { color: [188, 187, 176], grain: 2.5, mottle: 10, roughness: .7, relief: 3.5 }), c = face.ctx;
+  const face = surfaces.surface(1536, 900, { color: [190, 180, 156], grain: 2.5, mottle: 10, roughness: .7, relief: 3.5 }), c = face.ctx;
   surfaces.edgeWear(face, 1.1); surfaces.scuffs(face, 210, 42, .14);
   // Local handling marks and dust around hardware, rather than all-over dirt.
   for (const [x, y, rx, ry, opacity] of [[112, 72, 70, 55, .16], [1480, 70, 55, 45, .18],
@@ -232,7 +232,6 @@ export function createRadioModel(THREE, options = {}) {
   label('AM / FM', .051, .217, 12);
   label('TUNING', .059, .091, 11, 'center');
   label('VOLUME', .135, .063, 12, 'center');
-  label('ON', .144, .220, 10, 'center');
   // The volume numerals and tiny ticks are printed, not floating geometry.
   for (let i = 0; i <= 10; i++) {
     const a = (-130 + i * 26) * Math.PI / 180;
@@ -266,7 +265,7 @@ export function createRadioModel(THREE, options = {}) {
   const ribGeometry = rounded(.217, .0035, .0044, .00175, .00045);
   const ribs = new THREE.InstancedBufferAttribute(Float32Array.from({ length: 17 }, (_, i) => i / 17), 1);
   ribGeometry.setAttribute('wearRow', ribs);
-  const ribArt = surfaces.surface(1024, 512, { color: [188, 187, 174], grain: 3, mottle: 14, roughness: .72, relief: 4 });
+  const ribArt = surfaces.surface(1024, 512, { color: [190, 181, 156], grain: 3, mottle: 14, roughness: .72, relief: 4 });
   for (let i = 0; i < 17; i++) {
     const y = i / 17 * 512;
     surfaces.stain(ribArt, 110 + random() * 800, y, 100 + random() * 180, 10, .18);
@@ -277,32 +276,36 @@ export function createRadioModel(THREE, options = {}) {
   instanced(ribGeometry, ribMat, Array.from({ length: 17 }, (_, i) => ({ p: [-.075, .049 + i * .0093, .057] })));
 
   mesh(rounded(.138, .041, .004, .004, .0007), dark, [.118, .193, .053]);
-  const dial = surfaces.surface(768, 220, { color: [157, 165, 145], grain: 2, mottle: 6, roughness: .26, relief: .4 }), d = dial.ctx;
+  const dial = surfaces.surface(768, 220, { color: [20, 31, 22], grain: 2, mottle: 6, roughness: .26, relief: .4 }), d = dial.ctx;
   const dialGradient = d.createLinearGradient(0, 0, 0, 220);
-  dialGradient.addColorStop(0, 'rgba(44,49,39,.38)'); dialGradient.addColorStop(.35, 'rgba(223,219,183,.09)'); dialGradient.addColorStop(1, 'rgba(72,75,52,.23)');
+  dialGradient.addColorStop(0, 'rgba(8,14,10,.38)');
+  dialGradient.addColorStop(.4, 'rgba(104,123,86,.09)');
+  dialGradient.addColorStop(1, 'rgba(8,14,10,.31)');
   d.fillStyle = dialGradient; d.fillRect(0, 0, 768, 220);
-  d.fillStyle = '#2c382b'; d.font = '600 17px "Courier New", monospace'; d.textAlign = 'left';
+  d.fillStyle = '#c9cfb2'; d.font = '600 23px "Courier New", monospace'; d.textAlign = 'left';
   d.fillText('FM', 25, 40); d.fillText('AM', 25, 170);
-  d.strokeStyle = '#46533f'; d.lineWidth = 1;
+  d.strokeStyle = '#8c9b80'; d.lineWidth = 2;
   d.beginPath(); d.moveTo(92, 92); d.lineTo(739, 92); d.moveTo(92, 132); d.lineTo(739, 132); d.stroke();
   for (let i = 0; i <= 64; i++) {
-    const x = 96 + i * 10;
-    d.beginPath(); d.moveTo(x, 85); d.lineTo(x, i % 8 === 0 ? 54 : i % 4 === 0 ? 64 : 73); d.stroke();
+    const x = 96 + i * 10, major = i % 8 === 0;
+    d.strokeStyle = major ? '#c4ccb0' : '#9fae91';
+    d.lineWidth = major ? 3 : 2;
+    d.beginPath(); d.moveTo(x, 85); d.lineTo(x, major ? 54 : i % 4 === 0 ? 64 : 73); d.stroke();
   }
-  d.font = '500 17px "Courier New", monospace'; d.textAlign = 'center';
+  d.font = '500 23px "Courier New", monospace'; d.textAlign = 'center';
   ['88', '92', '96', '100', '104', '108'].forEach((s, i) => d.fillText(s, 105 + i * 122, 39));
   ['RAIN', 'NOISE', 'WIND'].forEach((s, i) => d.fillText(s, 165 + i * 245, 174));
   surfaces.edgeWear(dial, .45); surfaces.scuffs(dial, 90, 28, .1);
   surfaces.stain(dial, 130, 30, 190, 37, .12, '54,57,43');
   // Thin reflections and fine scratches belong to the acrylic, not extra planes.
   const glassReflection = d.createLinearGradient(0, 0, 190, 220);
-  glassReflection.addColorStop(0, 'rgba(255,255,238,.16)'); glassReflection.addColorStop(.6, 'rgba(255,255,238,0)');
+  glassReflection.addColorStop(0, 'rgba(255,255,238,.045)'); glassReflection.addColorStop(.6, 'rgba(255,255,238,0)');
   d.fillStyle = glassReflection; d.fillRect(0, 0, 768, 220);
   const dialMaps = surfaces.maps(dial, .65), dialTexture = dialMaps.map;
   const dialMat = material(new THREE.MeshPhysicalMaterial({ ...dialMaps, color: 0xffffff, roughness: 1, metalness: .05, clearcoat: .65, clearcoatRoughness: .23, emissive: 0x82936b, emissiveMap: dialTexture, emissiveIntensity: 0 }));
   const display = mesh(geometry(new THREE.PlaneGeometry(.131, .034)), dialMat, [.118, .193, .0554], group, 'tuning');
   display.castShadow = false;
-  const pointer = mesh(geometry(new THREE.BoxGeometry(.0008, .027, .0006)), standard({ color: 0x9a4e32, roughness: .4, metalness: .15 }), [.118, .193, .0561], group, 'tuning');
+  const pointer = mesh(geometry(new THREE.BoxGeometry(.0008, .027, .0006)), standard({ color: 0xb9602e, roughness: .4, metalness: .15 }), [.118, .193, .0561], group, 'tuning');
 
   // A turned profile gives the knob a shallow dished face and a rounded rim.
   const knobShape = geometry(new THREE.LatheGeometry([
@@ -313,7 +316,7 @@ export function createRadioModel(THREE, options = {}) {
   ], 48));
   // Lathe UV: u runs around the knob, v follows its turned profile. Dirt is
   // concentrated at the rim; the shallow centre has a smoother finger polish.
-  const knobArt = surfaces.surface(512, 512, { color: [184, 183, 170], grain: 2.5, mottle: 9, roughness: .68, relief: 3 });
+  const knobArt = surfaces.surface(512, 512, { color: [186, 177, 150], grain: 2.5, mottle: 9, roughness: .68, relief: 3 });
   for (let x = 0; x < 512; x++) {
     const brightness = 102 + Math.round(random() * 35);
     knobArt.ctx.strokeStyle = `rgba(81,76,59,${.03 + random() * .1})`;
@@ -351,12 +354,8 @@ export function createRadioModel(THREE, options = {}) {
   tuner.rotation.x = Math.PI / 2; tuner.scale.setScalar(.36);
   mesh(geometry(new THREE.BoxGeometry(.0008, .004, .0003)), blackInk, [0, .0095, .0035], knobs.tuning, 'tuning');
 
-  const lampMat = standard({ color: 0x554f33, roughness: .28, metalness: .15, emissive: 0xd49b40, emissiveIntensity: 0 });
-  const lamp = mesh(cylinder, lampMat, [.158, .220, .054], group, 'power');
-  lamp.rotation.x = Math.PI / 2; lamp.scale.set(.0032, .0018, .0032);
-
   function key(labelText, x, width, control) {
-    const art = surfaces.surface(256, 128, { color: [188, 189, 177], grain: 2.5, mottle: 8, roughness: .64, relief: 3 }), k = art.ctx;
+    const art = surfaces.surface(256, 128, { color: [188, 179, 151], grain: 2.5, mottle: 8, roughness: .64, relief: 3 }), k = art.ctx;
     const g = k.createLinearGradient(0, 0, 0, 128);
     g.addColorStop(0, 'rgba(255,253,235,.17)'); g.addColorStop(.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(68,71,55,.22)');
     k.fillStyle = g; k.fillRect(0, 0, 256, 128);
@@ -375,8 +374,16 @@ export function createRadioModel(THREE, options = {}) {
     return object;
   }
   const powerKey = key('I / O', .171, .020, 'power');
+  const indicatorShape = geometry(new THREE.ShapeGeometry(roundedShape(.0076, .002, .001), 6));
+  const indicatorMaterial = material(new THREE.MeshBasicMaterial({ color: 0xd48132, toneMapped: false }));
   [['rain', 'Дождь', .061], ['noise', 'Шум', .106], ['wind', 'Ветер', .151]].forEach(([id, title, x]) => {
-    stationButtons.set(id, key(title, x, .039, `station:${id}`));
+    const button = key(title, x, .039, `station:${id}`);
+    const indicator = new THREE.Mesh(indicatorShape, indicatorMaterial);
+    indicator.name = 'station-indicator';
+    indicator.position.set(0, -.0064, .0051);
+    indicator.visible = false;
+    button.add(indicator);
+    stationButtons.set(id, button);
   });
 
   instanced(rounded(.045, .014, .033, .005, .0012), rubber,
@@ -404,7 +411,7 @@ export function createRadioModel(THREE, options = {}) {
     Array.from({ length: 12 }, (_, i) => ({ p: [-.075, .087 + i * .0072, -.069] })));
 
   return createRadioController(THREE, {
-    group, knobs, pointer, lamp, dialMat, powerKey, stationButtons, geometries, materials, textures
+    group, knobs, pointer, dialMat, powerKey, stationButtons, geometries, materials, textures
   });
 }
 
@@ -417,10 +424,9 @@ export function configureRadioRibMaterial(material) {
   material.customProgramCacheKey = () => 'radio-rib-wear-atlas-v1';
 }
 
-export function createRadioController(THREE, { group, knobs, pointer, lamp, dialMat, powerKey, stationButtons, geometries, materials, textures, images = [] }) {
+export function createRadioController(THREE, { group, knobs, pointer, dialMat, powerKey, stationButtons, geometries, materials, textures, images = [] }) {
   const state = { powered: false, source: null, recording: false, noiseEnabled: false, volume: .35, station: 'rain' };
   const stationPositions = { rain: .22, noise: .5, wind: .79 };
-  const lampMat = lamp.material;
   let disposed = false;
   function setState(next = {}) {
     if (disposed) return;
@@ -433,22 +439,22 @@ export function createRadioController(THREE, { group, knobs, pointer, lamp, dial
     knobs.volume.rotation.z = THREE.MathUtils.degToRad(130 - state.volume * 260);
     knobs.tuning.rotation.z = -stationPositions[state.station] * Math.PI * 2;
     pointer.position.x = .0525 + stationPositions[state.station] * .131;
-    lampMat.color.setHex(state.powered ? 0xd2b76c : 0x554f33);
-    lampMat.emissiveIntensity = state.powered ? .6 : 0;
     dialMat.emissiveIntensity = state.powered ? .22 : 0;
     powerKey.position.z = powerKey.userData.restZ - (state.recording ? .002 : 0);
     for (const [id, button] of stationButtons) {
       const pressed = state.noiseEnabled && id === state.station;
-      button.position.z = button.userData.restZ - (pressed ? .0022 : 0);
-      button.material.color.setHex(pressed ? 0xbfc7b8 : 0xffffff);
+      button.position.z = button.userData.restZ - (pressed ? .0031 : 0);
+      button.material.color.setHex(pressed ? 0xc9c6bb : 0xffffff);
+      const indicator = button.getObjectByName('station-indicator');
+      if (indicator) indicator.visible = pressed;
     }
   }
   setState(state);
   return {
-    group, knobs, pointer, lamp, setState,
+    group, knobs, pointer, setState,
     resources: { geometries, materials, textures },
     preparation: {
-      volume: knobs.volume.uuid, tuning: knobs.tuning.uuid, pointer: pointer.uuid, lamp: lamp.uuid,
+      volume: knobs.volume.uuid, tuning: knobs.tuning.uuid, pointer: pointer.uuid,
       dialMaterial: dialMat.uuid, powerKey: powerKey.uuid,
       stations: [...stationButtons].map(([id, button]) => [id, button.uuid])
     },
