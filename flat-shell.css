@@ -326,6 +326,13 @@ html:has(> body.flat-mode.mobile-mode.is-tv) { --mobile-surface: #0a0a0c; }
 body.flat-mode.mobile-mode:not(.is-radio, .is-tv) .retro-os:not(.os-high-contrast) {
   --os-paper: var(--mobile-surface, #f6f5ef);
 }
+body.flat-mode.mobile-mode .retro-os .os-menubar {
+  background-color: var(--os-paper);
+  background-image: linear-gradient(to bottom,
+    transparent env(safe-area-inset-top, 0px),
+    var(--os-surface) calc(env(safe-area-inset-top, 0px) + 16px));
+  box-shadow: inset 0 -1px 0 #cbc9c0;
+}
 body.flat-mode.mobile-mode:not(.is-tv) {
   /* Let the shadow settle before reaching the browser's content edge. */
   --glass-outer-shadow: 0 1px 4px -1px var(--glass-shadow);
