@@ -43,7 +43,11 @@ body.flat-mode.is-radio #radio-root .radio-system {
 }
 
 body.flat-mode.mobile-mode.is-radio #radio-root .radio-system {
-  background-image: linear-gradient(to bottom, transparent calc(100% - 120px), var(--mobile-surface, var(--flat-surface)) calc(100% - 12px)), var(--radio-room);
+  background-image: linear-gradient(to bottom,
+    var(--mobile-surface, var(--flat-surface)),
+    transparent 64px,
+    transparent calc(100% - 120px),
+    var(--mobile-surface, var(--flat-surface)) calc(100% - 12px)), var(--radio-room);
   background-blend-mode: normal, soft-light, normal;
 }
 

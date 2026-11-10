@@ -30,9 +30,14 @@ body.flat-mode.is-tv .tv-system::after {
 }
 
 body.flat-mode.is-tv .tv-library-screen {
-  background:
+  --tv-library-ambience:
     radial-gradient(ellipse at 14% 0%, #2d141a 0%, transparent 39%),
     radial-gradient(ellipse at 50% 41%, #1d1d23 0%, #101014 52%, #0a0a0c 100%);
+  background: var(--tv-library-ambience);
+}
+
+body.flat-mode.mobile-mode.is-tv .tv-library-screen {
+  background-image: linear-gradient(to bottom, var(--mobile-surface, var(--flat-surface)), transparent 72px), var(--tv-library-ambience);
 }
 
 body.flat-mode.is-tv .tv-library-picture {
@@ -125,6 +130,9 @@ body.flat-mode.is-tv .tv-library-screen .tv-bottom {
 
 body.flat-mode.is-tv .tv-player-screen {
   background: #09090b;
+}
+body.flat-mode.mobile-mode.is-tv .tv-player-screen {
+  background-color: var(--mobile-surface, var(--flat-surface));
 }
 
 body.flat-mode.is-tv .tv-player-screen .tv-picture {
