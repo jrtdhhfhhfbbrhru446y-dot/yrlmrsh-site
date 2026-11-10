@@ -192,7 +192,8 @@ body[data-display-mode] .view-switch > button[aria-pressed="true"] { --key-ink: 
   body[data-display-mode] .view-switch[data-glass-dragging] > button { cursor: grabbing; }
 }
 body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button)::before,
-body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button)::after { display: none; }
+body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button)::after,
+body[data-display-mode] .view-switch #radio-view.has-sound::after { display: none; }
 
 body[data-display-mode] .view-controls .expand-button {
   gap: 7px;
