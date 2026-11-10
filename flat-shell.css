@@ -17,6 +17,7 @@ body {
   --glass-hover: #2929291b;
   --glass-hover-rim: #29292915;
   --glass-lens-fill: #cecece;
+  --glass-radio-status: #497525;
   --glass-specular: #fffffff2;
   --glass-reflection-shade: .31;
   --glass-reflection-strength: .56;
@@ -48,6 +49,7 @@ body.flat-mode.is-tv {
   --glass-hover: #ffffff16;
   --glass-hover-rim: #ffffff12;
   --glass-lens-fill: #3a3a3a;
+  --glass-radio-status: #a3ce75;
   --glass-specular: #ffffffde;
   --glass-reflection-shade: .75;
   --glass-reflection-strength: .44;
@@ -209,16 +211,22 @@ body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button
   outline: 2px solid var(--key-ink);
   outline-offset: -3px;
 }
-body[data-display-mode] .view-switch #radio-view.has-sound::after {
+body[data-display-mode] .view-switch #radio-view > .dock-radio-label {
+  position: relative;
   display: block;
-  inset: 6px 10px auto auto;
-  width: 5px;
-  height: 5px;
+  margin: 0;
+}
+body[data-display-mode] #radio-view.has-sound .dock-radio-label::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  clip-path: none;
-  background: currentColor;
-  box-shadow: 0 0 6px currentColor;
-  z-index: 1;
+  background: var(--glass-radio-status);
+  pointer-events: none;
 }
 
 /* Keep the same surface at rest, during deformation, and on release. */
