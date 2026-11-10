@@ -314,6 +314,11 @@ body.flat-mode.mobile-mode {
   --glass-bevel-shadow: #22222235;
   --glass-reflection-strength: .72;
 }
+/* The browser can extend the document background into its toolbar area. */
+html:has(> body.flat-mode.mobile-mode:not(.is-radio, .is-tv, .text-mode)),
+body.flat-mode.mobile-mode:not(.is-radio, .is-tv, .text-mode) {
+  background-color: #f6f6f6;
+}
 body.flat-mode.mobile-mode.is-radio {
   --glass-fill: #f7efdc8c;
   --glass-lens-fill: #40352226;

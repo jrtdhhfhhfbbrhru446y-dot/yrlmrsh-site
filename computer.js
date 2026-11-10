@@ -212,7 +212,7 @@ function syncModes() {
   document.body.classList.toggle('device-pending', !flat && mode === 'tv' && !engine?.tvReady && !tvFailed);
   document.body.dataset.displayMode = flat ? 'flat' : '3d';
   $('meta[name="theme-color"]').content = flat
-    ? { tv: '#101010', radio: '#e9e4d6' }[mode] || '#eeede6'
+    ? { tv: '#101010', radio: '#e9e4d6' }[mode] || (mobile && !textVersion ? '#f6f6f6' : '#eeede6')
     : '#f7f7f4';
   root.inert = !entered || mode === 'object' || mode === 'tv' || mode === 'radio';
   loginScreen.inert = entered || mode === 'object' || mode === 'tv' || mode === 'radio';
