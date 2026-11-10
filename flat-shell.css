@@ -306,6 +306,8 @@ body.flat-mode.mobile-mode {
   --flat-nav-gap: 6px;
   --glass-height: 60px;
   --glass-bottom: 8px;
+  --glass-left-gutter: max(10px, env(safe-area-inset-left));
+  --glass-right-gutter: max(10px, env(safe-area-inset-right));
   --glass-fill: #fdfcf8a6;
   --glass-lens-fill: #28282226;
   --glass-edge-light: #ffffffdf;
@@ -319,6 +321,8 @@ html:has(> body.flat-mode.mobile-mode:not(.is-radio, .is-tv, .text-mode)),
 body.flat-mode.mobile-mode:not(.is-radio, .is-tv, .text-mode) {
   background-color: #f6f6f6;
 }
+html:has(> body.flat-mode.mobile-mode.is-radio) { background-color: #e9e3d5; }
+html:has(> body.flat-mode.mobile-mode.is-tv) { background-color: #0a0a0c; }
 body.flat-mode.mobile-mode.is-radio {
   --glass-fill: #f7efdc8c;
   --glass-lens-fill: #40352226;
@@ -334,6 +338,11 @@ body.flat-mode.mobile-mode.is-tv {
 }
 
 /* Reserve space at the end of the scroll, leaving the dock over live content. */
+body.flat-mode.mobile-mode #experience,
+body.flat-mode.mobile-mode.is-radio #radio-panel {
+  position: relative;
+}
+body.flat-mode.mobile-mode.is-radio #experience { position: absolute; }
 body.flat-mode.mobile-mode:not(.is-tv) #experience,
 body.flat-mode.mobile-mode.is-radio #radio-panel {
   height: var(--app-height, 100dvh);
@@ -361,9 +370,18 @@ body.flat-mode.mobile-mode .pm-map[data-view="list"] .pm-detail {
 body.flat-mode.mobile-mode.is-radio #radio-root .radio-system {
   padding-block-end: calc(clamp(14px, 2.5vh, 24px) + var(--flat-nav-height));
 }
+/* Keep the fixed anchor narrow so Safari leaves the scroll edge transparent,
+   even when it samples the glass effect outside the visible capsule. */
+body.flat-mode.mobile-mode .view-controls {
+  left: calc((100% + var(--glass-left-gutter) - var(--glass-right-gutter) - 1px) / 2);
+  right: auto;
+  width: 1px;
+  padding: 0;
+}
 body.flat-mode.mobile-mode .view-switch {
   --glass-inset: 4px;
-  width: min(100%, 460px);
+  flex: none;
+  width: min(calc(100vw - var(--glass-left-gutter) - var(--glass-right-gutter)), 460px);
   touch-action: pan-y;
   touch-action: pan-y pinch-zoom;
 }
@@ -388,7 +406,7 @@ body.flat-mode.mobile-mode.keyboard-open .view-controls { display: none; }
 html:has(> body.flat-mode.mobile-mode:not(.is-tv, .is-radio, .is-loading, .text-mode, .fallback-readable) #os-root[data-document-scroll]:not([hidden])) {
   --os-mobile-menubar-height: calc(44px + env(safe-area-inset-top));
   height: auto;
-  overflow: auto;
+  overflow: visible;
   scroll-padding-top: calc(var(--os-mobile-menubar-height) + var(--os-mobile-titlebar-height));
 }
 body.flat-mode.mobile-mode:not(.is-tv, .is-radio, .is-loading, .text-mode, .fallback-readable):has(#os-root[data-document-scroll]:not([hidden])) {
