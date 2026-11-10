@@ -53,10 +53,12 @@ body.flat-mode.is-tv {
   --glass-reflection-strength: .44;
 }
 
-/* Add enough light tint for dark text over the projected TV housing. */
+/* Keep the selected segment distinct on both the housing and the studio floor. */
 body[data-display-mode="3d"].is-tv {
-  --glass-fill: #ffffff70;
+  --glass-fill: #ffffff8c;
+  --glass-blur: 7px;
   --glass-ink: #1c1c1c;
+  --glass-lens-fill: #5050503d;
   --glass-hover: #ffffff28;
   --glass-hover-rim: #ffffff3d;
 }
@@ -225,7 +227,10 @@ body[data-display-mode] .view-switch #radio-view.has-sound::after {
   body[data-display-mode]:not(.motion-off) .view-controls :is(.view-switch, .expand-button)[data-glass-ready] {
     border-color: transparent !important;
     background: none !important;
-    box-shadow: 0 4px 13px -4px var(--glass-shadow) !important;
+    box-shadow:
+      inset 0 4px 10px -6px var(--glass-shadow),
+      0 2px 8px -2px var(--glass-shadow),
+      0 7px 18px -4px var(--glass-shadow) !important;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
