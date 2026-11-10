@@ -105,16 +105,29 @@ const DESKTOP_ICON_IMAGES = {
 const STORAGE_KEY = 'archive26:view:1';
 const defaults = () => ({ scale: 100, layout: 'icons', crt: true, contrast: false, motion: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
 
+const DOCUMENT_SCROLL_VIEWS = new Set([
+  'experiments', 'completed', 'upcoming', 'case', 'article', 'demo', 'image', 'about', 'contact', 'settings'
+]);
+function mobileDocumentScroller(root) {
+  if (root.hidden || !root.hasAttribute?.('data-document-scroll')) return null;
+  const active = document.body.matches?.('body.mobile-mode.flat-mode:not(.is-radio, .is-tv, .is-loading, .text-mode, .fallback-readable)');
+  return active ? document.scrollingElement : null;
+}
+
 // Scroll events do not bubble. Capture only the actual reading surfaces, so a
 // diagram pan, a horizontal strip or a nested image never hides navigation.
 export function bindMobileScrollToolbars(root, { isMobile = () => document.body.classList.contains('mobile-mode') } = {}) {
   let disposed = false;
   let positions = new WeakMap();
   let mobileLayout = isMobile();
+  let documentLayout = mobileDocumentScroller(root);
+  const browser = globalThis.window;
   const bars = new Set();
   const reveal = bar => bar?.classList.remove('is-scroll-hidden');
   function toolbarFor(scroller) {
-    if (scroller?.matches?.('.os-window-content') && scroller.parentElement?.classList.contains('os-case-window')) return scroller.querySelector('.os-case-tabs');
+    const documentScroller = mobileDocumentScroller(root);
+    if (scroller && scroller === documentScroller) return root.querySelector('.os-case-tabs');
+    if (!documentScroller && scroller?.matches?.('.os-window-content') && scroller.parentElement?.classList.contains('os-case-window')) return scroller.querySelector('.os-case-tabs');
     if (scroller?.matches?.('.pm-list, .pm-detail-body')) {
       const map = scroller.closest('.pm-map');
       return map?.dataset.view === 'list' ? map.querySelector('.pm-topbar') : null;
@@ -145,8 +158,11 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
     observer?.disconnect();
     for (const bar of bars) reveal(bar);
     bars.clear(); positions = new WeakMap();
+    documentLayout = mobileDocumentScroller(root);
     for (const bar of root.querySelectorAll('.pm-topbar')) { bars.add(bar); reveal(bar); }
-    for (const scroller of root.querySelectorAll('.os-window-content, .pm-list, .pm-detail-body')) {
+    const scrollers = [...root.querySelectorAll('.os-window-content, .pm-list, .pm-detail-body')];
+    if (documentLayout) scrollers.push(documentLayout);
+    for (const scroller of scrollers) {
       const bar = toolbarFor(scroller);
       if (!bar) continue;
       positions.set(scroller, { top: Math.max(0, scroller.scrollTop || 0), height: scroller.clientHeight, total: scroller.scrollHeight, direction: 0, distance: 0 });
@@ -157,7 +173,7 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
   }
   function viewport() {
     const nextMobile = isMobile();
-    if (nextMobile !== mobileLayout) {
+    if (nextMobile !== mobileLayout || documentLayout !== mobileDocumentScroller(root)) {
       mobileLayout = nextMobile; refresh();
     } else {
       // Mobile browser chrome resizes the viewport while a finger is still
@@ -165,9 +181,9 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
       for (const bar of bars) measure(bar);
     }
   }
-  function scroll(event) {
+  function updateScroll(scroller) {
     if (disposed || !isMobile()) return;
-    const scroller = event.target, bar = toolbarFor(scroller);
+    const bar = toolbarFor(scroller);
     if (!bar) return;
     bars.add(bar);
     const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
@@ -196,6 +212,8 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
       if (!bar.contains(focused) || !focused?.matches?.(':focus-visible')) bar.classList.add('is-scroll-hidden');
     }
   }
+  const scroll = event => updateScroll(event.target);
+  const documentScroll = () => updateScroll(mobileDocumentScroller(root));
   function focus(event) {
     const bar = event.target?.closest?.('.os-case-tabs, .pm-topbar');
     if (bar) reveal(bar);
@@ -215,6 +233,7 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
     for (const scroller of map.querySelectorAll('.pm-list, .pm-detail-body')) rebase(scroller);
   }
   root.addEventListener('scroll', scroll, { capture: true, passive: true });
+  browser?.addEventListener?.('scroll', documentScroll, { passive: true });
   root.addEventListener('focusin', focus);
   root.addEventListener('keydown', keyboard);
   root.addEventListener('click', activated);
@@ -226,6 +245,7 @@ export function bindMobileScrollToolbars(root, { isMobile = () => document.body.
       if (disposed) return;
       disposed = true; observer?.disconnect();
       root.removeEventListener('scroll', scroll, true);
+      browser?.removeEventListener?.('scroll', documentScroll);
       root.removeEventListener('focusin', focus); root.removeEventListener('keydown', keyboard);
       root.removeEventListener('click', activated);
       root.removeEventListener('retro-viewport', viewport);
@@ -257,6 +277,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   const scrollPositions = new Map();
   const browser = globalThis.window;
   const browserHistory = browser?.history?.pushState && browser.history.replaceState && browser.addEventListener ? browser.history : null;
+  const originalScrollRestoration = browserHistory?.scrollRestoration;
   const navigationSession = `${Date.now()}-${Math.random()}`;
   let browserIndex = 0;
   let browserViews = [getBrowserPageView() || 'home'];
@@ -307,6 +328,20 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   const brand = root.querySelector('.os-brand');
   const location = root.querySelector('.os-location'), notice = root.querySelector('.os-notice');
   const scrollToolbars = bindMobileScrollToolbars(root);
+  function scrollSurface() {
+    return mobileDocumentScroller(root) || main.querySelector('.os-window-content');
+  }
+  function saveDocumentScroll() {
+    const scroller = mobileDocumentScroller(root);
+    if (scroller && !viewPending) scrollPositions.set(view, Math.max(0, scroller.scrollTop));
+  }
+  function restoreDocumentScroll() {
+    const scroller = mobileDocumentScroller(root);
+    // A route render restores its own position after switching back to work.
+    if (!scroller || finishReadiness) return;
+    scroller.scrollTo({ top: scrollPositions.get(view) ?? 0, behavior: 'auto' });
+    scrollToolbars.refresh();
+  }
   function applyPreferences(save = true) {
     root.style.setProperty('--os-scale', preferences.scale / 100);
     root.dataset.layout = preferences.layout;
@@ -453,8 +488,8 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     readiness = new Promise(resolve => { finishReadiness = resolve; });
     const ticket = ++viewTicket;
     const previous = view;
-    const previousContent = main.querySelector('.os-window-content');
-    if (previousContent && !viewPending) scrollPositions.set(view, previousContent.scrollTop);
+    const previousScroller = scrollSurface();
+    if (previousScroller && !viewPending && !root.inert && !root.hidden) scrollPositions.set(view, Math.max(0, previousScroller.scrollTop));
     if (remember && next !== view) { history.push(view); forward = []; }
     if (history.length > 60) history.shift();
     cleanupView(); cleanupView = () => {};
@@ -464,6 +499,8 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     const needsProject = ['case','article','demo','image'].includes(page) && Boolean(project);
     if (['case','article','demo','image'].includes(page) && !project) next = 'experiments';
     view = next; root.dataset.view = view;
+    if (DOCUMENT_SCROLL_VIEWS.has(view.split(':')[0])) root.setAttribute('data-document-scroll', '');
+    else root.removeAttribute('data-document-scroll');
     if (historyMode !== 'none') syncBrowser(view, remember, previous);
     if (metadata) syncPageMetadata(view);
     const sectionName = next === 'skills' || next === 'games' ? next : next === 'about' || next === 'contact' ? 'profile' : '';
@@ -475,6 +512,8 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
       main.setAttribute('aria-busy', 'true');
       main.innerHTML = windowFrame(label, '<div class="os-empty-collection"><p role="status">Загрузка…</p></div>');
       location.textContent = label;
+      onViewChange(view);
+      mobileDocumentScroller(root)?.scrollTo({ top: 0, behavior: 'auto' });
       if (focus) main.querySelector('.os-window-content')?.focus({ preventScroll: true });
       pending.then(loaded => {
         if (destroyed || ticket !== viewTicket) return;
@@ -493,13 +532,12 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
         finishReadiness?.({ view, ready: false }); finishReadiness = null;
       });
     } else {
-      completeView(next, needsProject ? getLoadedProject(id) : project, { remember, focus });
+      completeView(next, needsProject ? getLoadedProject(id) : project, { remember, focus, notify: true });
       finishReadiness?.({ view, ready: true }); finishReadiness = null;
     }
-    onViewChange(view);
     return readiness;
   }
-  function completeView(next, project, { remember, focus }) {
+  function completeView(next, project, { remember, focus, notify = false }) {
     viewPending = false;
     main.removeAttribute('aria-busy');
     const [page, , tab = 'overview'] = next.split(':');
@@ -523,10 +561,15 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     else if (next === 'settings') { main.innerHTML = renderSettings(); label = 'Вид'; }
     else if (next === 'completed' || next === 'upcoming') { main.innerHTML = renderCollection(next); label = next === 'completed' ? 'Завершённые' : 'Скоро'; }
     else if (next === 'games') { main.innerHTML = windowFrame('Игры', '<div class="os-games-mount"></div>', { type: 'os-games-window', iconName: 'games' }); const mounted = sections.games.module.mountGames(main.querySelector('.os-games-mount')); cleanupView = typeof mounted === 'function' ? mounted : () => mounted?.dispose?.(); root.dispatchEvent(new CustomEvent('retro-activity', { bubbles: true, detail: { active: viewActive } })); label = 'Игры'; }
-    else { view = 'home'; root.dataset.view = 'home'; main.innerHTML = renderDesktop(); }
+    else { view = 'home'; root.dataset.view = 'home'; root.removeAttribute('data-document-scroll'); main.innerHTML = renderDesktop(); }
     syncViewportLayout();
     location.textContent = next === 'home' ? '' : label;
-    if (!remember && scrollPositions.has(view)) main.querySelector('.os-window-content')?.scrollTo({ top: scrollPositions.get(view) });
+    if (notify) onViewChange(view);
+    const documentScroller = mobileDocumentScroller(root);
+    if (documentScroller || !remember && scrollPositions.has(view)) {
+      const top = remember ? 0 : scrollPositions.get(view) ?? 0;
+      scrollSurface()?.scrollTo({ top, behavior: 'auto' });
+    }
     scrollToolbars.refresh();
     if (focus) { const target = next === 'home' ? main : main.querySelector('.os-window-content'); (target || main).focus({ preventScroll: true }); }
   }
@@ -614,15 +657,23 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     const target = content?.querySelector(selector);
     if (!content || !target) return;
     const focusTarget = focusSelector ? content.querySelector(focusSelector) : target;
-    // Layout offsets remain correct while the LCD is transformed in 3D.
-    let top = 0, element = focusSelector && target.contains(focusTarget) ? focusTarget : target;
-    while (element && element !== content) { top += element.offsetTop; element = element.offsetParent; }
+    const destination = focusSelector && target.contains(focusTarget) ? focusTarget : target;
+    const documentScroller = mobileDocumentScroller(root);
+    let top = 0;
+    if (documentScroller) {
+      const menuHeight = root.querySelector('.os-menubar')?.offsetHeight ?? 0;
+      const titleHeight = content.parentElement?.querySelector('.os-titlebar')?.offsetHeight ?? 0;
+      top = destination.getBoundingClientRect().top + documentScroller.scrollTop - menuHeight - titleHeight;
+    } else {
+      // Layout offsets remain correct while the LCD is transformed in 3D.
+      for (let element = destination; element && element !== content; element = element.offsetParent) top += element.offsetTop;
+    }
     const tabs = content.querySelector('.os-case-tabs');
     // Only the stacked tab row covers the top of narrow content. The desktop
     // sidebar stretches to the article's height and must never be subtracted.
     const tabHeight = tabs && tabs.offsetWidth >= content.clientWidth * .8 ? tabs.offsetHeight : 0;
     focusTarget?.focus({ preventScroll: true });
-    content.scrollTo({ top: Math.max(0, top - tabHeight - 8), behavior: preferences.motion && !document.body.classList.contains('mobile-mode') ? 'smooth' : 'auto' });
+    (documentScroller || content).scrollTo({ top: Math.max(0, top - tabHeight - 8), behavior: preferences.motion && !document.body.classList.contains('mobile-mode') ? 'smooth' : 'auto' });
   }
   function click(event) {
     const target = event.target.closest('button, a');
@@ -663,7 +714,13 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     if (target.hasAttribute('data-expand')) { onExpand(); return; }
     if (target.hasAttribute('data-copy')) { copyHandle(target); return; }
     if (target.hasAttribute('data-layout')) { preferences.layout = target.dataset.layout; applyPreferences(); show(view, { remember: false }); return; }
-    if (target.hasAttribute('data-step')) { const content = main.querySelector('.os-window-content'), scrollTop = content.scrollTop; processIndex = Number(target.dataset.step); show(view, { remember: false, focus: false }); main.querySelector('.os-window-content').scrollTop = scrollTop; main.querySelector(`[data-step="${processIndex}"]`)?.focus({ preventScroll: true }); if (root.clientWidth < 570 || main.querySelector('.os-process-long')) scrollContentTo('.os-step-detail'); return; }
+    if (target.hasAttribute('data-step')) {
+      processIndex = Number(target.dataset.step);
+      show(view, { remember: false, focus: false });
+      main.querySelector(`[data-step="${processIndex}"]`)?.focus({ preventScroll: true });
+      if (root.clientWidth < 570 || main.querySelector('.os-process-long')) scrollContentTo('.os-step-detail');
+      return;
+    }
     if (target.hasAttribute('data-article-jump')) { const section = Number(target.dataset.articleJump); if (Number.isInteger(section) && section >= 0) scrollContentTo(`#os-article-section-${section}`); return; }
     if (target.hasAttribute('data-return-map')) { scrollContentTo('.os-process', `[data-step="${processIndex}"]`); return; }
     if (target.hasAttribute('data-reset-settings')) { preferences = defaults(); applyPreferences(); show('settings', { remember: false }); return; }
@@ -692,7 +749,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
       const delta = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns }[event.key];
       if (delta) { event.preventDefault(); const index = selectable().indexOf(document.activeElement); select(index < 0 ? delta > 0 ? 0 : selectable().length - 1 : index + delta); }
       if (event.key === 'Enter' && document.activeElement === main) { event.preventDefault(); select(0, false); selectable()[0]?.click(); }
-    } else if (document.activeElement.classList.contains('os-window-content') && ['ArrowDown','ArrowUp','PageDown','PageUp'].includes(event.key)) {
+    } else if (!mobileDocumentScroller(root) && document.activeElement.classList.contains('os-window-content') && ['ArrowDown','ArrowUp','PageDown','PageUp'].includes(event.key)) {
       event.preventDefault(); document.activeElement.scrollBy({ top: (event.key.includes('Down') ? 1 : -1) * (event.key.startsWith('Page') ? 180 : 45) });
     }
   }
@@ -717,20 +774,31 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
   if (browserHistory) {
     // Seed the existing entry rather than pushing a synthetic home page in
     // front of a directly opened article. The intro still runs on every load.
-    try { browserHistory.replaceState(browserState(browserViews[0]), ''); } catch { /* History can be unavailable in embedded previews. */ }
+    try {
+      if (originalScrollRestoration !== undefined) browserHistory.scrollRestoration = 'manual';
+      browserHistory.replaceState(browserState(browserViews[0]), '');
+    } catch { /* History can be unavailable in embedded previews. */ }
     browser.addEventListener('popstate', popstate);
   }
-  function focus() { if (selected >= 0 && selectable().length) select(selected); else (main.querySelector('.os-window-content') || main).focus({ preventScroll: true }); }
+  function focus() {
+    const item = selected >= 0 ? selectable()[selected] : null;
+    if (item && !mobileDocumentScroller(root)) select(selected);
+    else (item || main.querySelector('.os-window-content') || main).focus({ preventScroll: true });
+  }
   function dispose() {
     if (destroyed) return; destroyed = true;
     finishReadiness?.({ view, ready: false }); finishReadiness = null;
     scrollToolbars.dispose(); cleanupView(); clearInterval(clockTimer); clearTimeout(copyTimer); clearTimeout(noticeTimer); clearTimeout(menuCloseTimer);
-    if (browserHistory) browser.removeEventListener('popstate', popstate);
+    if (browserHistory) {
+      browser.removeEventListener('popstate', popstate);
+      if (originalScrollRestoration !== undefined) browserHistory.scrollRestoration = originalScrollRestoration;
+    }
     root.removeEventListener('click', click); root.removeEventListener('submit', submit); root.removeEventListener('keydown', keydown); document.removeEventListener('pointerdown', outsidePointer); root.removeEventListener('retro-activity', activity);
     root.removeEventListener('retro-viewport', syncViewportLayout);
     brand.removeEventListener('pointerenter', openHoverMenu); brand.removeEventListener('pointerleave', leaveHoverMenu);
     menuLayer.removeEventListener('pointerenter', keepHoverMenu); menuLayer.removeEventListener('pointerleave', leaveHoverMenu);
     root.classList.remove('retro-os','os-crt','os-high-contrast','os-reduce-motion'); root.innerHTML = '';
+    root.removeAttribute('data-document-scroll');
   }
-  return { open: show, show, whenReady: () => readiness, focus, dispose, destroy: dispose, get view() { return view; }, get preferences() { return { ...preferences }; } };
+  return { open: show, show, whenReady: () => readiness, focus, saveDocumentScroll, restoreDocumentScroll, dispose, destroy: dispose, get view() { return view; }, get preferences() { return { ...preferences }; } };
 }
