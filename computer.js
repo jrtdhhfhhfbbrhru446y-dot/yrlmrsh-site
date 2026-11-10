@@ -1,4 +1,4 @@
-import { initOS, getBrowserPageView } from './os-ui.js?v=studio-81-final';
+import { initOS, getBrowserPageView } from './os-ui.js?v=studio-91-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
 import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
 import { createTelevision } from './television.js?v=studio-81-final';
@@ -236,13 +236,15 @@ function syncModes() {
 }
 function setMode(next) {
   if (flat && (next === 'desk' || next === 'object')) next = 'work';
-  const changed = mode !== next; mode = next;
+  const changed = mode !== next;
+  if (changed && mode === 'work') os.saveDocumentScroll();
+  mode = next;
   syncModes();
   engine?.setMode(mode);
   if (mode !== 'tv') updateStatus();
   if (!flat && mode === 'tv' && !engine?.tvReady && !tvFailed) updateStatus('Подключаем телевизор…');
   if (changed) {
-    if (mode === 'work') focusComputer();
+    if (mode === 'work') { focusComputer(); os.restoreDocumentScroll(); }
     else if (mode === 'tv') television.focus();
     else if (mode === 'radio') radio.focus();
     else if (mode === 'object') canvas.focus({ preventScroll: true });

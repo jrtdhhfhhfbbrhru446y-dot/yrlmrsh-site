@@ -380,6 +380,52 @@ body.flat-mode.mobile-mode .view-controls .dock-icon { width: 16px; height: 16px
 body.flat-mode.mobile-mode.keyboard-open { --flat-nav-height: 0px; }
 body.flat-mode.mobile-mode.keyboard-open .view-controls { display: none; }
 
+/* Reading views scroll the document so the browser can collapse its toolbar. */
+:root { --os-mobile-titlebar-height: 52px; }
+@media (max-height: 500px) {
+  :root { --os-mobile-titlebar-height: 48px; }
+}
+html:has(> body.flat-mode.mobile-mode:not(.is-tv, .is-radio, .is-loading, .text-mode, .fallback-readable) #os-root[data-document-scroll]:not([hidden])) {
+  --os-mobile-menubar-height: calc(44px + env(safe-area-inset-top));
+  height: auto;
+  overflow: auto;
+  scroll-padding-top: calc(var(--os-mobile-menubar-height) + var(--os-mobile-titlebar-height));
+}
+body.flat-mode.mobile-mode:not(.is-tv, .is-radio, .is-loading, .text-mode, .fallback-readable):has(#os-root[data-document-scroll]:not([hidden])) {
+  height: auto;
+  overflow: visible;
+
+  & #experience,
+  & .screen-inner,
+  & #os-root {
+    position: relative;
+    inset: auto !important;
+    height: auto;
+    overflow: visible;
+  }
+  & #screen-anchor {
+    position: relative;
+    height: auto !important;
+    overflow: visible;
+  }
+  & .retro-os {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+    container-type: inline-size;
+  }
+  & .retro-os :is(.os-workspace, .os-window) {
+    height: auto;
+    overflow: visible;
+  }
+  & .retro-os .os-window-content { overflow: clip; }
+  & .retro-os .os-menubar { position: sticky; top: 0; }
+  & .retro-os .os-titlebar { position: sticky; top: var(--os-mobile-menubar-height); z-index: 5; }
+  & .retro-os .os-case-tabs { top: calc(var(--os-mobile-menubar-height) + var(--os-mobile-titlebar-height)); }
+  & .retro-os .os-menu-layer { position: fixed; }
+  & .retro-os .os-notice { position: fixed; bottom: calc(var(--flat-nav-height) + 8px); }
+}
+
 body[data-display-mode].motion-off .view-switch::before,
 body[data-display-mode].motion-off .view-controls button { transition: none; }
 @media (prefers-reduced-motion: reduce) {
