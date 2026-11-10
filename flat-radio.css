@@ -22,6 +22,7 @@ body.flat-mode.is-radio #radio-root {
 }
 
 body.flat-mode.is-radio #radio-root .radio-system {
+  --radio-room: var(--tuner-grain), radial-gradient(ellipse at 42% 0%, #faf8ef 0%, #eeeadd 59%, #e4dece 100%);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
@@ -31,7 +32,7 @@ body.flat-mode.is-radio #radio-root .radio-system {
   max-height: none;
   border: 0;
   border-radius: 0;
-  background: var(--tuner-grain), radial-gradient(ellipse at 42% 0%, #faf8ef 0%, #eeeadd 59%, #e4dece 100%);
+  background: var(--radio-room);
   background-blend-mode: soft-light, normal;
   box-shadow: none;
   padding: max(clamp(14px, 2.5vh, 24px), env(safe-area-inset-top))
@@ -39,6 +40,11 @@ body.flat-mode.is-radio #radio-root .radio-system {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+}
+
+body.flat-mode.mobile-mode.is-radio #radio-root .radio-system {
+  background-image: linear-gradient(to bottom, transparent calc(100% - 120px), var(--mobile-surface, var(--flat-surface)) calc(100% - 12px)), var(--radio-room);
+  background-blend-mode: normal, soft-light, normal;
 }
 
 body.flat-mode.is-radio #radio-root :is(.radio-heading, .radio-body),

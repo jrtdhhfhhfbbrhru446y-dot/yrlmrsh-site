@@ -104,8 +104,7 @@ body[data-display-mode] .view-controls :is(.view-switch, .expand-button) {
     inset 0 1px 1px var(--glass-edge-light),
     inset 0 -1px 1px var(--glass-bevel-light),
     inset 0 0 3px 1px var(--glass-bevel-shadow),
-    0 2px 5px var(--glass-shadow),
-    0 11px 26px var(--glass-shadow) !important;
+    var(--glass-outer-shadow, 0 2px 5px var(--glass-shadow), 0 11px 26px var(--glass-shadow)) !important;
   pointer-events: auto;
 }
 
@@ -241,8 +240,7 @@ body[data-display-mode] #radio-view.has-sound .dock-radio-label::after {
     background: none !important;
     box-shadow:
       inset 0 4px 10px -6px var(--glass-shadow),
-      0 2px 8px -2px var(--glass-shadow),
-      0 7px 18px -4px var(--glass-shadow) !important;
+      var(--glass-outer-shadow, 0 2px 8px -2px var(--glass-shadow), 0 7px 18px -4px var(--glass-shadow)) !important;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -315,14 +313,23 @@ body.flat-mode.mobile-mode {
   --glass-bevel-light: #ffffff90;
   --glass-bevel-shadow: #22222235;
   --glass-reflection-strength: .72;
+  background-color: var(--mobile-surface, var(--flat-surface));
 }
-/* The browser can extend the document background into its toolbar area. */
-html:has(> body.flat-mode.mobile-mode:not(.is-radio, .is-tv, .text-mode)),
-body.flat-mode.mobile-mode:not(.is-radio, .is-tv, .text-mode) {
-  background-color: #f6f6f6;
+/* The browser extends the root surface into its toolbar area. */
+html:has(> body.flat-mode.mobile-mode:not(.text-mode, .fallback-readable)) {
+  --mobile-surface: #f6f5ef;
+  background-color: var(--mobile-surface);
 }
-html:has(> body.flat-mode.mobile-mode.is-radio) { background-color: #e9e3d5; }
-html:has(> body.flat-mode.mobile-mode.is-tv) { background-color: #0a0a0c; }
+html:has(> body.flat-mode.mobile-mode:not(.is-radio, .is-tv) .os-high-contrast) { --mobile-surface: #fff; }
+html:has(> body.flat-mode.mobile-mode.is-radio) { --mobile-surface: #e9e3d5; }
+html:has(> body.flat-mode.mobile-mode.is-tv) { --mobile-surface: #0a0a0c; }
+body.flat-mode.mobile-mode:not(.is-radio, .is-tv) .retro-os:not(.os-high-contrast) {
+  --os-paper: var(--mobile-surface, #f6f5ef);
+}
+body.flat-mode.mobile-mode:not(.is-tv) {
+  /* Let the shadow settle before reaching the browser's content edge. */
+  --glass-outer-shadow: 0 1px 4px -1px var(--glass-shadow);
+}
 body.flat-mode.mobile-mode.is-radio {
   --glass-fill: #f7efdc8c;
   --glass-lens-fill: #40352226;
