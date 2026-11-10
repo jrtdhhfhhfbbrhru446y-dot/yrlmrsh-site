@@ -115,6 +115,10 @@ body[data-display-mode] .view-controls :is(.view-switch, .expand-button) {
     -webkit-backdrop-filter: blur(var(--glass-blur, 4px));
     backdrop-filter: blur(var(--glass-blur, 4px));
   }
+  body.flat-mode.mobile-mode .view-controls .view-switch {
+    -webkit-backdrop-filter: blur(13px) saturate(1.18);
+    backdrop-filter: blur(13px) saturate(1.18);
+  }
 }
 
 body[data-display-mode] .view-switch {
@@ -230,7 +234,8 @@ body[data-display-mode] #radio-view.has-sound .dock-radio-label::after {
 
 /* Keep the same surface at rest, during deformation, and on release. */
 .glass-material { display: none; }
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+@media (hover: hover) and (prefers-reduced-motion: no-preference),
+       (max-width: 1024px) and (any-pointer: coarse) and (prefers-reduced-motion: no-preference) {
   body[data-display-mode]:not(.motion-off) .view-controls :is(.view-switch, .expand-button)[data-glass-ready] {
     border-color: transparent !important;
     background: none !important;
@@ -268,6 +273,11 @@ body[data-display-mode] #radio-view.has-sound .dock-radio-label::after {
     opacity: calc(var(--glass-energy, 0) * var(--glass-reflection-strength));
   }
   .glass-glint { stroke-width: 2.6px; filter: blur(.3px); opacity: var(--glass-energy, 0); }
+  body.flat-mode.mobile-mode .glass-face {
+    background-image: linear-gradient(178deg, #ffffff21, transparent 35%, transparent 74%, #ffffff12);
+    -webkit-backdrop-filter: blur(13px) saturate(1.18);
+    backdrop-filter: blur(13px) saturate(1.18);
+  }
 }
 
 body[data-display-mode="3d"] .orbit-hint {
@@ -296,10 +306,61 @@ body.flat-mode.mobile-mode {
   --flat-nav-gap: 6px;
   --glass-height: 60px;
   --glass-bottom: 8px;
+  --glass-fill: #fdfcf8a6;
+  --glass-lens-fill: #28282226;
+  --glass-edge-light: #ffffffdf;
+  --glass-edge-low: #4b4b4b79;
+  --glass-bevel-light: #ffffff90;
+  --glass-bevel-shadow: #22222235;
+  --glass-reflection-strength: .72;
+}
+body.flat-mode.mobile-mode.is-radio {
+  --glass-fill: #f7efdc8c;
+  --glass-lens-fill: #40352226;
+}
+body.flat-mode.mobile-mode.is-tv {
+  --glass-fill: #ffffff13;
+  --glass-lens-fill: #ffffff30;
+  --glass-edge-light: #ffffff91;
+  --glass-edge-low: #ffffff52;
+  --glass-bevel-light: #ffffff48;
+  --glass-bevel-shadow: #00000066;
+  --glass-reflection-strength: .66;
+}
+
+/* Reserve space at the end of the scroll, leaving the dock over live content. */
+body.flat-mode.mobile-mode:not(.is-tv) #experience,
+body.flat-mode.mobile-mode.is-radio #radio-panel {
+  height: var(--app-height, 100dvh);
+}
+body.flat-mode.mobile-mode .retro-os .os-desktop {
+  padding-block-end: calc(16px + var(--flat-nav-height));
+}
+body.flat-mode.mobile-mode .retro-os .os-window-content {
+  padding-block-end: calc(28px + var(--flat-nav-height));
+  scroll-padding-block-end: calc(24px + var(--flat-nav-height));
+}
+body.flat-mode.mobile-mode .retro-os .os-case-window .os-window-content {
+  padding-block-end: var(--flat-nav-height);
+}
+body.flat-mode.mobile-mode .retro-os .os-skills-window .os-window-content { padding-block-end: 0; }
+body.flat-mode.mobile-mode .pm-map .pm-list {
+  padding-block-end: calc(20px + var(--flat-nav-height));
+}
+body.flat-mode.mobile-mode .pm-map .pm-detail {
+  bottom: calc(10px + var(--flat-nav-height));
+}
+body.flat-mode.mobile-mode .pm-map[data-view="list"] .pm-detail {
+  max-height: calc(100% - var(--pm-mobile-toolbar-height, 122px) - 14px - var(--flat-nav-height));
+}
+body.flat-mode.mobile-mode.is-radio #radio-root .radio-system {
+  padding-block-end: calc(clamp(14px, 2.5vh, 24px) + var(--flat-nav-height));
 }
 body.flat-mode.mobile-mode .view-switch {
   --glass-inset: 4px;
   width: min(100%, 460px);
+  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
 }
 body.flat-mode.mobile-mode .view-switch > button {
   gap: 5px;

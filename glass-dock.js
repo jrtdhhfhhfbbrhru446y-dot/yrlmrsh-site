@@ -73,6 +73,7 @@ function attachSelectionSpring(switcher) {
   };
   let compact = isCompact(), target = selection(), position = target, velocity = 0, frame = 0, lastTime = 0;
   let pointer;
+  let ignoreTouchClickUntil = 0;
 
   function paint() {
     const inside = clamp(position, 0, buttons.length - 1 - Number(compact)), spill = position - inside;
@@ -112,27 +113,45 @@ function attachSelectionSpring(switcher) {
   }
 
   function finishDrag(destination) {
-    const dragged = pointer?.dragging;
+    const gesture = pointer;
     pointer = null;
-    if (!dragged) return;
+    if (!gesture?.dragging) return;
+    if (gesture.touch) ignoreTouchClickUntil = performance.now() + 450;
     switcher.removeAttribute('data-glass-dragging');
     if (destination && !destination.disabled && destination !== buttons[selection()]) destination.click();
     glideTo(selection());
   }
 
   switcher.addEventListener('pointerdown', event => {
+    const touch = event.pointerType === 'touch';
+    if (touch ? !body.classList.contains('mobile-mode') : event.pointerType !== 'mouse') return;
+    if (event.isPrimary === false || event.button !== 0 || pointer) return;
+    ignoreTouchClickUntil = 0;
     const active = buttons[selection()];
-    if (event.pointerType !== 'mouse' || event.button !== 0 || pointer || !active.contains(event.target)) return;
-    pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, step: active.getBoundingClientRect().width };
+    if (!active.contains(event.target)) return;
+    const step = active.getBoundingClientRect().width;
+    if (step > 0) pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, step, touch };
   });
+
+  switcher.addEventListener('click', event => {
+    // A touch drag may be followed by a native click on its starting button.
+    if (!event.detail || performance.now() >= ignoreTouchClickUntil) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
 
   addEventListener('pointermove', event => {
     if (event.pointerId !== pointer?.id) return;
     const dx = event.clientX - pointer.x;
     if (!pointer.dragging) {
+      const slop = pointer.touch ? 8 : 5;
       const dy = Math.abs(event.clientY - pointer.y);
-      if (dy > 5 && dy > Math.abs(dx)) { finishDrag(); return; }
-      if (Math.abs(dx) < 5) return;
+      if (dy > slop && dy > Math.abs(dx)) {
+        if (pointer.touch) ignoreTouchClickUntil = performance.now() + 450;
+        finishDrag();
+        return;
+      }
+      if (Math.abs(dx) < slop) return;
       // Capture only after a drag, so an ordinary press keeps its native click.
       switcher.setPointerCapture(event.pointerId);
       cancelAnimationFrame(frame);
@@ -156,7 +175,10 @@ function attachSelectionSpring(switcher) {
     if (event.pointerId === pointer?.id) finishDrag();
   }
   addEventListener('pointercancel', cancelPointer);
-  switcher.addEventListener('lostpointercapture', cancelPointer);
+  switcher.addEventListener('lostpointercapture', event => {
+    // Touch initially captures the button, then hands the gesture to the row.
+    if (event.target === switcher) cancelPointer(event);
+  });
   addEventListener('keydown', event => {
     if (event.key !== 'Escape' || !pointer?.dragging) return;
     event.preventDefault();
@@ -181,12 +203,13 @@ function attachSelectionSpring(switcher) {
 export function attachGlassDock(dock) {
   attachSelectionSpring(dock.querySelector('.view-switch'));
   if (!CSS.supports('clip-path', 'path("M0 0H1V1Z")') || typeof ResizeObserver !== 'function') return;
-  const hover = matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)');
+  const hover = matchMedia('(hover: hover)');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   // Use SVG backdrop displacement on Chromium. Other engines keep the CSS glass.
   const canRefract = /(?:Chrome|Chromium)\/\d+/.test(navigator.userAgent)
     && CSS.supports('backdrop-filter', 'url("#dock-optics") blur(2px)');
   const body = document.body;
-  const canFollow = () => hover.matches && !body.classList.contains('motion-off');
+  const canAnimate = () => !reduce.matches && !body.classList.contains('motion-off');
   const measures = [];
   const observer = new ResizeObserver(() => measures.forEach(measure => measure()));
 
@@ -236,7 +259,7 @@ export function attachGlassDock(dock) {
     const edges = svg.querySelectorAll('path');
     const glint = svg.querySelector('radialGradient');
     const axes = Array.from({ length: 2 }, () => ({ value: 0, target: 0, speed: 0 }));
-    let bounds, frame = 0, lastTime = 0, light, energy = 0, hovering = false;
+    let bounds, frame = 0, lastTime = 0, light, energy = 0, hovering = false, touchId = null;
 
     function paint() {
       const path = outline(bounds, axes[0].value, axes[1].value, energy);
@@ -253,6 +276,7 @@ export function attachGlassDock(dock) {
       cancelAnimationFrame(frame);
       frame = lastTime = energy = 0;
       hovering = false;
+      touchId = null;
       for (const axis of axes) axis.value = axis.target = axis.speed = 0;
       if (bounds) paint();
       light = null;
@@ -284,7 +308,7 @@ export function attachGlassDock(dock) {
 
     function animate(time) {
       frame = 0;
-      if (!canFollow()) { reset(); return; }
+      if (!canAnimate()) { reset(); return; }
       const step = lastTime ? Math.min(.025, (time - lastTime) / 1000) : 1 / 60;
       lastTime = time;
       let moving = false;
@@ -304,7 +328,8 @@ export function attachGlassDock(dock) {
     }
 
     function followPointer(event) {
-      if (event.pointerType === 'touch' || !canFollow()) return;
+      const touch = event.pointerType === 'touch';
+      if (!canAnimate() || (touch ? event.pointerId !== touchId : !hover.matches || touchId !== null)) return;
       if (!bounds || event.type === 'pointerenter') measure();
       if (!bounds) return;
       const x = clamp(event.clientX - bounds.left, 0, bounds.width);
@@ -316,6 +341,21 @@ export function attachGlassDock(dock) {
       schedule();
     }
 
+    function startTouch(event) {
+      if (event.pointerType !== 'touch' || event.isPrimary === false || touchId !== null || !canAnimate()) return;
+      if (!body.classList.contains('mobile-mode')) return;
+      measure();
+      if (!bounds) return;
+      touchId = event.pointerId;
+      followPointer(event);
+    }
+
+    function finishTouch(event) {
+      if (event.pointerId !== touchId) return;
+      touchId = null;
+      settle();
+    }
+
     function settle() {
       if (!hovering) return;
       hovering = false;
@@ -324,12 +364,23 @@ export function attachGlassDock(dock) {
     }
 
     glass.addEventListener('pointerenter', followPointer, { passive: true });
+    glass.addEventListener('pointerdown', startTouch, { passive: true });
     glass.addEventListener('pointermove', followPointer, { passive: true });
-    glass.addEventListener('pointerleave', settle);
-    glass.addEventListener('pointercancel', settle);
+    glass.addEventListener('pointerup', finishTouch);
+    glass.addEventListener('pointerleave', event => {
+      if (event.pointerType !== 'touch' && touchId === null) settle();
+    });
+    glass.addEventListener('pointercancel', event => {
+      if (event.pointerType === 'touch') finishTouch(event);
+      else settle();
+    });
+    glass.addEventListener('lostpointercapture', event => {
+      if (event.target === glass) finishTouch(event);
+    });
     addEventListener('resize', measure, { passive: true });
     addEventListener('blur', reset);
     hover.addEventListener('change', reset);
+    reduce.addEventListener('change', reset);
     measures.push(measure);
     observer.observe(glass, { box: 'border-box' });
   });
