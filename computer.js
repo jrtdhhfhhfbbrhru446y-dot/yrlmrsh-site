@@ -1,8 +1,9 @@
-import { initOS, getBrowserPageView } from './os-ui.js?v=studio-77-final';
+import { initOS, getBrowserPageView } from './os-ui.js?v=studio-81-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
 import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
-import { createTelevision } from './television.js?v=studio-78-final';
+import { createTelevision } from './television.js?v=studio-81-final';
 import { createRadio } from './radio.js?v=studio-79-final';
+import { attachGlassDock } from './glass-dock.js?v=studio-81-final';
 
 import { createStartupDeadline } from './startup-deadline.js?v=studio-76-final';
 
@@ -17,14 +18,14 @@ const loginScreen = $('#login-screen'), enterButton = $('#enter-desktop');
 const tvAnchor = $('#tv-anchor'), tvRoot = $('#tv-root');
 const radioPanel = $('#radio-panel'), radioRoot = $('#radio-root'), canvas = $('#computer-canvas');
 const modeButton = $('#expand-screen'), status = $('#device-status');
+attachGlassDock($('.view-controls'));
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 // Narrow layouts are mobile regardless of the browser's primary pointer.
 // Larger touch screens, including landscape phones, keep the app layout too.
 const mobileViewport = matchMedia('(max-width: 760px), (max-width: 1024px) and (any-pointer: coarse)');
 let mobile = mobileViewport.matches;
 const textVersion = new URLSearchParams(location.search).get('view') === 'text';
-// Every desktop visit starts with the scene. The toggle is kept for this visit,
-// while touch devices retain the full-screen mobile interface.
+// Desktop visits start with the scene; phones and the text view stay flat.
 let preferredFlat = false;
 let flat = mobile || textVersion;
 const startupUrl = new URL(location.href);
@@ -75,7 +76,7 @@ const os = initOS(root, {
   onRestart: () => { entered = false; engine?.setEntered(false); os.open('home', { focus: false }); setMode('work'); bootDone = false; root.hidden = true; loginScreen.hidden = false; showLoading(); void showReady(); },
   onTelevision: id => openTelevision(id),
   onRadio: () => openRadio(),
-  onExpand: () => setFlat(true),
+  onExpand: () => setFlat(!flat),
   onTextVersion: () => {
     const url = new URL(document.querySelector('link[rel=canonical]').href);
     location.assign(url.pathname + '?view=text');
@@ -210,6 +211,9 @@ function syncModes() {
   document.body.classList.toggle('is-radio', mode === 'radio');
   document.body.classList.toggle('device-pending', !flat && mode === 'tv' && !engine?.tvReady && !tvFailed);
   document.body.dataset.displayMode = flat ? 'flat' : '3d';
+  $('meta[name="theme-color"]').content = flat
+    ? { tv: '#101010', radio: '#e9e4d6' }[mode] || '#eeede6'
+    : '#f7f7f4';
   root.inert = !entered || mode === 'object' || mode === 'tv' || mode === 'radio';
   loginScreen.inert = entered || mode === 'object' || mode === 'tv' || mode === 'radio';
   tvRoot.inert = mode !== 'tv'; radioRoot.inert = mode !== 'radio';
@@ -226,7 +230,6 @@ function syncModes() {
   $('#display-mode-label').textContent = modeButton.disabled ? '3D загружается…' : flat ? 'Включить 3D' : 'Без 3D';
   if (modeButton.disabled) modeButton.setAttribute('aria-label', '3D-сцена загружается. Сайт уже доступен.');
   $('#orbit-hint').hidden = flat || mode !== 'object';
-  $('#orbit-hint').textContent = innerWidth < 680 ? 'Потяни, чтобы повернуть. Двумя пальцами — масштаб.' : 'Потяни, чтобы повернуть. Колесо — масштаб. Нажми на устройство, чтобы открыть.';
   television.setActive(mode === 'tv'); radio.setActive(mode === 'radio');
   root.dispatchEvent(new CustomEvent('retro-activity', { bubbles: true, detail: { active: entered && (mode === 'work' || mode === 'desk') } }));
   root.dispatchEvent(new CustomEvent('retro-viewport', { detail: { mobile } }));
@@ -258,7 +261,10 @@ function setFlat(value, { persist = true, temporary = false } = {}) {
   if (flat && (mode === 'object' || mode === 'desk')) mode = 'work';
   if (!flat && mode === 'tv' && tvFailed) mode = 'work';
   engine?.setSuspended(flat && !backgroundSceneLoading);
-  if (flat) { skipBoot(); void showReady({ immediate: !loadingEye }); updateStatus(); }
+  if (flat) {
+    if (!textVersion && !entered) { entered = true; engine?.setEntered(true); }
+    skipBoot(); void showReady({ immediate: !loadingEye }); updateStatus();
+  }
   syncModes();
   engine?.setMode(mode, { animate: false });
   if (!flat) {
@@ -313,7 +319,7 @@ async function ensureScene() {
         backgroundSceneLoading = false;
         engine?.setSuspended(flat);
         syncModes();
-        if (!startupCompleteMarked) void showReady();
+        if (loadingEye) void showReady();
       },
       onTVReady: () => { tvFailed = false; updateStatus(); syncModes(); },
       onTVError: error => { tvFailed = true; if (mode === 'tv' && !flat) setFlat(true, { persist: false }); console.warn('TV model unavailable.', error); },
@@ -343,7 +349,10 @@ async function ensureScene() {
   });
   return scenePromise;
 }
-$('#work-view').addEventListener('click', () => setMode('work'));
+$('#work-view').addEventListener('click', () => {
+  if (flat && mode === 'work' && entered) os.open('home');
+  setMode('work');
+});
 $('#tv-view').addEventListener('click', () => openTelevision());
 $('#radio-view').addEventListener('click', openRadio);
 $('#object-view').addEventListener('click', () => setMode('object'));
@@ -382,9 +391,11 @@ window.visualViewport?.addEventListener('resize', updateVisualViewport);
 document.addEventListener('focusin', updateVisualViewport);
 document.addEventListener('focusout', updateVisualViewport);
 updateVisualViewport();
-if (initialPageView) {
+if (initialPageView || flat && !textVersion) {
   entered = true; mode = 'work';
   root.hidden = false; loginScreen.hidden = true;
+}
+if (initialPageView) {
   os.open(initialPageView, { remember: false, focus: false });
   initialPageReady = os.whenReady();
 }

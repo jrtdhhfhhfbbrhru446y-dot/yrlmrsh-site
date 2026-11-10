@@ -1,0 +1,257 @@
+/* Full-screen receiver. The existing radio controller owns every interaction. */
+body.flat-mode.is-radio #radio-panel {
+  --flat-radio-gutter: clamp(18px, 5.6vw, 96px);
+  --flat-radio-width: 1300px;
+  --flat-radio-pad: clamp(18px, 3vw, 40px);
+  --flat-radio-gap: clamp(13px, 1.65vw, 24px);
+  --flat-radio-edge: #a79c86;
+  inset: 0 0 auto;
+  width: 100%;
+  height: calc(var(--app-height, 100dvh) - var(--flat-nav-height, 64px));
+  max-height: none;
+  transform: none;
+}
+
+body.flat-mode.is-radio #radio-root {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  padding: 0;
+  background: none;
+}
+
+body.flat-mode.is-radio #radio-root .radio-system {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+  grid-template-areas: '.' 'console-heading' 'console-body' '.';
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: var(--tuner-grain), radial-gradient(ellipse at 42% 0%, #faf8ef 0%, #eeeadd 59%, #e4dece 100%);
+  background-blend-mode: soft-light, normal;
+  box-shadow: none;
+  padding: max(clamp(14px, 2.5vh, 24px), env(safe-area-inset-top))
+    env(safe-area-inset-right) clamp(14px, 2.5vh, 24px) env(safe-area-inset-left);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+body.flat-mode.is-radio #radio-root :is(.radio-heading, .radio-body),
+body.flat-mode.is-radio #radio-root .radio-system::before {
+  width: min(calc(100% - 2 * var(--flat-radio-gutter)), var(--flat-radio-width));
+  margin-inline: auto;
+}
+
+/* One faceplate spans the small label row and the controls below it. */
+body.flat-mode.is-radio #radio-root .radio-system::before {
+  content: '';
+  grid-area: 2 / 1 / 4 / 2;
+  box-sizing: border-box;
+  border: 1px solid var(--flat-radio-edge);
+  border-radius: 10px;
+  background: var(--tuner-grain), linear-gradient(145deg, #f0eadb, #e4dbc6);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 0 0 2px #faf5e7, inset 0 0 0 3px #d4c9b0, 0 3px #bcaf95, 0 12px 30px #4d443018;
+  pointer-events: none;
+}
+
+body.flat-mode.is-radio #radio-root .radio-heading {
+  grid-area: console-heading;
+  z-index: 1;
+  min-height: 0;
+  padding: clamp(14px, 2.3vh, 24px) var(--flat-radio-pad) clamp(11px, 1.7vh, 18px);
+}
+
+body.flat-mode.is-radio #radio-root .radio-heading h1 {
+  color: #4a4437;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: clamp(13px, 1.3vw, 17px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-shadow: 0 1px #fff8e8;
+}
+
+body.flat-mode.is-radio #radio-root .radio-signal {
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid #b0a58c;
+  border-radius: 3px;
+  background: #ece6d6;
+  box-shadow: inset 0 1px 2px #50463119, 0 1px #fffcf1;
+  font-size: 11px;
+  letter-spacing: .12em;
+}
+
+body.flat-mode.is-radio #radio-root .radio-body {
+  grid-area: console-body;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'dial' 'stations' 'player' 'levels' 'notice' 'library';
+  column-gap: var(--flat-radio-gap);
+  padding: 0 var(--flat-radio-pad) var(--flat-radio-pad);
+}
+
+body.flat-mode.is-radio #radio-root .radio-dial {
+  grid-area: dial;
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: clamp(102px, 15vh, 145px);
+  padding: clamp(12px, 1.7vw, 23px) clamp(16px, 2.3vw, 32px);
+}
+
+body.flat-mode.is-radio #radio-root .radio-dial-top {
+  font-size: clamp(10px, 1.15vw, 14px);
+}
+
+body.flat-mode.is-radio #radio-root .radio-dial-top > [data-radio-frequency] {
+  font-size: clamp(34px, 4.4vw, 64px);
+  letter-spacing: .04em;
+}
+
+body.flat-mode.is-radio #radio-root .radio-system[data-source="recording"] [data-radio-frequency] {
+  font-size: clamp(23px, 3vw, 46px);
+}
+
+body.flat-mode.is-radio #radio-root .radio-scale { height: 38px; }
+body.flat-mode.is-radio #radio-root .radio-frequencies { font-size: clamp(9px, .96vw, 12px); }
+
+body.flat-mode.is-radio #radio-root .radio-stations {
+  grid-area: stations;
+  margin-top: var(--flat-radio-gap);
+  padding: 6px;
+  gap: 8px;
+}
+
+body.flat-mode.is-radio #radio-root .radio-stations > button {
+  min-height: clamp(50px, 6.7vh, 66px);
+}
+
+body.flat-mode.is-radio #radio-root .radio-stations > button > span {
+  font-size: clamp(12px, 1.45vw, 19px);
+}
+
+body.flat-mode.is-radio #radio-root :is(.radio-player, .radio-levels) {
+  min-width: 0;
+  margin-top: var(--flat-radio-gap);
+  padding: clamp(12px, 1.35vw, 19px);
+  border: 1px solid #b2a58b;
+  border-radius: 5px;
+  background: linear-gradient(145deg, #eee7d6, #e1d7c0);
+  box-shadow: inset 0 1px 3px #564a3222, 0 1px #fbf6e9;
+}
+
+body.flat-mode.is-radio #radio-root .radio-player {
+  grid-area: player;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.flat-mode.is-radio #radio-root .radio-player-title { font-size: clamp(14px, 1.3vw, 18px); }
+body.flat-mode.is-radio #radio-root .radio-time { font-size: clamp(12px, 1.1vw, 15px); }
+body.flat-mode.is-radio #radio-root .radio-player .radio-controls { margin-top: 9px; }
+
+body.flat-mode.is-radio #radio-root .radio-levels {
+  grid-area: levels;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--flat-radio-gap);
+}
+
+body.flat-mode.is-radio #radio-root .radio-volume label { font-size: clamp(11px, 1.05vw, 14px); }
+body.flat-mode.is-radio #radio-root .radio-volume input { height: 44px; }
+
+body.flat-mode.is-radio #radio-root .radio-reception { grid-area: notice; }
+body.flat-mode.is-radio #radio-root .radio-system.has-notice .radio-reception {
+  margin-top: var(--flat-radio-gap);
+}
+body.flat-mode.is-radio #radio-root .radio-reception > p { font-size: 12px; }
+
+body.flat-mode.is-radio #radio-root .radio-library {
+  grid-area: library;
+  margin-top: var(--flat-radio-gap);
+  min-height: 48px;
+  font-size: clamp(13px, 1.16vw, 16px);
+}
+
+body.flat-mode.is-radio #radio-root .radio-footer { display: none; }
+
+@media (min-width: 700px) {
+  body.flat-mode.is-radio #radio-root .radio-body {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-areas: 'dial dial' 'stations stations' 'player levels' 'notice notice' 'library library';
+  }
+  body.flat-mode.is-radio #radio-root .radio-levels {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+@media (min-width: 960px) {
+  body.flat-mode.is-radio:not(.mobile-mode) #radio-root .radio-body {
+    grid-template-columns: minmax(190px, .82fr) minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-areas: 'speaker dial dial' 'speaker stations stations' 'speaker player levels' 'speaker notice notice' 'speaker library library';
+  }
+
+  /* Slotted speaker grille, generated as a decorative grid item. */
+  body.flat-mode.is-radio:not(.mobile-mode) #radio-root .radio-body::before {
+    content: '';
+    grid-area: speaker;
+    align-self: stretch;
+    border: 1px solid #716754;
+    border-radius: 6px;
+    background:
+      linear-gradient(105deg, #4b3d282e, transparent 32%, #fff4d92b 60%, #4b3d281a),
+      repeating-linear-gradient(0deg, #4d473a 0 2px, #776d58 2px 3px, #b3a586 3px 4px, #e0d3b6 4px 8px, #f4ead3 8px 9px);
+    box-shadow: inset 0 0 12px #322a2580, 0 0 0 2px #b8ab91, 0 0 0 3px #e5dbc5, 0 2px 0 3px #f8f2e3;
+  }
+}
+
+@media (max-width: 699px) {
+  body.flat-mode.is-radio #radio-panel {
+    --flat-radio-gutter: 16px;
+    --flat-radio-pad: 15px;
+    --flat-radio-gap: 12px;
+  }
+  body.flat-mode.is-radio #radio-root .radio-heading {
+    padding-block: 13px 11px;
+  }
+  body.flat-mode.is-radio #radio-root .radio-signal { padding: 6px 8px; }
+}
+
+@media (max-width: 699px) and (min-height: 760px) {
+  body.flat-mode.is-radio #radio-root .radio-body {
+    grid-template-areas: 'dial' 'stations' 'player' 'levels' 'notice' 'library' 'speaker';
+  }
+  body.flat-mode.is-radio #radio-root .radio-body::before {
+    content: '';
+    grid-area: speaker;
+    height: 35px;
+    margin-top: var(--flat-radio-gap);
+    border: 1px solid #8f846e;
+    border-radius: 4px;
+    background: repeating-linear-gradient(90deg, #817662 0 2px, #b2a58b 2px 3px, #d8cdb3 3px 7px);
+    box-shadow: inset 0 0 8px #453b2b66, 0 1px #fff9e6;
+  }
+}
+
+@media (max-height: 820px) and (min-width: 700px) {
+  body.flat-mode.is-radio #radio-panel { --flat-radio-pad: clamp(16px, 3.4vh, 26px); --flat-radio-gap: clamp(12px, 2vh, 16px); }
+  body.flat-mode.is-radio #radio-root .radio-dial { min-height: 96px; padding-block: 12px; }
+  body.flat-mode.is-radio #radio-root .radio-dial-top > [data-radio-frequency] { font-size: clamp(35px, 6.1vh, 49px); }
+}
+
+@media (max-width: 360px) {
+  body.flat-mode.is-radio #radio-panel { --flat-radio-gutter: 12px; --flat-radio-pad: 12px; }
+  body.flat-mode.is-radio #radio-root .radio-stations { gap: 5px; }
+  body.flat-mode.is-radio #radio-root .radio-levels { gap: 9px; }
+  body.flat-mode.is-radio #radio-root .radio-volume label { font-size: 10px; }
+}

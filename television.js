@@ -195,6 +195,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   let seekDrag = null, volumeDrag = null;
   let crtEnabled = !document.body.classList.contains('crt-off');
   let mobilePresentation = document.body.classList.contains('mobile-mode');
+  let nativeFilmPresentation = mobilePresentation || document.body.classList.contains('flat-mode');
   const posters = new Map();
   const posterImages = new Map();
   const previewImages = new Map();
@@ -263,10 +264,10 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     media = video; mediaProject = project.id;
     filmFrames = createFilmFrameLoop(video, {
       canRun: () => active && playing && !document.hidden && !disposed && view === 'player' && media === video,
-      canFallback: () => !mobilePresentation,
+      canFallback: () => !nativeFilmPresentation,
       onFrame: (now, metadata) => {
         seconds = Number.isFinite(metadata?.mediaTime) ? metadata.mediaTime : Number.isFinite(video.currentTime) ? video.currentTime : 0;
-        if (!mobilePresentation) draw();
+        if (!nativeFilmPresentation) draw();
         updateTime();
       }
     });
@@ -539,9 +540,9 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
   }
   function draw() {
     if (!ctx || disposed) return;
-    // The browser displays the native film on phones. Avoid decoding and
+    // The browser displays the native film in flat mode. Avoid decoding and
     // painting every video frame a second time into an invisible CRT texture.
-    if (mobilePresentation && view === 'player' && currentFilm()) return;
+    if (nativeFilmPresentation && view === 'player' && currentFilm()) return;
     ctx.fillStyle = BLACK; ctx.fillRect(0, 0, 960, 720);
     ctx.save();
     const t = reduced.matches || document.body.classList.contains('motion-off') ? 0 : seconds;
@@ -716,7 +717,7 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     }
     const picture = root.querySelector('[data-tv-picture]');
     picture.append(canvas);
-    // The actual video can fill a phone's portrait viewport without stretching
+    // The actual video can fill the flat viewport without stretching
     // the 4:3 canvas used by the physical television's texture.
     if (currentFilm()) picture.append(media);
     const range = root.querySelector('[data-tv-seek]');
@@ -946,13 +947,15 @@ export function createTelevision(root, { onBack, onFrame = () => {} } = {}) {
     refreshAdvance();
     const enabled = !document.body.classList.contains('crt-off');
     const nextMobile = document.body.classList.contains('mobile-mode');
-    if ((enabled !== crtEnabled || nextMobile !== mobilePresentation) && !disposed) {
-      const enteringDesktop = mobilePresentation && !nextMobile;
-      crtEnabled = enabled; mobilePresentation = nextMobile;
-      stop();
-      if (!mobilePresentation) requestPosters({ retry: enteringDesktop });
-      draw(); schedule();
-    }
+    const nextNative = nextMobile || document.body.classList.contains('flat-mode');
+    if (disposed || (enabled === crtEnabled && nextMobile === mobilePresentation && nextNative === nativeFilmPresentation)) return;
+    const enteringDesktop = mobilePresentation && !nextMobile;
+    crtEnabled = enabled;
+    mobilePresentation = nextMobile;
+    nativeFilmPresentation = nextNative;
+    stop();
+    if (!mobilePresentation) requestPosters({ retry: enteringDesktop });
+    draw(); schedule();
   });
   appearance.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   root.addEventListener('click', click); root.addEventListener('input', input); root.addEventListener('keydown', keyboard);

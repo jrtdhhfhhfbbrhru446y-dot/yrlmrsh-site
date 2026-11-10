@@ -31,7 +31,7 @@ export function shouldHandlePageLink(event, link, browserLocation = globalThis.w
 const sections = {
   skills: { load: () => import('./skill-map.js?v=studio-75-final') },
   games: { load: () => import('./games.js?v=studio-71-final') },
-  profile: { load: () => import('./profile.js?v=studio-75-final') },
+  profile: { load: () => import('./profile.js?v=studio-81-final') },
 };
 function loadSection(name) {
   const section = sections[name];
@@ -570,7 +570,7 @@ export function initOS(root, { onRestart = () => {}, onTelevision = () => {}, on
     const entries = {
       system: [['Обо мне', 'about'], ['Рабочий стол', 'home'], ['Видеотека', 'videos'], ['К радио', 'radio'], ['Настройки', 'settings'], ['Текстовая версия', 'text-version'], ['Перезагрузить', 'restart']],
       file: [['Открыть эксперименты', 'experiments'], ['Видеотека', 'videos'], ['Написать автору', 'contact'], ['Закрыть окно', 'home']],
-      view: [['Настроить вид…', 'settings'], ['Значки', 'layout:icons'], ['Список', 'layout:list'], ['Пользоваться без 3D', 'expand'], ['Текстовая версия', 'text-version']],
+      view: [['Настроить вид…', 'settings'], ['Значки', 'layout:icons'], ['Список', 'layout:list'], [document.body.classList.contains('flat-mode') ? 'Включить 3D' : 'Пользоваться без 3D', 'expand'], ['Текстовая версия', 'text-version']],
       go: [['Рабочий стол', 'home'], ['Эксперименты', 'experiments'], ['Навыки', 'skills'], ['Игры', 'games'], ['Контакт', 'contact'], ['К телевизору', 'television'], ['К радио', 'radio']],
     };
     menuLayer.innerHTML = `<div class="os-dropdown" role="menu">${(entries[name] || entries.system).map(([label, action]) => `<button role="menuitem" data-menu-action="${action}">${action === `layout:${preferences.layout}` ? '✓ ' : ''}${label}</button>`).join('')}</div>`;
