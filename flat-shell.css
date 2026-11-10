@@ -225,7 +225,7 @@ body[data-display-mode] .view-switch #radio-view.has-sound::after {
   body[data-display-mode]:not(.motion-off) .view-controls :is(.view-switch, .expand-button)[data-glass-ready] {
     border-color: transparent !important;
     background: none !important;
-    box-shadow: none !important;
+    box-shadow: 0 4px 13px -4px var(--glass-shadow) !important;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -247,7 +247,6 @@ body[data-display-mode] .view-switch #radio-view.has-sound::after {
     -webkit-backdrop-filter: blur(var(--glass-blur, 2px));
     backdrop-filter: blur(var(--glass-blur, 2px));
   }
-  .glass-depth { stroke: var(--glass-shadow); stroke-width: 4px; filter: blur(5px); transform: translateY(4px); }
   .glass-bevel { stroke-width: 4.5px; filter: blur(.7px); }
   .glass-edge { stroke-width: 1.15px; }
   .glass-reflection {

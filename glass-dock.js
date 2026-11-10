@@ -225,7 +225,6 @@ export function attachGlassDock(dock) {
             <feDisplacementMap in="SourceGraphic" in2="smoothed" scale="18" xChannelSelector="R" yChannelSelector="B"/>
           </filter>` : ''}
         </defs>
-        <path class="glass-depth"/>
         <path class="glass-bevel" stroke="url(#${bevel})" clip-path="url(#${contour})"/>
         <path class="glass-edge" stroke="url(#${gradient})"/>
         <path class="glass-reflection" stroke="url(#${gleam})" clip-path="url(#${contour})"/>

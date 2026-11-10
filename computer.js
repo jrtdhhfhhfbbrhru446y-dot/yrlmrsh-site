@@ -3,7 +3,7 @@ import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v
 import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
 import { createTelevision } from './television.js?v=studio-81-final';
 import { createRadio } from './radio.js?v=studio-79-final';
-import { attachGlassDock } from './glass-dock.js?v=studio-81-final';
+import { attachGlassDock } from './glass-dock.js?v=studio-82-final';
 
 import { createStartupDeadline } from './startup-deadline.js?v=studio-76-final';
 
