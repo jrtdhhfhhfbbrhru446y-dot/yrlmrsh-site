@@ -224,11 +224,8 @@ body[data-display-mode] #radio-view.has-sound .dock-radio-label::after {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #000;
+  background: #607836;
   pointer-events: none;
-}
-body.flat-mode.is-tv #radio-view.has-sound .dock-radio-label::after {
-  box-shadow: 0 0 0 1px #ffffffa0;
 }
 
 /* Keep the same surface at rest, during deformation, and on release. */
