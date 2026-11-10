@@ -39,10 +39,13 @@
   document.documentElement.dataset.typography = baselineType ? 'baseline' : 'experiment';
   if (baselineType) document.getElementById('typography-experiment').disabled = true;
 </script>
-<script id="startup-entry" type="module" src="/startup.js?v=studio-80-final"></script>
+<script id="startup-entry" type="module" src="/startup.js?v=studio-81-final"></script>
 <link rel="stylesheet" href="/mobile.css?v=studio-76-final">
 <link rel="stylesheet" href="/radio-analog.css?v=studio-80-final">
 <link rel="stylesheet" href="/page-fallback.css?v=studio-76-final">
+<link rel="stylesheet" href="/flat-shell.css?v=studio-81-final">
+<link rel="stylesheet" href="/flat-radio.css?v=studio-81-final">
+<link rel="stylesheet" href="/flat-tv.css?v=studio-81-final">
 </head>
 <body data-page-route="article:tracker" data-page-path="/articles/mono-task/">
 <!-- SEO_FALLBACK_START -->
@@ -74,15 +77,19 @@
 </section>
 <!-- SEO_FALLBACK_END -->
 <header class="identity"><a href="/" aria-label="YRLMRSH — начало">YRLMRSH</a></header>
-<main id="experience" aria-label="Интерактивное портфолио на экране ноутбука">
+<main id="experience" aria-label="Интерактивное портфолио">
 <canvas id="computer-canvas" tabindex="-1" aria-label="Радио, ноутбук и телевизор в 3D. Нажмите на устройство или выберите его внизу. В режиме осмотра стрелки вращают сцену, плюс и минус меняют масштаб. В режиме радио ручки можно поворачивать перетаскиванием."></canvas>
 <div id="screen-anchor" class="screen-anchor" aria-label="Экран компьютера"><div class="screen-inner"><section id="login-screen" class="login-screen" aria-label="Вход на рабочий стол"><div class="login-center"><h1>YRLMRSH</h1><button id="enter-desktop">Войти <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"><path d="M19 5v9H5m5-5-5 5 5 5"/></svg></span></button></div></section><div id="os-root" hidden></div></div></div>
 <div id="tv-anchor" class="tv-anchor" aria-label="Экран телевизора"><div id="tv-root" style="width:100%;height:100%" inert></div></div>
 </main>
 <div class="loading-cover" id="loading-cover" role="status"><pre id="loading-eye" role="img" aria-label="Шкала загрузки превращается в моргающий ASCII-глаз"></pre><span class="loading-a11y">Открываем портфолио…</span></div>
 <aside id="radio-panel" class="radio-anchor" hidden aria-label="Управление радио"><div id="radio-root" inert></div></aside>
-<div class="view-controls" aria-label="Режим просмотра"><div class="view-switch"><button id="radio-view" aria-pressed="false">Радио</button><button id="work-view" aria-pressed="false">Компьютер</button><button id="tv-view" aria-pressed="false">Телевизор</button><button id="object-view" aria-pressed="true">Вся сцена <span aria-hidden="true">↗</span></button></div><button id="expand-screen" class="expand-button" aria-label="Пользоваться без 3D" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 5h16v11H4zM9 20h6m-3-4v4"/></svg><span id="display-mode-label" aria-hidden="true">Без 3D</span></button></div>
-<p class="orbit-hint" id="orbit-hint" hidden>Потяни, чтобы повернуть. Колесо — масштаб.</p>
+<nav class="view-controls" aria-label="Устройства"><div class="view-switch"><button id="radio-view" aria-pressed="false"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h18v12H3zM4 8l14-5M6 12h8m-8 3h8m-8 3h8"/><circle cx="17.5" cy="14" r="1.5"/></svg>Радио</button><button id="work-view" aria-pressed="false"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v13H3zM8 21h8m-4-4v4"/></svg>Компьютер</button><button id="tv-view" aria-pressed="false"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="m7 2 5 5 5-5m0 10h1m-1 4h1M6 10h8v8H6z"/></svg>Телевизор</button><button id="object-view" aria-pressed="true"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.5" ry="5.3" transform="rotate(-35 12 12)"/><circle cx="12" cy="12" r="1.6"/></svg>Вся сцена</button></div><button id="expand-screen" class="expand-button" aria-label="Пользоваться без 3D" aria-pressed="false"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.1 20 7.7v8.6L12 21l-8-4.7V7.7zM4 7.7l8 4.7 8-4.7M12 12.4V21"/></svg><span id="display-mode-label" aria-hidden="true">Без 3D</span></button></nav>
+<div class="orbit-hint" id="orbit-hint" hidden>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.5" ry="5.3" transform="rotate(-35 12 12)"/><circle cx="12" cy="12" r="1.6"/></svg>Потяни, чтобы повернуть</span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 6v4"/></svg>Колесо для масштаба</span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 3 13 10-6 .7-2.6 5.3L5 3z"/></svg>Нажми, чтобы открыть устройство</span>
+</div>
 <p class="device-status" id="device-status" role="status" hidden></p>
 <noscript><style>#loading-cover,#experience,.identity,.view-controls,#radio-panel,.orbit-hint,.device-status{display:none!important}html,body{height:auto;overflow:auto}.seo-fallback{position:static;display:block;visibility:visible;overflow:visible;min-height:100svh}</style></noscript>
 <script id="startup-guard">  (() => {

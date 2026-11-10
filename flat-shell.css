@@ -1,0 +1,311 @@
+/* The floating dock uses the same glass and geometry over each device. */
+.dock-icon { display: none; }
+
+body {
+  --glass-bottom: 12px;
+  --glass-height: 64px;
+  --glass-ink: #242424;
+  --glass-selected-ink: #151515;
+  --glass-fill: #ffffff06;
+  --glass-opaque: #eeede8;
+  --glass-rim: #4a4a4a42;
+  --glass-edge-light: #ffffffbd;
+  --glass-edge-low: #4b4b4b6b;
+  --glass-bevel-light: #ffffff60;
+  --glass-bevel-shadow: #27272723;
+  --glass-shadow: #00000018;
+  --glass-hover: #2929291b;
+  --glass-hover-rim: #29292915;
+  --glass-lens-fill: #cecece;
+  --glass-specular: #fffffff2;
+  --glass-reflection-shade: .31;
+  --glass-reflection-strength: .56;
+}
+
+body.flat-mode {
+  --flat-nav-gap: 8px;
+  --flat-nav-height: calc(var(--glass-height) + var(--glass-bottom) + var(--flat-nav-gap) + env(safe-area-inset-bottom, 0px));
+  --flat-surface: #f4f3ed;
+  background: var(--flat-surface);
+}
+
+body.flat-mode.is-radio {
+  --flat-surface: #e9e3d5;
+  --glass-lens-fill: #cecac2;
+}
+body.flat-mode.is-tv {
+  --flat-surface: #0a0a0c;
+  --glass-ink: #efefef;
+  --glass-selected-ink: #fff;
+  --glass-fill: #ffffff0c;
+  --glass-opaque: #1d1d1d;
+  --glass-rim: #ffffff3b;
+  --glass-edge-light: #ffffff84;
+  --glass-edge-low: #ffffff38;
+  --glass-bevel-light: #ffffff30;
+  --glass-bevel-shadow: #00000045;
+  --glass-shadow: #0000006e;
+  --glass-hover: #ffffff16;
+  --glass-hover-rim: #ffffff12;
+  --glass-lens-fill: #3a3a3a;
+  --glass-specular: #ffffffde;
+  --glass-reflection-shade: .75;
+  --glass-reflection-strength: .44;
+}
+
+/* Add enough light tint for dark text over the projected TV housing. */
+body[data-display-mode="3d"].is-tv {
+  --glass-fill: #ffffff70;
+  --glass-ink: #1c1c1c;
+  --glass-hover: #ffffff28;
+  --glass-hover-rim: #ffffff3d;
+}
+
+/* Soften the keyboard behind the dock while the laptop is in close-up. */
+body[data-display-mode="3d"]:has(#work-view[aria-pressed="true"]) {
+  --glass-fill: #ffffff60;
+  --glass-blur: 11px;
+  --glass-shadow: #0000002e;
+}
+
+body.flat-mode #experience {
+  inset: 0 0 auto !important;
+  height: calc(var(--app-height, 100dvh) - var(--flat-nav-height));
+  width: auto;
+}
+body.flat-mode .identity { display: none; }
+body.flat-mode #screen-anchor { border: 0; }
+body.flat-mode .retro-os .os-taskbar { display: none; }
+
+body[data-display-mode] .view-controls {
+  inset: auto 0 calc(var(--glass-bottom) + env(safe-area-inset-bottom, 0px));
+  transform: none;
+  width: auto;
+  max-width: none;
+  height: auto;
+  justify-content: center;
+  gap: 18px;
+  padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  border: 0;
+  background: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  user-select: none;
+  pointer-events: none;
+}
+
+body[data-display-mode] .view-controls :is(.view-switch, .expand-button) {
+  height: var(--glass-height);
+  border: 1px solid var(--glass-rim) !important;
+  border-radius: 999px;
+  background: var(--glass-opaque) !important;
+  box-shadow:
+    inset 0 1px 1px var(--glass-edge-light),
+    inset 0 -1px 1px var(--glass-bevel-light),
+    inset 0 0 3px 1px var(--glass-bevel-shadow),
+    0 2px 5px var(--glass-shadow),
+    0 11px 26px var(--glass-shadow) !important;
+  pointer-events: auto;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  body[data-display-mode] .view-controls :is(.view-switch, .expand-button) {
+    background: var(--glass-fill) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur, 4px));
+    backdrop-filter: blur(var(--glass-blur, 4px));
+  }
+}
+
+body[data-display-mode] .view-switch {
+  --glass-tracks: 3;
+  --glass-inset: 5px;
+  --glass-selection: 100%;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(var(--glass-tracks), minmax(0, 1fr));
+  width: clamp(470px, 40vw, 520px);
+  padding: var(--glass-inset);
+  gap: 0;
+}
+body[data-display-mode="3d"] .view-switch {
+  --glass-tracks: 4;
+  width: clamp(596px, 53vw, 700px);
+}
+body[data-display-mode] .view-switch:has(#radio-view[aria-pressed="true"]) { --glass-selection: 0%; }
+body[data-display-mode] .view-switch:has(#tv-view[aria-pressed="true"]) { --glass-selection: 200%; }
+body[data-display-mode="3d"] .view-switch:has(#object-view[aria-pressed="true"]) { --glass-selection: 300%; }
+
+body[data-display-mode] .view-switch::before {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  inset: var(--glass-inset) auto var(--glass-inset) var(--glass-inset);
+  width: calc((100% - 2 * var(--glass-inset)) / var(--glass-tracks));
+  border-radius: 999px;
+  background: var(--glass-lens-fill);
+  transform: translateX(var(--glass-selection)) scaleX(.978);
+  transition: transform 310ms cubic-bezier(.2, .82, .26, 1);
+  pointer-events: none;
+}
+body[data-display-mode] .view-switch[data-glass-dragging]::before {
+  transform: translateX(var(--glass-spring-position)) scaleX(.978);
+  transition: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body[data-display-mode]:not(.motion-off) .view-switch[data-glass-spring]::before {
+    transform: translateX(var(--glass-spring-position, var(--glass-selection))) scaleX(.978);
+    transition: none;
+  }
+}
+
+body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button) {
+  --key-ink: var(--glass-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 560;
+  letter-spacing: -.015em;
+  line-height: 1;
+  white-space: nowrap;
+  filter: none;
+  transition: background-color 150ms ease, transform 130ms ease;
+}
+body[data-display-mode] .view-switch > button { padding: 4px 16px; }
+body[data-display-mode] .view-switch > button[aria-pressed="true"] { --key-ink: var(--glass-selected-ink); }
+@media (hover: hover) {
+  body[data-display-mode] .view-switch:not([data-glass-dragging]) > button:not([aria-pressed="true"]):hover {
+    background: var(--glass-hover) !important;
+    box-shadow: inset 0 0 0 1px var(--glass-hover-rim) !important;
+  }
+}
+@media (any-pointer: fine) {
+  body[data-display-mode] .view-switch > button[aria-pressed="true"] { cursor: grab; }
+  body[data-display-mode] .view-switch[data-glass-dragging] > button { cursor: grabbing; }
+}
+body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button)::before,
+body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button)::after { display: none; }
+
+body[data-display-mode] .view-controls .expand-button {
+  gap: 7px;
+  padding: 0 18px;
+  font-size: 13px;
+}
+body[data-display-mode] .view-controls .expand-button > span { font: inherit; }
+body[data-display-mode] .view-controls .expand-button:hover:not(:disabled) { box-shadow: inset 0 1px 1px var(--glass-edge-light), inset 0 -1px 1px var(--glass-bevel-light), inset 0 0 4px 2px var(--glass-bevel-shadow), 0 7px 20px var(--glass-shadow) !important; }
+body[data-display-mode] .view-controls .dock-icon {
+  display: block;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+body[data-display-mode] .view-controls :is(.view-switch > button, .expand-button):focus-visible {
+  outline: 2px solid var(--key-ink);
+  outline-offset: -3px;
+}
+body[data-display-mode] .view-switch #radio-view.has-sound::after {
+  display: block;
+  inset: 6px 10px auto auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  clip-path: none;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  z-index: 1;
+}
+
+/* Keep the same surface at rest, during deformation, and on release. */
+.glass-material { display: none; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  body[data-display-mode]:not(.motion-off) .view-controls :is(.view-switch, .expand-button)[data-glass-ready] {
+    border-color: transparent !important;
+    background: none !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  body[data-display-mode]:not(.motion-off) [data-glass-ready] > .glass-material {
+    display: block;
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: -1;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .glass-material :is(.glass-face, .glass-outline) { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .glass-face {
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: var(--glass-backdrop, blur(4px));
+  }
+  body[data-display-mode="3d"] .glass-face {
+    -webkit-backdrop-filter: blur(var(--glass-blur, 2px));
+    backdrop-filter: blur(var(--glass-blur, 2px));
+  }
+  .glass-depth { stroke: var(--glass-shadow); stroke-width: 4px; filter: blur(5px); transform: translateY(4px); }
+  .glass-bevel { stroke-width: 4.5px; filter: blur(.7px); }
+  .glass-edge { stroke-width: 1.15px; }
+  .glass-reflection {
+    stroke-width: 5.5px;
+    transform: translateY(1px);
+    filter: brightness(var(--glass-reflection-shade)) blur(.7px);
+    opacity: calc(var(--glass-energy, 0) * var(--glass-reflection-strength));
+  }
+  .glass-glint { stroke-width: 2.6px; filter: blur(.3px); opacity: var(--glass-energy, 0); }
+}
+
+body[data-display-mode="3d"] .orbit-hint {
+  bottom: calc(var(--glass-bottom) + var(--glass-height) + 13px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 8px 13px;
+  border: 1px solid var(--glass-rim);
+  border-radius: 18px;
+  background: #f6f6f1c4;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 1px var(--glass-edge-light), 0 3px 12px var(--glass-shadow);
+  color: #4a4c50;
+  font: 500 12px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  pointer-events: none;
+}
+body[data-display-mode="3d"] .orbit-hint > span { display: inline-flex; align-items: center; gap: 6px; }
+body[data-display-mode="3d"] .orbit-hint > span + span { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--glass-rim); }
+.orbit-hint svg { width: 14px; height: 14px; flex: 0 0 auto; }
+
+body.flat-mode.mobile-mode {
+  --flat-nav-gap: 6px;
+  --glass-height: 60px;
+  --glass-bottom: 8px;
+}
+body.flat-mode.mobile-mode .view-switch {
+  --glass-inset: 4px;
+  width: min(100%, 460px);
+}
+body.flat-mode.mobile-mode .view-switch > button {
+  gap: 5px;
+  padding-inline: 3px;
+  font-size: clamp(11px, 3.2vw, 13px);
+}
+body.flat-mode.mobile-mode .view-controls .dock-icon { width: 16px; height: 16px; }
+@media (max-width: 415px) {
+  body.flat-mode.mobile-mode .view-switch > button { flex-direction: column; gap: 3px; padding: 3px 6px; }
+  body.flat-mode.mobile-mode .view-controls .dock-icon { width: 15px; height: 15px; }
+}
+body.flat-mode.mobile-mode.keyboard-open { --flat-nav-height: 0px; }
+body.flat-mode.mobile-mode.keyboard-open .view-controls { display: none; }
+
+body[data-display-mode].motion-off .view-switch::before,
+body[data-display-mode].motion-off .view-controls button { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  body[data-display-mode] .view-switch::before,
+  body[data-display-mode] .view-controls button { transition: none; }
+}

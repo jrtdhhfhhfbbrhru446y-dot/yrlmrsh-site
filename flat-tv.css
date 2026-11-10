@@ -1,0 +1,268 @@
+/* The flat TV fills the space above the shared device navigation. */
+body.flat-mode.is-tv #tv-anchor {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+  will-change: auto;
+}
+
+body.flat-mode.is-tv .tv-system {
+  --flat-tv-gutter: clamp(20px, 4.2cqw, 72px);
+  --flat-tv-top: clamp(18px, 4.3cqh, 44px);
+  --flat-tv-card: min(51cqw, 680px, 69cqh);
+  --flat-tv-carousel-top: clamp(54px, 13cqh, 116px);
+  --flat-tv-carousel-bottom: clamp(84px, 19cqh, 152px);
+  --flat-tv-caption-gap: clamp(16px, 4.8cqh, 46px);
+  --flat-tv-player-top: clamp(56px, 11cqh, 102px);
+  --flat-tv-player-bottom: clamp(98px, 16cqh, 132px);
+  color: #f5f3f3;
+  border-radius: 0;
+  text-shadow: none;
+}
+
+body.flat-mode.is-tv .tv-system::before,
+body.flat-mode.is-tv .tv-system::after {
+  display: none;
+}
+
+body.flat-mode.is-tv .tv-library-screen {
+  background:
+    radial-gradient(ellipse at 14% 0%, #2d141a 0%, transparent 39%),
+    radial-gradient(ellipse at 50% 41%, #1d1d23 0%, #101014 52%, #0a0a0c 100%);
+}
+
+body.flat-mode.is-tv .tv-library-picture {
+  background: transparent;
+}
+
+body.flat-mode.is-tv .tv-library-heading {
+  top: max(var(--flat-tv-top), env(safe-area-inset-top));
+  left: max(var(--flat-tv-gutter), env(safe-area-inset-left));
+  color: #f22a36;
+}
+
+body.flat-mode.is-tv .tv-service-mark {
+  width: clamp(126px, 14.5cqw, 204px);
+  filter: none;
+}
+
+body.flat-mode.is-tv .tv-carousel {
+  inset: var(--flat-tv-carousel-top) 0 var(--flat-tv-carousel-bottom);
+  perspective: clamp(620px, 115cqh, 1400px);
+  perspective-origin: 50% 50%;
+}
+
+body.flat-mode.is-tv .tv-carousel::after {
+  display: none;
+}
+
+body.flat-mode.is-tv .tv-system .tv-flow-card {
+  width: var(--flat-tv-card);
+  border: 1px solid #ffffff25;
+  border-radius: clamp(8px, 1.1cqw, 15px);
+  box-shadow: 0 12px 32px #0008;
+  -webkit-box-reflect: none;
+}
+
+body.flat-mode.is-tv .tv-system .tv-flow-card.is-current {
+  border-color: #ffffff47;
+  box-shadow: 0 20px 58px #000a, 0 1px 0 #ffffff10;
+}
+
+body.flat-mode.is-tv .tv-flow-media {
+  border-radius: inherit;
+}
+
+body.flat-mode.is-tv .tv-flow-play {
+  width: clamp(44px, 9cqh, 70px);
+  height: clamp(44px, 9cqh, 70px);
+  border-color: #ffffffa1;
+  background: #101014c9;
+  box-shadow: 0 3px 16px #0008;
+}
+
+body.flat-mode.is-tv .tv-flow-caption {
+  top: calc((100cqh + var(--flat-tv-carousel-top) - var(--flat-tv-carousel-bottom)) / 2 + var(--flat-tv-card) * .375 + var(--flat-tv-caption-gap));
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(calc(100% - 2 * var(--flat-tv-gutter)), 420px);
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: clamp(8px, 2cqw, 20px);
+  transform: translateX(-50%);
+}
+
+body.flat-mode.is-tv .tv-flow-caption p {
+  overflow: hidden;
+  font-size: clamp(18px, 4.1cqh, 34px);
+  font-weight: 700;
+  letter-spacing: -.045em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.flat-mode.is-tv .tv-flow-caption .tv-icon-button {
+  border: 1px solid #ffffff32;
+  border-radius: 50%;
+  background: #ffffff0a;
+  opacity: 1;
+  transition: background .18s, border-color .18s;
+}
+
+body.flat-mode.is-tv .tv-flow-caption .tv-icon-button:is(:hover, :focus-visible) {
+  border-color: #ffffff70;
+  background: #ffffff1a;
+}
+
+body.flat-mode.is-tv .tv-library-screen .tv-bottom {
+  display: none;
+}
+
+body.flat-mode.is-tv .tv-player-screen {
+  background: #09090b;
+}
+
+body.flat-mode.is-tv .tv-player-screen .tv-picture {
+  top: max(var(--flat-tv-player-top), calc(env(safe-area-inset-top) + 52px));
+  right: max(var(--flat-tv-gutter), env(safe-area-inset-right));
+  bottom: var(--flat-tv-player-bottom);
+  left: max(var(--flat-tv-gutter), env(safe-area-inset-left));
+  background: #050506;
+}
+
+body.flat-mode.is-tv .tv-film-screen .tv-picture > canvas {
+  visibility: hidden;
+}
+
+body.flat-mode.is-tv .tv-film-screen .tv-media-source {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  object-fit: contain;
+}
+
+body.flat-mode.is-tv .tv-player-shade {
+  display: none;
+}
+
+body.flat-mode.is-tv .tv-player-heading,
+body.flat-mode.is-tv .tv-system .tv-player-controls {
+  right: max(var(--flat-tv-gutter), env(safe-area-inset-right));
+  left: max(var(--flat-tv-gutter), env(safe-area-inset-left));
+}
+
+body.flat-mode.is-tv .tv-player-heading {
+  top: max(clamp(5px, 2.3cqh, 26px), env(safe-area-inset-top));
+  min-height: 44px;
+}
+
+body.flat-mode.is-tv .tv-player-heading .tv-back {
+  flex: none;
+  padding: 0 12px;
+  border: 1px solid #ffffff26;
+  border-radius: 8px;
+  background: #ffffff09;
+  color: #f5f3f3;
+  font-size: clamp(13px, 1.6cqw, 17px);
+  opacity: 1;
+}
+
+body.flat-mode.is-tv .tv-player-heading .tv-back:is(:hover, :focus-visible) {
+  border-color: #ffffff70;
+  background: #ffffff17;
+}
+
+body.flat-mode.is-tv .tv-player-heading > span {
+  max-width: 56%;
+  color: #f5f3f3;
+  font-size: clamp(14px, 1.65cqw, 19px);
+  font-weight: 600;
+  opacity: 1;
+}
+
+body.flat-mode.is-tv .tv-system .tv-player-controls {
+  bottom: clamp(8px, 2.4cqh, 25px);
+}
+
+body.flat-mode.is-tv .tv-player-timeline {
+  gap: clamp(8px, 1.6cqw, 20px);
+}
+
+body.flat-mode.is-tv .tv-seek-track {
+  height: 4px;
+  border-radius: 999px;
+  background: #ffffff25;
+}
+
+body.flat-mode.is-tv .tv-played {
+  background: #f22a36;
+}
+
+body.flat-mode.is-tv .tv-player-timeline > span {
+  color: #d2cfd1;
+  font-size: clamp(11px, 1.35cqw, 14px);
+  font-variant-numeric: tabular-nums;
+}
+
+body.flat-mode.is-tv .tv-player-actions .tv-icon-button {
+  border-radius: 8px;
+  transition: background .18s;
+}
+
+body.flat-mode.is-tv .tv-player-actions .tv-icon-button:is(:hover, :focus-visible) {
+  background: #ffffff17;
+}
+
+body.flat-mode.is-tv .tv-player-actions .tv-toggle {
+  background: #ffffff0e;
+}
+
+body.flat-mode.is-tv .tv-loading-ring {
+  border-top-color: #f22a36;
+  border-right-color: #f22a36;
+}
+
+body.flat-mode.is-tv .tv-player-message {
+  bottom: calc(var(--flat-tv-player-bottom) + 16px);
+  font-size: clamp(13px, 1.7cqw, 16px);
+}
+
+@media (max-width: 620px) {
+  body.flat-mode.is-tv .tv-system {
+    --flat-tv-card: min(77cqw, 69cqh);
+    --flat-tv-caption-gap: clamp(16px, 4.2cqh, 34px);
+  }
+
+  body.flat-mode.is-tv .tv-flow-caption p {
+    font-size: clamp(19px, 5.4cqw, 28px);
+  }
+
+  body.flat-mode.is-tv .tv-player-screen .tv-picture {
+    right: env(safe-area-inset-right);
+    left: env(safe-area-inset-left);
+  }
+}
+
+@media (max-height: 540px) {
+  body.flat-mode.is-tv .tv-system {
+    --flat-tv-top: 12px;
+    --flat-tv-card: min(56cqw, 59cqh);
+    --flat-tv-carousel-top: 44px;
+    --flat-tv-carousel-bottom: 72px;
+    --flat-tv-caption-gap: 11px;
+  }
+
+  body.flat-mode.is-tv .tv-service-mark {
+    width: 120px;
+  }
+
+  body.flat-mode.is-tv .tv-flow-caption p {
+    font-size: clamp(16px, 5.2cqh, 25px);
+  }
+}

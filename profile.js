@@ -1,5 +1,4 @@
 const PORTRAIT = '/assets/profile/yaroslav-portrait-studio56.webp';
-export const CONTACT_EMAIL = 'miroshnichenko.ys@mail.ru';
 export const CONTACT_PRESETS = [
   { id: 'project', title: 'Проект целиком', text: 'Привет, Ярослав! Хочу обсудить проект и пройти весь путь — от задачи и исследования до готового решения. Расскажу, что задумали, какие есть сроки и бюджет.' },
   { id: 'task', title: 'Отдельная задача', text: 'Привет, Ярослав! Нужна помощь с отдельной задачей в проекте. Расскажу, что уже есть, какой результат нужен и к какому сроку.' },
@@ -30,7 +29,6 @@ export function renderContact(icon) {
     <section class="os-contact-view">
       <header class="os-contact-identity">${icon('contact')}<div><h2>@YRLMRSH</h2><p>Ярослав</p></div></header>
       <button class="os-button os-button-dark os-write-author" data-profile-compose>Написать автору <span aria-hidden="true">↗</span></button>
-      <div class="os-contact-mail"><span>Почта</span><a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a><button type="button" data-profile-copy="email" aria-label="Скопировать почту">Копировать</button></div>
       <footer class="os-contact-options"><button data-profile-copy="handle">Скопировать ник</button></footer>
       <p class="os-contact-status" role="status" aria-live="polite"></p>
     </section>
@@ -52,8 +50,8 @@ export function mountContact(container) {
   function updateDraft() { telegram.href = telegramDraftURL(textarea.value); }
   function open() { home.hidden = true; composer.hidden = false; composer.querySelector('h2').focus({ preventScroll: true }); container.closest('.os-window-content')?.scrollTo({ top: 0 }); }
   function close() { home.hidden = false; composer.hidden = true; home.querySelector('[data-profile-compose]').focus({ preventScroll: true }); container.closest('.os-window-content')?.scrollTo({ top: 0 }); }
-  async function copy(kind) {
-    const value = kind === 'email' ? CONTACT_EMAIL : '@YRLMRSH';
+  async function copyHandle() {
+    const value = '@YRLMRSH';
     const trigger = document.activeElement;
     let copied = false;
     try { await navigator.clipboard.writeText(value); copied = true; } catch {
@@ -65,14 +63,14 @@ export function mountContact(container) {
     }
     if (disposed) return;
     const status = container.querySelector('.os-contact-status');
-    status.textContent = copied ? (kind === 'email' ? 'Почта скопирована' : 'Ник скопирован') : `Скопируйте: ${value}`;
+    status.textContent = copied ? 'Ник скопирован' : `Скопируйте: ${value}`;
     clearTimeout(statusTimer); statusTimer = setTimeout(() => { if (!disposed) status.textContent = ''; }, 2500);
   }
   function click(event) {
     const target = event.target.closest('button'); if (!target) return;
     if (target.hasAttribute('data-profile-compose')) open();
     if (target.hasAttribute('data-profile-close')) close();
-    if (target.dataset.profileCopy) void copy(target.dataset.profileCopy);
+    if (target.dataset.profileCopy === 'handle') void copyHandle();
     if (target.dataset.profilePreset) {
       const preset = CONTACT_PRESETS.find(item => item.id === target.dataset.profilePreset); if (!preset) return;
       textarea.value = preset.text; updateDraft();
