@@ -234,7 +234,7 @@ body[data-display-mode] #radio-view.has-sound .dock-radio-label::after {
 /* Keep the same surface at rest, during deformation, and on release. */
 .glass-material { display: none; }
 @media (hover: hover) and (prefers-reduced-motion: no-preference),
-       (max-width: 1024px) and (any-pointer: coarse) and (prefers-reduced-motion: no-preference) {
+       (max-width: 1366px) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
   body[data-display-mode]:not(.motion-off) .view-controls :is(.view-switch, .expand-button)[data-glass-ready] {
     border-color: transparent !important;
     background: none !important;
@@ -362,6 +362,7 @@ body.flat-mode.mobile-mode.is-radio #radio-panel {
   height: var(--app-height, 100dvh);
 }
 body.flat-mode.mobile-mode .retro-os .os-desktop {
+  align-items: safe center;
   padding-block-end: calc(16px + var(--flat-nav-height));
 }
 body.flat-mode.mobile-mode .retro-os .os-window-content {
@@ -374,12 +375,6 @@ body.flat-mode.mobile-mode .retro-os .os-case-window .os-window-content {
 body.flat-mode.mobile-mode .retro-os .os-skills-window .os-window-content { padding-block-end: 0; }
 body.flat-mode.mobile-mode .pm-map .pm-list {
   padding-block-end: calc(20px + var(--flat-nav-height));
-}
-body.flat-mode.mobile-mode .pm-map .pm-detail {
-  bottom: calc(10px + var(--flat-nav-height));
-}
-body.flat-mode.mobile-mode .pm-map[data-view="list"] .pm-detail {
-  max-height: calc(100% - var(--pm-mobile-toolbar-height, 122px) - 14px - var(--flat-nav-height));
 }
 body.flat-mode.mobile-mode.is-radio #radio-root .radio-system {
   padding-block-end: calc(clamp(14px, 2.5vh, 24px) + var(--flat-nav-height));
@@ -411,6 +406,18 @@ body.flat-mode.mobile-mode .view-controls .dock-icon { width: 16px; height: 16px
 @media (max-width: 415px) {
   body.flat-mode.mobile-mode .view-switch > button { flex-direction: column; gap: 3px; padding: 3px 6px; }
   body.flat-mode.mobile-mode .view-controls .dock-icon { width: 15px; height: 15px; }
+}
+@media (orientation: landscape) and (min-width: 520px) and (max-height: 500px) {
+  body.flat-mode.mobile-mode {
+    --glass-height: 52px;
+    --glass-bottom: 6px;
+  }
+  body.flat-mode.mobile-mode .retro-os .os-desktop-icons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto;
+    max-width: 680px;
+    column-gap: 12px;
+  }
 }
 body.flat-mode.mobile-mode.keyboard-open { --flat-nav-height: 0px; }
 body.flat-mode.mobile-mode.keyboard-open .view-controls { display: none; }

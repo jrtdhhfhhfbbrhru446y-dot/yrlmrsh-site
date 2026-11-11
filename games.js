@@ -1,4 +1,4 @@
-import { mountBounce } from './bounce.js?v=studio-71-final';
+import { mountBounce } from './bounce.js?v=studio-98-final';
 
 const DIRECTIONS = {
   up: { x: 0, y: -1 }, right: { x: 1, y: 0 },
@@ -172,6 +172,10 @@ function mountSnake(stage, container) {
     if (state === 'ready' || state === 'finished') reset(true);
     else if (state === 'playing') pause();
     else { state = 'playing'; message.hidden = true; play.textContent = 'Пауза'; live.textContent = 'Игра продолжается.'; schedule(); }
+    if (state === 'playing' && canvas.closest('body.mobile-mode') &&
+        globalThis.matchMedia?.('(orientation: landscape) and (max-height: 500px)').matches) {
+      canvas.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
   }
   function steer(name) {
     if (!activityAllowed) return;

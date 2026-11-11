@@ -72,6 +72,8 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
   const detail = root.querySelector('.pm-detail');
   const osHost = root.closest('.retro-os');
   const motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  const compactQuery = typeof matchMedia === 'function' ? matchMedia('(max-height: 500px)') : null;
+  const expandedDetail = () => compactQuery?.matches && document.body?.classList.contains('mobile-mode');
   const small = () => root.clientWidth < 520;
   const columnsForSize = () => small() && root.querySelector('.pm-content').clientHeight > root.clientWidth ? 2 : 4;
   const defaultView = () => small() || root.clientHeight < 360 ? 'list' : 'map';
@@ -82,6 +84,7 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
     if (document.hidden) return 'hidden';
     if (motionQuery.matches || document.body?.classList.contains('motion-off') || osHost?.classList.contains('os-reduce-motion')) return 'reduced';
     if (view !== 'web' || !webPhysics) return 'other-view';
+    if (selected && expandedDetail()) return 'detail';
     return 'running';
   }
   function paintWebMotion() {
@@ -214,7 +217,7 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
   }
   function usableRect() {
     const width = viewport.clientWidth, height = viewport.clientHeight;
-    if (!selected || detail.hidden) return { x: 0, y: 0, width, height };
+    if (!selected || detail.hidden || expandedDetail()) return { x: 0, y: 0, width, height };
     // Both are siblings in pm-content: offsets stay correct under the laptop's 3D projection.
     if (detail.offsetWidth > width * .7) return { x: 0, y: 0, width, height: clamp(detail.offsetTop - 12, 45, height) };
     return { x: 0, y: 0, width: clamp(detail.offsetLeft - 16, 110, width), height };
@@ -305,15 +308,20 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
     const node = BY_ID.get(id); if (!node) return;
     selected = id; detail.hidden = false; root.classList.add('has-detail');
     detail.innerHTML = `<header class="pm-detail-heading"><div><p>${esc(node.stageTitle)}</p><h2 id="${uid}-detail-title" tabindex="-1">${esc(node.title)}</h2></div><button type="button" data-pm-action="close" aria-label="Закрыть описание">×</button></header><div class="pm-detail-body"><p class="pm-detail-action">${esc(node.action)}</p><dl><dt>На выходе</dt><dd>${esc(node.artifact)}</dd><dt>Как работаю</dt><dd>${node.methods.map(esc).join(' · ')}</dd></dl>${node.projectIds.length ? `<section class="pm-related"><h3>В архиве</h3>${node.projectIds.map(projectId => { const project = getProject(projectId); return project ? `<button type="button" data-pm-project="${projectId}">${esc(project.title)}<span aria-hidden="true">↗</span></button>` : ''; }).join('')}</section>` : ''}${neighborMarkup(id)}<button type="button" class="pm-contact" data-pm-action="contact">Обсудить задачу <span aria-hidden="true">↗</span></button></div>`;
-    if (view === 'web' && scale < .45) {
+    const expanded = expandedDetail();
+    if (!expanded && view === 'web' && scale < .45) {
       const point = layout.nodes.get(id);
       zoomTo(.64, tx + (point.x + point.width / 2) * scale, ty + (point.y + 4) * scale);
     }
-    paintSelection(); ensureVisible(id); if (focus) detail.querySelector('h2').focus({ preventScroll: true });
+    paintSelection();
+    if (!expanded) ensureVisible(id);
+    if (focus || expanded) detail.querySelector('h2').focus({ preventScroll: true });
+    if (expanded) syncWebMotion();
   }
   function closeDetail({ focus = true } = {}) {
     const id = selected; selected = null; detail.hidden = true; root.classList.remove('has-detail'); paintSelection();
     if (focus && id) (view !== 'list' ? world : list).querySelector(`[data-pm-node="${id}"]`)?.focus({ preventScroll: true });
+    if (id && expandedDetail()) syncWebMotion();
   }
   function setView(value) {
     resetGesture();
@@ -335,7 +343,7 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
       renderWorld();
     }
     if (!initialized) { initialized = true; setView(defaultView()); }
-    else if (!manualView && view !== defaultView()) setView(defaultView());
+    else if (!manualView && !selected && view !== defaultView()) setView(defaultView());
     else if (view !== 'list' && (changedSize || changedLayout)) fit();
   }
   function click(event) {
@@ -457,6 +465,7 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
   viewport.addEventListener('pointerup', pointerEnd); viewport.addEventListener('pointercancel', pointerEnd); viewport.addEventListener('lostpointercapture', lostCapture);
   viewport.addEventListener('wheel', wheel, { passive: false }); document.addEventListener('visibilitychange', visibility);
   motionQuery.addEventListener?.('change', motionChanged);
+  compactQuery?.addEventListener?.('change', motionChanged);
   const motionObserver = typeof MutationObserver === 'function' ? new MutationObserver(motionChanged) : null;
   if (document.body) motionObserver?.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   if (osHost && osHost !== document.body) motionObserver?.observe(osHost, { attributes: true, attributeFilter: ['class'] });
@@ -471,6 +480,7 @@ export function mountSkillMap(container, { onProject = () => {}, onContact = () 
       if (!observer) window.removeEventListener('resize', rebuild);
       document.removeEventListener('visibilitychange', visibility);
       motionQuery.removeEventListener?.('change', motionChanged);
+      compactQuery?.removeEventListener?.('change', motionChanged);
       root.removeEventListener('click', click); root.removeEventListener('keydown', keydown); root.removeEventListener('focusin', focusIn);
       viewport.removeEventListener('pointerdown', pointerDown); viewport.removeEventListener('pointermove', pointerMove);
       viewport.removeEventListener('pointerleave', pointerLeave);
