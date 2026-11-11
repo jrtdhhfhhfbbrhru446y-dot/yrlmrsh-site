@@ -264,7 +264,7 @@ function setFlat(value, { persist = true, temporary = false } = {}) {
   if (!flat && mode === 'tv' && tvFailed) mode = 'work';
   engine?.setSuspended(flat && !backgroundSceneLoading);
   if (flat) {
-    if (!textVersion && !entered) { entered = true; engine?.setEntered(true); }
+    if (!mobile && !textVersion && !entered) { entered = true; engine?.setEntered(true); }
     skipBoot(); void showReady({ immediate: !loadingEye }); updateStatus();
   }
   syncModes();
@@ -393,11 +393,9 @@ window.visualViewport?.addEventListener('resize', updateVisualViewport);
 document.addEventListener('focusin', updateVisualViewport);
 document.addEventListener('focusout', updateVisualViewport);
 updateVisualViewport();
-if (initialPageView || flat && !textVersion) {
+if (initialPageView) {
   entered = true; mode = 'work';
   root.hidden = false; loginScreen.hidden = true;
-}
-if (initialPageView) {
   os.open(initialPageView, { remember: false, focus: false });
   initialPageReady = os.whenReady();
 }
