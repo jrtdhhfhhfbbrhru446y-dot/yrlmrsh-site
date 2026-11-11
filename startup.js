@@ -10,7 +10,7 @@ if (!globalThis.__yrlmrshStartupGuard?.failed) {
       .then(({ preloadScene3D }) => preloadScene3D())
       .catch(() => { /* The normal scene path handles a failed dependency. */ });
   }
-  if (!loading.cancelled) void import('./computer.js?v=studio-91-final').catch(error => {
+  if (!loading.cancelled) void import('./computer.js?v=studio-95-final').catch(error => {
     if (!globalThis.__yrlmrshStartupGuard?.failed) console.warn('Portfolio startup failed.', error);
     loading.fail();
   });
