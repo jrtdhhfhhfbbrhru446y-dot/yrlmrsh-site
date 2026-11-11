@@ -1,4 +1,4 @@
-import { initOS, getBrowserPageView } from './os-ui.js?v=studio-91-final';
+import { initOS, getBrowserPageView } from './os-ui.js?v=studio-98-final';
 import { createEyeLoader, createStartupTimingRecorder } from './loading-eye.js?v=studio-71-final';
 import { takeStartupLoader } from './startup-loader.js?v=studio-76-final';
 import { createTelevision } from './television.js?v=studio-81-final';
@@ -22,8 +22,8 @@ const viewControls = $('.view-controls');
 attachGlassDock(viewControls);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 // Narrow layouts are mobile regardless of the browser's primary pointer.
-// Larger touch screens, including landscape phones, keep the app layout too.
-const mobileViewport = matchMedia('(max-width: 760px), (max-width: 1024px) and (any-pointer: coarse)');
+// Touch-first tablets keep the app layout across orientations.
+const mobileViewport = matchMedia('(max-width: 760px), (max-width: 1366px) and (pointer: coarse)');
 let mobile = mobileViewport.matches;
 const textVersion = new URLSearchParams(location.search).get('view') === 'text';
 // Desktop visits start with the scene; phones and the text view stay flat.
@@ -396,17 +396,27 @@ function updateViewportMode() {
 }
 let viewportBaselineWidth = innerWidth, viewportBaselineHeight = innerHeight;
 function updateVisualViewport() {
-  if (!mobile) { document.body.style.removeProperty('--app-height'); document.body.classList.remove('keyboard-open'); return; }
+  if (!mobile) {
+    document.body.style.removeProperty('--app-height');
+    document.body.classList.remove('keyboard-open');
+    viewportBaselineWidth = innerWidth;
+    viewportBaselineHeight = innerHeight;
+    return;
+  }
   const visual = window.visualViewport;
-  document.body.style.setProperty('--app-height', `${Math.round(visual?.height || innerHeight)}px`);
+  // Pinch zoom magnifies the page; it should not also shrink the app layout.
+  if (visual && Math.abs(visual.scale - 1) > .01) return;
+  const height = Math.round(visual?.height || innerHeight);
+  document.body.style.setProperty('--app-height', `${height}px`);
   const editingElement = document.activeElement;
   const editing = editingElement?.matches('input:not([type="range"]), textarea, [contenteditable="true"]');
-  // Some mobile browsers resize both viewports for the keyboard. Retain the
-  // unobstructed height instead of relying only on their current difference.
-  if (Math.abs(innerWidth - viewportBaselineWidth) > 120) {
-    viewportBaselineWidth = innerWidth; viewportBaselineHeight = innerHeight;
-  } else if (!editing) viewportBaselineHeight = Math.max(viewportBaselineHeight, innerHeight);
-  const keyboardOpen = Boolean(editing && visual && Math.max(innerHeight, viewportBaselineHeight) - visual.height > 120);
+  // Compare with the last unobstructed visual height at this width, including
+  // when a fold, rotation or browser toolbar changes the available space.
+  if (innerWidth !== viewportBaselineWidth || !editing) {
+    viewportBaselineWidth = innerWidth;
+    viewportBaselineHeight = height;
+  }
+  const keyboardOpen = Boolean(editing && viewportBaselineHeight - height > 120);
   document.body.classList.toggle('keyboard-open', keyboardOpen);
   if (keyboardOpen) requestAnimationFrame(() => {
     if (document.activeElement === editingElement) editingElement.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });

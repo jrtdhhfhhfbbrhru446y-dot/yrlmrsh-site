@@ -49,6 +49,7 @@ body.flat-mode.mobile-mode.is-radio #radio-root .radio-system {
     transparent calc(100% - 120px),
     var(--mobile-surface, var(--flat-surface)) calc(100% - 12px)), var(--radio-room);
   background-blend-mode: normal, soft-light, normal;
+  scroll-padding-block-end: var(--flat-nav-height);
 }
 
 body.flat-mode.is-radio #radio-root :is(.radio-heading, .radio-body),
@@ -262,6 +263,40 @@ body.flat-mode.is-radio #radio-root .radio-footer { display: none; }
 @media (max-width: 360px) {
   body.flat-mode.is-radio #radio-panel { --flat-radio-gutter: 12px; --flat-radio-pad: 12px; }
   body.flat-mode.is-radio #radio-root .radio-stations { gap: 5px; }
+  body.flat-mode.is-radio #radio-root .radio-stations > button > span { white-space: normal; }
   body.flat-mode.is-radio #radio-root .radio-levels { gap: 9px; }
   body.flat-mode.is-radio #radio-root .radio-volume label { font-size: 10px; }
+}
+
+@media (min-width: 560px) and (max-height: 500px) and (orientation: landscape) {
+  body.flat-mode.mobile-mode.is-radio #radio-panel {
+    --flat-radio-gutter: 12px;
+    --flat-radio-pad: 12px;
+    --flat-radio-gap: 8px;
+  }
+
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-heading { padding-block: 8px; }
+
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: 'dial player' 'stations levels' 'notice notice' 'library library';
+  }
+
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-dial {
+    min-height: 88px;
+    padding-block: 8px;
+  }
+
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-dial-top > [data-radio-frequency] {
+    font-size: clamp(28px, 4.1vw, 42px);
+  }
+
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-scale { height: 32px; }
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-player { margin-top: 0; }
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-stations > button > span { white-space: normal; }
+
+  body.flat-mode.mobile-mode.is-radio #radio-root .radio-levels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--flat-radio-gap);
+  }
 }

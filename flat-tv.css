@@ -274,3 +274,48 @@ body.flat-mode.is-tv .tv-player-message {
     font-size: clamp(16px, 5.2cqh, 25px);
   }
 }
+
+@media (orientation: landscape) {
+  body.flat-mode.mobile-mode.is-tv .tv-player-screen {
+    --flat-tv-left-inset: max(12px, env(safe-area-inset-left));
+    --flat-tv-right-inset: max(12px, env(safe-area-inset-right));
+    --flat-tv-controls-width: clamp(208px, 35cqw, 290px);
+  }
+
+  @container tv-screen (min-width: 480px) and (max-height: 320px) {
+    body.flat-mode.mobile-mode.is-tv .tv-carousel {
+      --flat-tv-carousel-top: 42px;
+      --flat-tv-carousel-bottom: 58px;
+      --flat-tv-card: max(44px, min(48cqw, 80cqh, calc((100cqh - 108px) * 4 / 3)));
+    }
+
+    body.flat-mode.mobile-mode.is-tv .tv-flow-caption {
+      top: auto;
+      bottom: 4px;
+    }
+
+    body.flat-mode.mobile-mode.is-tv .tv-player-screen .tv-picture {
+      inset: max(8px, env(safe-area-inset-top)) calc(var(--flat-tv-right-inset) + var(--flat-tv-controls-width) + 12px)
+        8px var(--flat-tv-left-inset);
+    }
+
+    body.flat-mode.mobile-mode.is-tv .tv-player-screen :is(.tv-player-heading, .tv-player-controls) {
+      left: auto;
+      right: var(--flat-tv-right-inset);
+      width: var(--flat-tv-controls-width);
+    }
+
+    body.flat-mode.mobile-mode.is-tv .tv-player-heading {
+      top: max(8px, env(safe-area-inset-top));
+      gap: 8px;
+    }
+
+    body.flat-mode.mobile-mode.is-tv .tv-player-screen .tv-player-controls { bottom: 8px; }
+
+    body.flat-mode.mobile-mode.is-tv .tv-player-message {
+      left: calc(var(--flat-tv-left-inset) + 8px);
+      right: calc(var(--flat-tv-right-inset) + var(--flat-tv-controls-width) + 20px);
+      bottom: 16px;
+    }
+  }
+}

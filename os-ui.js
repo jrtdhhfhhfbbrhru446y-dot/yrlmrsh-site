@@ -29,8 +29,8 @@ export function shouldHandlePageLink(event, link, browserLocation = globalThis.w
 // Keep the four desktop icons synchronous: the 3D screen compiles their SVGs
 // immediately after initOS. Larger sections are fetched only when opened.
 const sections = {
-  skills: { load: () => import('./skill-map.js?v=studio-75-final') },
-  games: { load: () => import('./games.js?v=studio-71-final') },
+  skills: { load: () => import('./skill-map.js?v=studio-98-final') },
+  games: { load: () => import('./games.js?v=studio-98-final') },
   profile: { load: () => import('./profile.js?v=studio-81-final') },
 };
 function loadSection(name) {

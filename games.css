@@ -121,3 +121,41 @@
   .retro-games .rg-mines-layout { flex-direction: column; align-items: center; gap: 12px; }
   .retro-games .rg-mines-guide { max-width: 100%; }
 }
+
+@container retro-games (max-width: 310px) {
+  body.mobile-mode .retro-games .rg-snake-controls { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  body.mobile-mode .retro-games .rg-snake-controls > p { grid-column: 1; grid-row: 2; }
+}
+
+/* A message can need more height than the scaled canvas on a narrow screen. */
+body.mobile-mode .retro-games .rg-bounce-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+body.mobile-mode .retro-games .rg-bounce-field > canvas { grid-area: 1 / 1; align-self: center; }
+body.mobile-mode .retro-games .rg-bounce-message { position: relative; inset: auto; grid-area: 1 / 1; }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  @container retro-games (min-width: 440px) {
+    body.mobile-mode .retro-games :is(.rg-snake, .rg-bounce) {
+      --rg-board-height: max(96px, calc(var(--app-height, 100dvh) - var(--flat-nav-height, 74px) - 120px - env(safe-area-inset-top, 0px)));
+      display: grid;
+      align-items: center;
+      gap: 12px 8px;
+    }
+    body.mobile-mode .retro-games .rg-snake { grid-template-columns: auto minmax(0, 1fr); }
+    body.mobile-mode .retro-games .rg-bounce { grid-template-columns: 64px 64px minmax(0, 1fr) 72px; }
+    body.mobile-mode .retro-games :is(.rg-snake, .rg-bounce) > .rg-toolbar { grid-column: 1 / -1; margin-bottom: 0; }
+    body.mobile-mode .retro-games .rg-snake-field { grid-area: 2 / 2; width: min(100%, 480px, calc(2 * var(--rg-board-height))); }
+    body.mobile-mode .retro-games .rg-snake-controls { grid-area: 2 / 1; grid-template-columns: auto; width: auto; margin: 0; }
+    body.mobile-mode .retro-games .rg-dpad { gap: 4px 8px; }
+    body.mobile-mode .retro-games :is(.rg-snake-controls, .rg-bounce-controls) > p { display: none; }
+    body.mobile-mode .retro-games .rg-bounce-field {
+      grid-area: 2 / 3;
+      width: min(100%, calc(var(--rg-board-height) * 720 / 336));
+      margin-inline: auto;
+    }
+    body.mobile-mode .retro-games :is(.rg-bounce-controls, .rg-bounce-pad) { display: contents; }
+    body.mobile-mode .retro-games .rg-bounce-pad > [data-bounce-hold] { grid-row: 2; align-self: end; }
+  }
+}

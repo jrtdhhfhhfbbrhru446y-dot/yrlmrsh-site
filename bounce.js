@@ -204,6 +204,10 @@ export function mountBounce(stage, container, observeActivity) {
     phase = 'playing'; message.hidden = true; lastTime = 0; accumulator = 0; label();
     game.dataset.pauseReason = '';
     if (focus) canvas.focus({ preventScroll: true });
+    if (canvas.closest('body.mobile-mode') &&
+        globalThis.matchMedia?.('(orientation: landscape) and (max-height: 500px)').matches) {
+      canvas.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
     if (!raf) raf = requestAnimationFrame(frame);
   }
   function pause(reason) {
