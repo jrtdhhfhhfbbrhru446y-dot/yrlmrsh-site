@@ -394,13 +394,6 @@ body.flat-mode.mobile-mode .view-controls {
 }
 body.flat-mode.mobile-mode:not(.is-radio, .is-tv):has(#login-screen:not([hidden])) .view-controls {
   visibility: hidden;
-  opacity: 0;
-  transform: translateY(14px);
-}
-@media (prefers-reduced-motion: no-preference) {
-  body.flat-mode.mobile-mode:not(.motion-off) .view-controls {
-    transition: opacity 240ms ease-out, transform 320ms cubic-bezier(.22, .61, .36, 1);
-  }
 }
 body.flat-mode.mobile-mode .view-switch {
   --glass-inset: 4px;
