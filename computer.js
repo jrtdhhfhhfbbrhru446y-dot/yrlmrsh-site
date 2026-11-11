@@ -18,7 +18,8 @@ const loginScreen = $('#login-screen'), enterButton = $('#enter-desktop');
 const tvAnchor = $('#tv-anchor'), tvRoot = $('#tv-root');
 const radioPanel = $('#radio-panel'), radioRoot = $('#radio-root'), canvas = $('#computer-canvas');
 const modeButton = $('#expand-screen'), status = $('#device-status');
-attachGlassDock($('.view-controls'));
+const viewControls = $('.view-controls');
+attachGlassDock(viewControls);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 // Narrow layouts are mobile regardless of the browser's primary pointer.
 // Larger touch screens, including landscape phones, keep the app layout too.
@@ -65,7 +66,7 @@ startupGuard?.onFailure(() => {
 addEventListener('pagehide', () => startupDeadline?.dispose());
 function setLoadingInteraction(loading) {
   $('#experience').inert = loading;
-  $('.view-controls').inert = loading;
+  viewControls.inert = loading;
   $('.identity').inert = loading;
 }
 function markReveal() {
@@ -115,9 +116,33 @@ function finishBoot({ focus = !textVersion } = {}) { return startupTimings.run('
   if (focus && (mode === 'work' || mode === 'desk')) focusComputer();
 }); }
 function focusComputer() { return startupTimings.run('startup focus max', () => { if (entered) os.focus?.(); else enterButton.focus({ preventScroll: true }); }); }
+
+function animateMobileEntry() {
+  const easeOut = 'cubic-bezier(.22, .61, .36, 1)';
+  root.querySelector('.os-menubar')?.animate?.([
+    { opacity: 0, transform: 'translateY(-10px)' },
+    { opacity: 1, transform: 'none' }
+  ], { duration: 460, easing: easeOut });
+
+  const desktopItems = root.querySelectorAll('.os-desktop-icons > .os-desktop-item');
+  desktopItems.forEach((item, index) => {
+    item.animate?.([
+      { opacity: 0, transform: 'translateY(28px) scale(.97)' },
+      { opacity: 1, transform: 'none' }
+    ], { duration: 580, delay: 65 + index * 55, easing: easeOut, fill: 'backwards' });
+  });
+
+  viewControls.animate?.([
+    { opacity: 0, transform: 'translateY(76px)', easing: 'cubic-bezier(.18, .75, .25, 1)' },
+    { opacity: 1, transform: 'translateY(-5px)', offset: .72, easing: 'ease-in-out' },
+    { opacity: 1, transform: 'none' }
+  ], { duration: 800, delay: 120, fill: 'backwards' });
+}
+
 enterButton.addEventListener('click', () => {
   entered = true; loginScreen.hidden = true; root.hidden = false;
   engine?.setEntered(true); setMode('work'); focusComputer();
+  if (mobile && !motionDisabled && !reduced.matches) animateMobileEntry();
 });
 function showLoading() {
   if (startupGuard?.failed) return;
